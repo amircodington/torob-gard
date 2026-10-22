@@ -56,5 +56,6 @@ test("radar: anchor fallback, sort, open-now filter, missing unit, a failure ope
   await sheet.getByRole("button", { name: "موجود نبود" }).click();
   expect((await report).status()).toBe(200);
   await page.waitForURL(/planb=stock/);
-  await expect(sheet).toHaveCount(0);
+  await expect(sheet.getByText("قیمت ثبت‌شده‌ی فروشگاه در ترب")).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "پلن B" })).toBeVisible();
 });

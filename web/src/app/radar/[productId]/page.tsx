@@ -1,9 +1,10 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { JourneyShell } from "../../../components/JourneyShell";
 import { DistrictMap } from "../../../components/map/DistrictMap";
+import { PlanB } from "../../../components/planb/PlanB";
 import { AnchorPicker, landmarkAnchor, type RadarAnchor } from "../../../components/radar/AnchorPicker";
 import { FilterPanel, NO_FILTERS } from "../../../components/radar/FilterPanel";
 import { ShopRow } from "../../../components/radar/ShopRow";
@@ -143,6 +144,9 @@ function Radar({ id }: { id: string }) {
 
       <FilterPanel open={filtersOpen} onClose={closeFilters} prices={all?.map((r) => r.offer.priceToman) ?? []} shown={rows.length} />
       <StoreSheet row={open} anchor={anchor} now={cur?.now ?? new Date()} />
+      <Suspense fallback={null}>
+        <PlanB rows={all} />
+      </Suspense>
     </>
   );
 }

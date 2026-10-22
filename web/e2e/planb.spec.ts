@@ -1,0 +1,62 @@
+import { expect, test, type Locator } from "@playwright/test";
+
+const PRODUCT = "product_a112c972266b57d0f7eddeab";
+const FA = "۰۱۲۳۴۵۶۷۸۹";
+const ascii = (s: string) => s.replace(/[۰-۹]/g, (d) => String(FA.indexOf(d))).replace(/[٬,]/g, "").replace("٫", ".");
+const price = async (card: Locator) => Number(ascii(await card.getByText(/^[۰-۹٬]+ تومان$/).innerText()).replace(/\D/g, ""));
+async function metres(card: Locator): Promise<number> {
+  const m = (await card.innerText()).match(/([۰-۹٬٫]+) (متر|کیلومتر)/);
+  return m ? Number(ascii(m[1])) * (m[2] === "کیلومتر" ? 1000 : 1) : Infinity;
+}
+
+test.use({ permissions: [] });
+
+test("plan B: fail a shop, re-rank by price then distance, every shop failed → diagnosis", async ({ page, request }) => {
+  await page.goto(`/radar/${PRODUCT}`);
+  const rows = page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem");
+  await rows.first().getByRole("button").click();
+  await page.getByRole("dialog").getByRole("button", { name: "موجود نبود" }).click();
+  await page.waitForURL(/planb=stock/);
+
+  const planB = page.getByRole("dialog", { name: "پلن B" });
+  await expect(planB.getByText("موجودی تأیید نشد")).toBeVisible();
+  await expect(planB.getByText("حالا بگو چی برات مهم‌تره:")).toBeVisible();
+  // Back closes it; Forward brings it back from the URL alone.
+  await page.goBack();
+  await expect(planB).toHaveCount(0);
+  await page.goForward();
+  await expect(planB.getByText("موجودی تأیید نشد")).toBeVisible();
+
+  const cards = planB.getByRole("list", { name: "گزینه‌های جایگزین" }).getByRole("listitem");
+  await planB.getByRole("button", { name: /قیمت مهم‌تره/ }).click();
+  await expect(cards.first()).toBeVisible();
+  const prices = await Promise.all((await cards.all()).map(price));
+  expect(prices[0]).toBe(Math.min(...prices));
+  const firstByPrice = await cards.first().getByRole("heading").innerText();
+
+  await planB.getByRole("button", { name: /نزدیکی مهم‌تره/ }).click();
+  await expect(cards.first().getByRole("heading")).not.toHaveText(firstByPrice);
+  const ds = await Promise.all((await cards.all()).map(metres));
+  expect(ds[0]).toBe(Math.min(...ds));
+
+  // Accept: the overlay closes, the param goes, the new shop's sheet opens.
+  const nearest = await cards.first().getByRole("heading").innerText();
+  await cards.first().getByRole("button", { name: "انتخاب این فروشگاه" }).click();
+  await expect(planB).toHaveCount(0);
+  await expect(page).not.toHaveURL(/planb=/);
+  await expect(page.getByRole("dialog").getByRole("heading", { name: nearest })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "بستن" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+
+  // Every shop failed: write the failures into the stored session and reload with the param.
+  const offers: { shop: { id: string } }[] = await (await request.get(`/api/products/${PRODUCT}/offers`)).json();
+  await page.evaluate((ids) => {
+    const s = JSON.parse(sessionStorage.getItem("torobgard-session-v2")!);
+    s.failures = ids.map((storeId) => ({ storeId, reason: "stock", at: 0 }));
+    sessionStorage.setItem("torobgard-session-v2", JSON.stringify(s));
+  }, offers.map((o) => o.shop.id));
+  await page.goto(`/radar/${PRODUCT}?planb=stock`);
+  await expect(page.getByText("گزینه‌ی جایگزینی نموند")).toBeVisible();
+  await page.getByRole("button", { name: "برگشت به میز تصمیم" }).click();
+  await page.waitForURL(/\/desk/);
+});
