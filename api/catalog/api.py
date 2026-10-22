@@ -55,8 +55,10 @@ def desk(request, body: DeskIn):
             "image_url": t.product.image_urls[0] if t.product.image_urls else None,
             "specs_top3": _top3(body.category, t.product.specs),
             "price": t.price, "offer_count": t.offer_count,
+            # Age of the shown price: cheapest non-outlier offer, newest on a tie (PLAN §2 rule 1).
             "newest_price_at": Offer.objects.filter(product=t.product, is_outlier=False)
-            .aggregate(m=Max("last_price_changed_at"))["m"],
+            .order_by("price_toman", "-last_price_changed_at")
+            .values_list("last_price_changed_at", flat=True).first(),
             **ex[t.tier],
         }
         for t in tiers

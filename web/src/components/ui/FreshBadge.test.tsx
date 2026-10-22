@@ -15,5 +15,10 @@ describe("FreshBadge", () => {
   it("61 days: honesty suffix", () => {
     render(<FreshBadge updatedMinAgo={61 * DAY} />);
     expect(screen.getByText(/ممکن است تغییر کرده باشد/)).toBeTruthy();
+    expect(screen.queryByText(/قدیمی/)).toBeNull(); // one stale marker, not two
+  });
+  it("prefixes what the age belongs to", () => {
+    render(<FreshBadge updatedMinAgo={5} prefix="کمترین قیمت: " />);
+    expect(screen.getByText("کمترین قیمت: به‌روزرسانی ۵ دقیقه پیش")).toBeTruthy();
   });
 });

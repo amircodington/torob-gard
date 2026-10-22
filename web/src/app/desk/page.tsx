@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CompareSheet } from "../../components/desk/CompareSheet";
 import { ReqChips } from "../../components/desk/ReqChips";
 import { TierCard } from "../../components/desk/TierCard";
+import { staleCompareIds } from "../../components/desk/compare";
 import { JourneyShell } from "../../components/JourneyShell";
 import { Mascot } from "../../components/Mascot";
 import { Btn } from "../../components/ui/Btn";
@@ -41,6 +42,12 @@ function Desk() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `key` covers every input
   }, [askable, key]);
+
+  const tiers = res?.key === key ? res.tiers : undefined;
+  // TOGGLE_COMPARE caps the list at 3, so ids from an earlier desk would block «مقایسه»; drop them.
+  useEffect(() => {
+    if (tiers) for (const id of staleCompareIds(state.compare, tiers)) dispatch({ type: "TOGGLE_COMPARE", id });
+  }, [tiers, state.compare, dispatch]);
 
   const edit = () => dispatch({ type: "GO", stage: "consult" });
   const editBtn = (
@@ -90,7 +97,6 @@ function Desk() {
       />
     );
 
-  const tiers = current?.tiers;
   const picked = tiers?.filter((t) => state.compare.includes(t.productId)) ?? [];
   const pick = (id: string) => dispatch({ type: "SELECT_PRODUCT", id, advance: true });
 

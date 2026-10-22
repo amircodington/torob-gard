@@ -51,7 +51,7 @@ export function TierCard({
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-pill bg-panel px-3 py-1 text-[13px] font-bold text-on-dark">{TIER_LABEL[t.tier]}</span>
         {t.tier === "balanced" && (
-          <span className="rounded-pill bg-orange px-3 py-1 text-[13px] font-bold text-on-orange">پیشنهاد ترب‌گرد</span>
+          <span className="rounded-pill bg-orange px-3 py-1 text-[15px] font-bold text-on-orange">پیشنهاد ترب‌گرد</span>
         )}
       </div>
 
@@ -76,9 +76,9 @@ export function TierCard({
           <span className="text-[13px] font-semibold text-ink-muted">{faNum(t.offerCount)} فروشگاه</span>
         </div>
         {minAgo === null ? (
-          <span className="text-[12px] font-semibold text-signal">زمان این قیمت ثبت نشده · ممکن است تغییر کرده باشد</span>
+          <span className="text-[12px] font-semibold text-signal">کمترین قیمت: زمانش ثبت نشده · ممکن است تغییر کرده باشد</span>
         ) : (
-          <FreshBadge updatedMinAgo={minAgo} />
+          <FreshBadge updatedMinAgo={minAgo} prefix="کمترین قیمت: " />
         )}
       </div>
 

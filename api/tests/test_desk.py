@@ -120,3 +120,28 @@ def test_desk_endpoint(client, phones):
     keys = {"tier", "product_id", "title", "price", "offer_count", "specs_top3", "newest_price_at",
             "bullets", "tradeoffs", "fit_note", "fits_priority"}
     assert all(keys <= set(t) for t in tiers)
+
+
+def test_desk_price_age_is_the_min_price_offers(client, db):
+    # PLAN §2 rule 1: the age shown next to min_price must be that offer's age, not a pricier one's.
+    shop = Shop.objects.create(
+        id="s1", name="s", name_norm="s", address_raw="a", geom=Point(51.4, 35.7, srid=4326)
+    )
+    cat = Category.objects.create(name="گوشی موبایل", name_norm="گوشی موبایل")
+    p = Product.objects.create(
+        id="cheap", persian_title="cheap", title_norm="cheap", category=cat, specs=[],
+        min_price=600_000, offer_count=3,
+    )
+    for oid, price, at in [
+        ("old-cheap", 600_000, "2026-07-24T00:00:00Z"),
+        ("new-cheap", 600_000, "2026-07-25T00:00:00Z"),  # tie on price → the newer one
+        ("pricier", 700_000, "2026-10-21T00:00:00Z"),
+    ]:
+        Offer.objects.create(id=oid, product=p, shop=shop, seller_title="s", price_toman=price,
+                             last_price_changed_at=at)
+    Offer.objects.create(id="junk", product=p, shop=shop, seller_title="s", price_toman=1,
+                         is_outlier=True, last_price_changed_at="2026-10-22T00:00:00Z")
+    r = client.post("/api/desk", {"category": "mobile", "budget_min": 0, "budget_max": M},
+                    content_type="application/json")
+    tier = next(t for t in r.json()["tiers"] if t["product_id"] == "cheap")
+    assert tier["newest_price_at"].startswith("2026-07-25")

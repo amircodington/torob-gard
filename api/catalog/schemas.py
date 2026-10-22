@@ -41,7 +41,7 @@ class TierOut(Schema):
     specs_top3: list[SpecOut]
     price: int
     offer_count: int
-    newest_price_at: datetime | None
+    newest_price_at: datetime | None  # the min-price offer's date, not the newest offer's
     bullets: list[str]
     tradeoffs: list[str]
     fit_note: str
