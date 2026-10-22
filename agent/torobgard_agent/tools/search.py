@@ -33,6 +33,8 @@ _DESK_WORDS = {"mobile": "mobile", "موبایل": "mobile", "گوشی": "mobile
                "لوازمجانبی": "accessory"}
 _SEPARATORS = "[\\s\u200c،,_-]"  # spaces, ZWNJ, punctuation: «لپ‌تاپ» == «لپ تاپ»
 MIN_TRIGRAM = 0.5
+# ponytail: half an RRF vote per in-category ranker is a guess; tune it once the eval set grows
+CATEGORY_BOOST = 0.5
 
 
 class LatLng(TypedDict):
@@ -133,7 +135,8 @@ async def search_products(
     limit: int = 10, *, db: AsyncConnection | None = None, embed: Embedder | None = None,
 ) -> list[ProductHit]:
     """Hybrid search: tsvector top 50 ∪ vector top 50, reciprocal-rank fusion, top `limit`.
-    `category` is resolved loosely (resolve_category); one that matches no catalog name finds nothing.
+    `category` (resolved loosely, resolve_category) is a boost, not a filter: the same two rankers run again
+    inside it at half weight, so a wrong category never hides an exact model match.
 
     ponytail: `near` is accepted but unused here; distance ranking lives in search_shops.
     """
@@ -143,41 +146,51 @@ async def search_products(
     if budget_max is not None:
         where.append("p.min_price <= :budget_max")
         params["budget_max"] = budget_max
-    if category:
-        if not (names := await resolve_category(category, db=db)):
-            return []
-        where.append("c.name_norm = ANY(:categories)")
+    conds = [(" AND ".join(where), 1.0)]
+    if category and (names := await resolve_category(category, db=db)):
         params["categories"] = names
+        conds.append((" AND ".join([*where, "c.name_norm = ANY(:categories)"]), CATEGORY_BOOST))
     base = "catalog_product p JOIN catalog_category c ON c.id = p.category_id"
-    cond = " AND ".join(where)
     try:
         params["vec"] = str(await (embed or embed_query)(q))
     except Exception:
         log.warning("query embedding failed; keyword-only search", exc_info=True)
     async with _connect(db) as conn:
-        # OR the words (plainto_tsquery ANDs them); ts_rank prefers titles matching more of them
-        kw = await conn.execute(text(f"""
-            SELECT p.id FROM {base},
-                to_tsquery('simple', replace(plainto_tsquery('simple', :q)::text, '&', '|')) tq
-            WHERE p.search_tsv @@ tq AND {cond}
-            ORDER BY ts_rank(p.search_tsv, tq) DESC, p.offer_count DESC, p.id LIMIT :pool"""), params)
-        ranked = [kw.scalars().all()]
+        ranked: list[tuple[list[str], float]] = []  # (ids in rank order, weight)
         if "vec" in params:
             # ef_search defaults to 40 (< POOL); iterative scan keeps going when filters drop rows.
             # SET LOCAL lasts for this transaction (the connection autobegins on first execute).
             await conn.execute(text("SET LOCAL hnsw.ef_search = 100"))
             await conn.execute(text("SET LOCAL hnsw.iterative_scan = relaxed_order"))
-            vec = await conn.execute(text(f"""
-                SELECT p.id FROM catalog_productembedding e JOIN {base} ON p.id = e.product_id
-                WHERE e.model = :model AND {cond}
-                ORDER BY e.embedding <=> CAST(:vec AS vector) LIMIT :pool"""), params)
-            ranked.append(vec.scalars().all())
+        for cond, weight in conds:
+            # OR the words (plainto_tsquery ANDs them); ts_rank prefers titles matching more of them
+            kw = await conn.execute(text(f"""
+                SELECT p.id FROM {base},
+                    to_tsquery('simple', replace(plainto_tsquery('simple', :q)::text, '&', '|')) tq
+                WHERE p.search_tsv @@ tq AND {cond}
+                ORDER BY ts_rank(p.search_tsv, tq) DESC, p.offer_count DESC, p.id LIMIT :pool"""), params)
+            ranked.append((kw.scalars().all(), weight))
+            if "vec" in params:
+                vec = await conn.execute(text(f"""
+                    SELECT p.id FROM catalog_productembedding e JOIN {base} ON p.id = e.product_id
+                    WHERE e.model = :model AND {cond}
+                    ORDER BY e.embedding <=> CAST(:vec AS vector) LIMIT :pool"""), params)
+                ranked.append((vec.scalars().all(), weight))
+        plain: dict[str, float] = {}  # without the category
         scores: dict[str, float] = {}
-        for ids in ranked:
+        for ids, weight in ranked:
             for rank, pid in enumerate(ids, 1):
-                scores[pid] = scores.get(pid, 0) + 1 / (RRF_K + rank)
-        kw_rank = {pid: n for n, pid in enumerate(ranked[0])}  # ties go to the exact-word match
-        top = sorted(scores, key=lambda i: (-scores[i], kw_rank.get(i, POOL), i))[:limit]
+                scores[pid] = scores.get(pid, 0) + weight / (RRF_K + rank)
+                if weight == 1.0:
+                    plain[pid] = plain.get(pid, 0) + 1 / (RRF_K + rank)
+        kw_rank = {pid: n for n, pid in enumerate(ranked[0][0])}  # ties go to the exact-word match
+
+        def order(s: dict[str, float]) -> list[str]:
+            return sorted(s, key=lambda i: (-s[i], kw_rank.get(i, POOL), i))
+        # the best half without the category always stays in, so a wrong category cannot push it out
+        keep = order(plain)[:max(1, limit // 2)]
+        rest = [i for i in order(scores) if i not in keep][:limit - len(keep)]
+        top = order({i: scores[i] for i in [*keep, *rest]})
         rows = await conn.execute(text("""
             SELECT id, persian_title AS title, brand_name AS brand, min_price, median_price, offer_count
             FROM catalog_product WHERE id = ANY(:ids)"""), {"ids": top})

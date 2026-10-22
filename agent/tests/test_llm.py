@@ -78,3 +78,13 @@ async def test_stream_yields_deltas_and_usage():
 
 def test_health():
     assert TestClient(app).get("/agent/health").json() == {"ok": True}
+
+
+@respx.mock
+async def test_temperature_only_when_set():
+    route = respx.post(f"{BASE}/chat/completions").respond(json=completion({"content": "ok"}))
+    await client(True).chat([{"role": "user", "content": "hi"}], None, "m")
+    t0 = LLMClient(AsyncOpenAI(base_url=BASE, api_key="k"), supports_tools=True, temperature=0)
+    await t0.chat([{"role": "user", "content": "hi"}], None, "m")
+    bodies = [json.loads(c.request.content) for c in route.calls]
+    assert "temperature" not in bodies[0] and bodies[1]["temperature"] == 0

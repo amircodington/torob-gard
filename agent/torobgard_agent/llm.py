@@ -65,15 +65,19 @@ def _parse_action(content: str | None) -> list[ToolCall]:
 
 
 class LLMClient:
-    def __init__(self, client: AsyncOpenAI | None = None, supports_tools: bool | None = None):
+    def __init__(self, client: AsyncOpenAI | None = None, supports_tools: bool | None = None,
+                 temperature: float | None = None):
         self.client = client or AsyncOpenAI(base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY)
         self.supports_tools = config.BOXAPI_TOOLS if supports_tools is None else supports_tools
+        self.temperature = temperature  # None: the model's default (live chat); evals pin it
 
     async def chat(
         self, messages: list[dict], tools: list[dict] | None, model: str, stream: bool = False
     ) -> ChatResult | AsyncIterator[Delta]:
         # reasoning models reject max_tokens, so no cap is sent
         kw: dict = {"model": model, "messages": messages}
+        if self.temperature is not None:
+            kw["temperature"] = self.temperature
         if tools and self.supports_tools:
             kw["tools"] = tools
         elif tools:

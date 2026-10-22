@@ -144,7 +144,8 @@ async def _save_case(conn: AsyncConnection, case: dict):
 async def run(cases: list[dict], *, agent_llm=None, judge_llm=None, db: AsyncConnection | None = None
               ) -> dict:
     """Runs every case once (cases run one after another: BoxAPI spend stays predictable)."""
-    agent_llm, judge_llm = Metered(agent_llm or LLMClient()), Metered(judge_llm or LLMClient())
+    agent_llm = Metered(agent_llm or LLMClient(temperature=config.EVAL_TEMPERATURE))
+    judge_llm = Metered(judge_llm or LLMClient())
     async with _tx(db) as conn:
         run_id = (await conn.execute(text(
             "INSERT INTO quality_evalrun (id, model, git_sha, notes) VALUES (gen_random_uuid(), :m, :g, '')"

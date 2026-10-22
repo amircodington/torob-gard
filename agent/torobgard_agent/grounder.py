@@ -126,7 +126,8 @@ def ground(answer: Answer, results: list[ToolResult], user_prices: set[int] = fr
     for t in texts:
         for m in _STOCK.findall(t):
             out.append(Violation("stock", m, "stock is unknown; say «موجودی رو قبل از رفتن بپرس» instead"))
-    quoted = {r.args.get("quoted_price") for r in results if r.name == "price_check"}
+    quoted = {r.args.get("quoted_price") for r in results  # a failed price_check judged nothing
+              if r.name == "price_check" and not (isinstance(r.data, dict) and "error" in r.data)}
     names = set().union(*(_names(r.data) for r in results)) if results else set()
     checked = [_drop_user_echo(answer.say, user_prices, quoted, names), *texts[1:]]
     for p in dict.fromkeys([*_block_prices(answer), *(p for t in checked for p in prices(t))]):

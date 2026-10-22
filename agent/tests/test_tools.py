@@ -43,7 +43,7 @@ async def test_price_check_cheaper_nearby_fair_below_unknown(conn):
     assert [s["id"] for s in r["cheaper_nearby"]] == ["t_shop_b1", "t_shop_a1"]  # same venue first
     assert (await price_check("t_p610", 400_000, None, db=conn))["verdict"] == "below"
     assert (await price_check("t_p610", None, None, db=conn))["verdict"] == "unknown"
-    assert (await price_check("nope", 5, None, db=conn))["verdict"] == "unknown"
+    assert "unknown product_id" in (await price_check("nope", 5, None, db=conn))["error"]
 
 
 async def test_locate_and_plan_trip_floor_order(conn):
@@ -112,9 +112,16 @@ async def test_search_products_category_never_empties_the_search(conn, monkeypat
     monkeypatch.setattr("torobgard_agent.tools.search.embed_query", test_search.near_target)
     def call(cat: str) -> ToolCall:
         return ToolCall("1", "search_products", {"q": "کابل ۱۶×۵ مشهد", "category": cat})
-    ok = await run_tool(call("کابل"), db=conn)
-    assert ok.data[0]["id"] == T  # a matching category filters as before: a plain list
-    for cat in ["accessory", "لوازم جانبی", "لپ‌تاپ", "هواشناسی"]:  # no product of the test DB in these
+    # category is a ranking boost: one with no test-DB products (or none at all) never hides the match
+    for cat in ["کابل", "accessory", "لوازم جانبی", "لپ‌تاپ", "هواشناسی"]:
         r = await run_tool(call(cat), db=conn)
-        assert r.data["products"][0]["id"] == T and cat in r.data["note"]
-        assert T in r.ids
+        assert r.data[0]["id"] == T and T in r.ids
+
+
+async def test_price_check_rejects_names_and_non_positive_quotes(conn):
+    by_name = {"product_id": "سامسونگ A37 5G", "quoted_price": 1}
+    r = await run_tool(ToolCall("1", "price_check", by_name), db=conn)
+    assert "search_products" in r.data["error"] and r.ids == set()
+    for q in (0, -5):
+        r = await run_tool(ToolCall("1", "price_check", {"product_id": T, "quoted_price": q}), db=conn)
+        assert "quoted_price" in r.data["error"]

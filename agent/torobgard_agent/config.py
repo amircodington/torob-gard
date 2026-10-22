@@ -8,3 +8,6 @@ EMBED_MODEL = os.environ.get("EMBED_MODEL", "openai/text-embedding-3-small")
 EMBED_DIMS = int(os.environ.get("EMBED_DIMS", "1024"))
 BOXAPI_TOOLS = os.environ.get("BOXAPI_TOOLS", "1") == "1"
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+# evals only: the agent model's temperature during `make eval` ("" = model default); FAST_MODEL rejects it
+_eval_t = os.environ.get("EVAL_TEMPERATURE", "0")
+EVAL_TEMPERATURE = float(_eval_t) if _eval_t else None

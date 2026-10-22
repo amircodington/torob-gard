@@ -2,14 +2,14 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from ..llm import ToolCall
 from .locate import locate_shop
 from .memory import State, remember
 from .price import price_check
-from .search import LatLng, ProductHit, search_products, search_shops
+from .search import LatLng, search_products, search_shops
 from .trip import plan_trip
 
 
@@ -31,7 +31,7 @@ class SearchShopsArgs(BaseModel):
 
 class PriceCheckArgs(BaseModel):
     product_id: str
-    quoted_price: int | None = None
+    quoted_price: int | None = Field(None, gt=0, description="toman the shopper was quoted; > 0")
     venue_slug: str | None = None
 
 
@@ -51,19 +51,10 @@ class RememberArgs(BaseModel):  # user_id is the session's, never the model's: r
     note: str | None = None
 
 
-async def _search_products(a: dict, db: AsyncConnection | None) -> list[ProductHit] | dict:
-    """A category that finds nothing is dropped rather than ending the search; the note tells the model."""
-    hits = await search_products(**a, db=db)
-    if hits or not a["category"]:
-        return hits
-    return {"note": f"no products in category «{a['category']}» for this search; searched every category",
-            "products": await search_products(**{**a, "category": None}, db=db)}
-
-
 # name -> (args model, description, fn(args dict, db))
 _TOOLS: dict[str, tuple[type[BaseModel], str, Any]] = {
     "search_products": (SearchProductsArgs, "Find products by words (hybrid keyword + meaning search).",
-                        lambda a, db, u: _search_products(a, db)),
+                        lambda a, db, u: search_products(**a, db=db)),
     "search_shops": (SearchShopsArgs, "Find shops holding products, or matching a category or venue.",
                      lambda a, db, u: search_shops(a["product_ids"], a["category"], a["venue_slug"],
                                                    a["near"], a["limit"], db=db)),

@@ -95,3 +95,8 @@ def test_quoted_price_passes_only_inside_a_quote():
     assert "بهت … گفتن" in v.message  # the retry learns how to repeat the quote
     pc15 = ToolResult("price_check", DATA, {"product_1"}, {"quoted_price": 1_500_000})
     assert ground(Answer(say="بهت ۱٫۵ میلیون تومان گفتن."), [pc15], {1_500_000}) == []  # decimal point
+
+
+def test_failed_price_check_grants_no_quote():
+    err = ToolResult("price_check", {"error": "unknown product_id x"}, set(), {"quoted_price": 120_000_000})
+    assert len(ground(Answer(say="بهت ۱۲۰ میلیون گفتن"), [err], {120_000_000})) == 1
