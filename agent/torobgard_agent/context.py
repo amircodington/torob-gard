@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
@@ -16,7 +16,14 @@ class TurnContext(BaseModel):
 
     req: dict[str, Any] | None = None
     anchor: dict[str, Any] | None = None  # e.g. {"venue_slug": …} or {"lat": …, "lng": …}
-    stage: str | None = None
+    stage: str | None = Field(None, max_length=40)
+
+    @field_validator("req", "anchor")
+    @classmethod
+    def _small(cls, v: dict | None) -> dict | None:  # re-sent on every LLM call of the turn
+        if v is not None and len(json.dumps(v, ensure_ascii=False)) > 1000:
+            raise ValueError("too large")
+        return v
 
 
 async def load_session(conn: AsyncConnection, session_id) -> tuple[dict, list[dict]]:

@@ -164,6 +164,15 @@ def _correction(violations: list[Violation]) -> dict:
             " استفاده کن (یا ابزار صدا بزن) و دوباره فقط JSON خروجی رو بده."}
 
 
+def _profile(updates: dict) -> dict:
+    """Model-written and replayed every turn: keep only the consult fields, small and well-typed."""
+    def ok(k, v) -> bool:
+        if k in ("category", "priority"):
+            return isinstance(v, str) and 0 < len(v) <= 40
+        return k in ("budget_min", "budget_max") and type(v) is int and 0 <= v < 10**12
+    return {k: v for k, v in updates.items() if ok(k, v)}
+
+
 def _chunks(s: str) -> list[str]:
     return re.findall(r"\S+\s*|\s+", s)
 
@@ -241,6 +250,7 @@ async def _turn(
         answer = Answer(say=FALLBACK)
     answer = _trim(answer)
     receipts = cited_ids(answer)
+    answer.profile_updates = _profile(answer.profile_updates)
     profile = {**profile, **answer.profile_updates}
     latency = int((monotonic() - t0) * 1000)
     log.info("turn %s: %d+%d tokens, $%.5f, %d ms", sid, turn.tokens_in, turn.tokens_out, turn.cost, latency)

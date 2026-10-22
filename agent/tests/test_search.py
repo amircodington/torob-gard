@@ -124,6 +124,7 @@ async def test_shops_without_near_by_price(conn):
     hits = await search_shops([T], None, None, near=None, db=conn)
     assert [h["id"] for h in hits] == ["t_shop_b1", "t_shop_far", "t_shop_a1"]
     assert hits[0]["distance_m"] is None
+    assert hits[0]["last_price_changed_at"] is not None and hits[0]["price_age_days"] == 0  # honesty rule 1
     venue = await search_shops([T], None, "t-venue-b", near=None, db=conn)
     assert [h["id"] for h in venue] == ["t_shop_b1"]
 

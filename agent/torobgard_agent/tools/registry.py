@@ -18,15 +18,15 @@ class SearchProductsArgs(BaseModel):
     category: str | None = None
     budget_max: int | None = None
     near: LatLng | None = None
-    limit: int = 10
+    limit: int = Field(10, ge=1, le=20)  # every row goes back into the next prompt
 
 
 class SearchShopsArgs(BaseModel):
-    product_ids: list[str] | None = None
+    product_ids: list[str] | None = Field(None, max_length=20)
     category: str | None = None
     venue_slug: str | None = None
     near: LatLng | None = None
-    limit: int = 10
+    limit: int = Field(10, ge=1, le=20)
 
 
 class PriceCheckArgs(BaseModel):
@@ -40,7 +40,7 @@ class LocateShopArgs(BaseModel):
 
 
 class PlanTripArgs(BaseModel):
-    shop_ids: list[str]
+    shop_ids: list[str] = Field(max_length=20)
 
 
 class RememberArgs(BaseModel):  # user_id is the session's, never the model's: run_tool injects it
