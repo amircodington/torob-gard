@@ -2,14 +2,14 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from .contract import Answer, PriceCheckBlock, RouteBlock, ShopCardsBlock
+from .contract import Answer, AskBlock, PriceCheckBlock, RouteBlock, ShopCardsBlock
 from .persian import to_ascii_digits
 from .tools.registry import ToolResult
 
 _ID = re.compile(r"\b(?:shop|product|offer)_[A-Za-z0-9_]+")
 # ponytail: only numbers tagged تومان / هزار تومان / میلیون count as prices; bare numbers (floors, counts)
 # are not checked. Upgrade if the model starts quoting prices without a unit.
-_PRICE = re.compile(r"(\d+(?:\.\d+)?)\s*(هزار\s*تومان|میلیون(?:\s*تومان)?|تومان)")
+_PRICE = re.compile(r"(\d+(?:\.\d+)?)\s*(هزار\s*تومان|هزار\s*تومن|میلیون(?:\s*تومان|\s*تومن)?|تومان|تومن)")
 _SCALE = {"هزار": 1_000, "میلیون": 1_000_000}
 
 
@@ -37,8 +37,23 @@ def _block_ids(answer: Answer) -> list[str]:
         elif isinstance(b, PriceCheckBlock):
             out += [b.product_id, *b.offer_ids]
         elif isinstance(b, RouteBlock):
-            out += [s["shop_id"] for s in b.stops]
+            out += [s.get("shop_id") for s in b.stops]
     return out
+
+
+def _texts(answer: Answer) -> list[str]:
+    out = [answer.say]
+    for b in answer.blocks:
+        if isinstance(b, ShopCardsBlock):
+            out += b.why.values()
+        elif isinstance(b, AskBlock):
+            out += [b.question, *b.options]
+    return out
+
+
+def _block_prices(answer: Answer) -> list[int]:
+    return [v for b in answer.blocks if isinstance(b, PriceCheckBlock) for v in (b.min, b.median, b.max)
+            if v is not None]
 
 
 def _prices(say: str) -> list[int]:
@@ -51,10 +66,12 @@ def ground(answer: Answer, results: list[ToolResult]) -> list[Violation]:
     known = set().union(*(r.ids for r in results)) if results else set()
     values = set().union(*(_numbers(r.data) for r in results)) if results else set()
     out: list[Violation] = []
-    for i in dict.fromkeys([*_block_ids(answer), *_ID.findall(answer.say)]):
+    texts = _texts(answer)
+    ids = [i for t in texts for i in _ID.findall(t)]
+    for i in dict.fromkeys([*filter(None, _block_ids(answer)), *ids]):
         if i not in known:
             out.append(Violation("id", i, f"id {i} was not returned by any tool"))
-    for p in dict.fromkeys(_prices(answer.say)):
+    for p in dict.fromkeys([*_block_prices(answer), *(p for t in texts for p in _prices(t))]):
         if p not in values:
             out.append(Violation("price", str(p), f"price {p} toman appears in no tool result"))
     return out
