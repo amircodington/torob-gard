@@ -33,5 +33,18 @@ services:
       - ./api:/app
       - ./shared:/shared:ro
       - ./docs/starcoach-dataset-v16-cap300-csv:/data:ro
+  agent:
+    build: ./agent
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://torobgard:torobgard@db:5432/torobgard
+      REDIS_URL: redis://redis:6379/0
+      SHARED_DIR: /shared
+    ports: ["${AGENT_PORT:-8001}:8001"]
+    depends_on:
+      db: {condition: service_healthy}
+    volumes:
+      - ./agent:/app
+      - ./shared:/shared:ro
 volumes:
   pgdata:

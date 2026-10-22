@@ -1,0 +1,26 @@
+[project]
+name = "torobgard-agent"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "openai<3",  # openai 3 moved to httpx2, which respx cannot mock
+    "sqlalchemy[asyncio]",
+    "asyncpg",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-asyncio", "respx", "httpx", "ruff"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 110
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
