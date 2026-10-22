@@ -6,6 +6,6 @@ A Persian, phone-first companion for in-person shopping in downtown Tehran's ele
 
 ## Commands
 
-`make dev` · `make down` · `make check` · `make test-api` · `make ingest` · `make psql`
+`make dev` · `make hooks` · `make down` · `make check` · `make test-api` · `make ingest` · `make psql`
 
 `docs/` is the spec; start at `CLAUDE.md`.
