@@ -7,7 +7,9 @@ test("landing: CTAs, live numbers, pasazh strip, no horizontal scroll", async ({
   await expect(main.getByRole("link", { name: "سناریوی آماده" })).toHaveAttribute("href", "/start?seed=phone-camera");
 
   await expect(page.getByTestId("live-numbers")).toContainText(/[۰-۹]/);
-  await expect(page.getByTestId("pasazh-strip").getByRole("listitem")).toHaveCount(12);
+  const pasazh = page.getByTestId("pasazh-strip").getByRole("listitem");
+  await expect(pasazh).toHaveCount(12);
+  await expect(pasazh.locator("[data-bar]")).toHaveCount(12);
 
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual(page.viewportSize()!.width);
@@ -29,6 +31,13 @@ test("the wordmark links home from the landing and the journey", async ({ page }
 
 test.describe("desktop shell", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
+  test("the hero uses the width: CTA and mascot share a row", async ({ page }) => {
+    await page.goto("/");
+    const cta = await page.getByRole("main").getByRole("link", { name: "شروع کن" }).boundingBox();
+    const mascot = await page.locator('main img[src*="wave"]').boundingBox();
+    expect(cta!.y).toBeLessThan(mascot!.y + mascot!.height);
+    expect(cta!.y + cta!.height).toBeGreaterThan(mascot!.y);
+  });
   test("step labels are visible text; the top bar spans the content width", async ({ page }) => {
     await page.goto("/desk");
     const nav = page.getByRole("navigation", { name: "مراحل خرید" });

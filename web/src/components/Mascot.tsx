@@ -9,7 +9,8 @@ export type MascotPose = "wave" | "idle" | "point" | "stuck" | "icon";
 const REACT = {
   hop: (el: Element) => gsap.from(el, { y: 12, rotation: -4, duration: 0.42, ease: "back.out(1.6)" }),
   shake: (el: Element) => gsap.to(el, { keyframes: { x: [0, 4, -4, 4, -4, 0] }, duration: 0.3, ease: "none" }),
-  wave: (el: Element) => gsap.to(el, { keyframes: { rotation: [0, 6, -6, 6, -6, 0] }, duration: 0.6, ease: "none", transformOrigin: "50% 100%" }),
+  // The hero: its CSS rise (600 ms) runs from the server paint, then one wave.
+  wave: (el: Element) => gsap.to(el, { keyframes: { rotation: [0, 6, -6, 6, -6, 0] }, duration: 0.6, delay: 0.6, ease: "none", transformOrigin: "50% 100%" }),
 };
 
 export function Mascot({

@@ -51,11 +51,18 @@
   --animate-page-in: fade var(--duration-base) var(--ease-out) both;
   --animate-rise: rise var(--duration-base) var(--ease-out) both;
   --animate-fade: fade var(--duration-fast) var(--ease-out) both;
+  /* P1 moment 3: bars grow from inline-start (set the origin on the bar). */
+  --animate-grow: grow 400ms var(--ease-out) both;
 
   @keyframes rise {
     from {
       opacity: 0;
       translate: 0 var(--rise, 8px);
+    }
+  }
+  @keyframes grow {
+    from {
+      scale: 0 1;
     }
   }
   @keyframes fade {
@@ -78,6 +85,7 @@
   :root {
     --rise: 0;
     --animate-rise: fade var(--duration-base) var(--ease-out) both;
+    --animate-grow: none;
   }
 }
 

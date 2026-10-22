@@ -1,3 +1,5 @@
+import { ChevronDown } from "lucide-react";
+
 const QA = [
   { q: "ترب‌گرد چیه؟", a: "یه همراه برای خرید حضوری تو بازار الکترونیک مرکز تهران: کمک می‌کنه مدل رو انتخاب کنی و بدونی از کدوم مغازه، کدوم طبقه بخری." },
   { q: "قیمت‌ها از کجا میاد؟", a: "از داده‌ی ترب/استارکوچ. کنار هر قیمت تاریخش هست؛ قیمت قدیمی رو قدیمی نشون می‌دیم." },
@@ -17,7 +19,7 @@ export function Faq() {
           <details key={q} className="group rounded-lg bg-surface shadow-card">
             <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 text-[15px] leading-6 font-bold [&::-webkit-details-marker]:hidden">
               {q}
-              <span aria-hidden className="text-[17px] text-ink-muted transition-transform group-open:rotate-45">+</span>
+              <ChevronDown aria-hidden className="size-5 shrink-0 text-ink-muted transition-transform duration-(--duration-fast) ease-out group-open:rotate-180" />
             </summary>
             <p className="px-5 pb-4 text-[15px] leading-6 text-ink-muted">{a}</p>
           </details>
