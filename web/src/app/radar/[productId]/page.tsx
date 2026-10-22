@@ -1,7 +1,8 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { JourneyShell } from "../../../components/JourneyShell";
 import { DistrictMap } from "../../../components/map/DistrictMap";
 import { PlanB } from "../../../components/planb/PlanB";
@@ -19,6 +20,13 @@ import { applyFilters, sortRows } from "../../../lib/ranking";
 import type { OfferRow, Product } from "../../../lib/types";
 import { useSession } from "../../../state/session";
 
+const LG = "(min-width: 1024px)";
+const onLg = (cb: () => void) => {
+  const m = window.matchMedia(LG);
+  m.addEventListener("change", cb);
+  return () => m.removeEventListener("change", cb);
+};
+
 type Loaded = { key: string; product?: Product; rows?: OfferRow[]; now?: Date; error?: true; missing?: boolean };
 
 function Radar({ id }: { id: string }) {
@@ -28,6 +36,8 @@ function Radar({ id }: { id: string }) {
   const [attempt, setAttempt] = useState(0);
   const [res, setRes] = useState<Loaded | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [hovered, setHovered] = useState<string | null>(null);
+  const lg = useSyncExternalStore(onLg, () => window.matchMedia(LG).matches, () => false);
   const closeFilters = useCallback(() => setFiltersOpen(false), []); // stable: ui/Sheet refocuses on a new onClose
   const key = JSON.stringify([id, anchor.lat, anchor.lng, attempt]);
   useEffect(() => {
@@ -45,7 +55,7 @@ function Radar({ id }: { id: string }) {
   const all = cur?.rows;
   const rows = useMemo(() => (all ? sortRows(applyFilters(all, state.filters, cur?.now), state.sort) : []), [all, state.filters, state.sort, cur?.now]);
   const changeModel = (
-    <Btn variant="ghost" onClick={() => dispatch({ type: "GO", stage: "products" })}>
+    <Btn variant="ghost" icon={ArrowLeft} onClick={() => dispatch({ type: "GO", stage: "products" })}>
       تغییر مدل
     </Btn>
   );
@@ -94,21 +104,12 @@ function Radar({ id }: { id: string }) {
         <EmptyState pose="stuck" title="برای این مدل فروشگاهی ثبت نشده" body="هیچ فروشگاهی در ترب این مدل رو پیشنهاد نداده." actions={changeModel} />
       ) : (
         <>
-          <div className="mt-4">
+          {/* Sticky under the 60 px top bar so sort and filters stay in reach while the rows scroll. */}
+          <div className="sticky top-[60px] z-20 -mx-4 mt-2 bg-paper/80 px-4 py-1 backdrop-blur-md md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
             <Toolbar onFilters={() => setFiltersOpen(true)} />
           </div>
-          <div className="mt-4 grid gap-4 md:grid-cols-[1.2fr_1fr]">
-            <div className={state.radarView === "list" ? "hidden md:block" : ""}>
-              {all && (
-                <DistrictMap
-                  rows={rows}
-                  anchor={anchor}
-                  selectedId={state.selectedStoreId ?? undefined}
-                  onSelect={(sid) => dispatch({ type: "OPEN_STORE", id: sid })}
-                  radiusKm={state.filters.maxDistanceKm ?? undefined}
-                />
-              )}
-            </div>
+          {/* lg: the list takes the inline-start 440 px (where the store sheet docks), the map fills the rest and stays put. */}
+          <div className="mt-2 grid gap-4 md:grid-cols-2 md:items-start lg:grid-cols-[440px_minmax(0,1fr)]">
             <div className={state.radarView === "map" ? "hidden md:block" : ""}>
               {!all ? (
                 <div aria-busy="true" aria-label="در حال پیدا کردن فروشگاه‌ها" className="grid gap-3">
@@ -130,9 +131,15 @@ function Radar({ id }: { id: string }) {
                     <span>قیمت‌ها به هزار تومان</span>
                   </p>
                   <ul aria-label="فروشگاه‌ها" className="grid gap-3">
-                    {rows.map((r) => (
-                      <li key={r.offer.offerId}>
-                        <ShopRow row={r} now={cur!.now!} onOpen={() => dispatch({ type: "OPEN_STORE", id: r.store.id })} />
+                    {rows.map((r, i) => (
+                      <li key={r.offer.offerId} style={{ "--i": i } as CSSProperties} className="animate-rise stagger">
+                        <ShopRow
+                          row={r}
+                          now={cur!.now!}
+                          active={r.store.id === state.selectedStoreId}
+                          onHover={setHovered}
+                          onOpen={() => dispatch({ type: "OPEN_STORE", id: r.store.id })}
+                        />
                       </li>
                     ))}
                   </ul>
@@ -140,6 +147,20 @@ function Radar({ id }: { id: string }) {
                     قیمت‌ها «آخرین قیمتِ ثبت‌شده‌ی فروشگاه»اند و به‌روز بودنشان تضمین نمی‌شود؛ قبل از رفتن زنگ بزن.
                   </p>
                 </>
+              )}
+            </div>
+            <div className={`md:sticky md:top-[124px] lg:h-[calc(100dvh-140px)] ${state.radarView === "list" ? "hidden md:block" : ""}`}>
+              {all && (
+                <DistrictMap
+                  rows={rows}
+                  anchor={anchor}
+                  selectedId={state.selectedStoreId ?? undefined}
+                  hoveredId={hovered}
+                  onSelect={(sid) => dispatch({ type: "OPEN_STORE", id: sid })}
+                  radiusKm={state.filters.maxDistanceKm ?? undefined}
+                  fill={lg}
+                  dropKey={key}
+                />
               )}
             </div>
           </div>
@@ -159,7 +180,7 @@ export default function RadarPage() {
   const { productId } = useParams<{ productId: string }>();
   return (
     <JourneyShell stage="radar" productId={productId}>
-      <main className="mx-auto max-w-md px-4 pb-32 pt-2 md:max-w-5xl">
+      <main className="page pb-32 pt-2">
         <Radar id={productId} />
       </main>
     </JourneyShell>

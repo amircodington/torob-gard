@@ -141,3 +141,29 @@ test("radar: the store sheet takes focus, closes by «بستن», Escape and (ph
   await page.mouse.up();
   await expect(sheet).toHaveCount(0);
 });
+
+test("radar (desktop): the map stays beside the list, and the docked sheet leaves the selected pin in view", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "split view is lg only");
+  await page.goto(`/radar/${PRODUCT}`);
+  const rows = page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem");
+  await expect(rows.first()).toBeVisible();
+  const map = page.locator("[data-map]");
+  const inView = async () => {
+    const b = (await map.boundingBox())!;
+    return b.y >= 0 && b.y + b.height <= 900;
+  };
+  await rows.last().evaluate((li) => li.scrollIntoView({ block: "end" })); // the last row at the bottom edge
+  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(200);
+  await expect(rows.last()).toBeInViewport();
+  expect(await inView()).toBe(true);
+
+  await rows.last().getByRole("button").click();
+  const panel = page.getByRole("dialog").locator("[data-sheet-panel]");
+  await expect.poll(async () => (await panel.boundingBox())?.x).toBe(1440 - 440);
+  const pin = map.locator('button[aria-pressed="true"]');
+  await expect(pin).toBeVisible();
+  const [p, s] = [(await pin.boundingBox())!, (await panel.boundingBox())!];
+  expect(p.x + p.width).toBeLessThanOrEqual(s.x);
+  expect(p.y).toBeGreaterThanOrEqual(0);
+  expect(p.y + p.height).toBeLessThanOrEqual(900);
+});

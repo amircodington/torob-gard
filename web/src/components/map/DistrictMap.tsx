@@ -1,5 +1,8 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
+import { gsap } from "gsap";
+import { Info, MapPin } from "lucide-react";
 import type { OfferRow } from "../../lib/types";
 import { project } from "../../lib/geo";
 import { faNum } from "../../lib/fa";
@@ -11,6 +14,11 @@ interface Props {
   selectedId?: string;
   onSelect: (shopId: string) => void;
   radiusKm?: number;
+  hoveredId?: string | null;
+  /** Fills its parent (lg split view): the square map covers the box and crops its edges. */
+  fill?: boolean;
+  /** Pins drop in once per value (product + anchor); filter changes do not replay it. */
+  dropKey?: string;
 }
 
 // ponytail: the bbox is ≈3.6 km wide east–west; no zoom/pan, no map library.
@@ -18,7 +26,16 @@ const BBOX_KM = 3.6;
 // 0.02° lat ≈ 2.22 km north–south, so the ring is an ellipse in the 0–100 square.
 const BBOX_KM_NS = 2.22;
 
-export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm }: Props) {
+export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hoveredId, fill, dropKey }: Props) {
+  const root = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const mm = gsap.matchMedia(root);
+    // Radar moment: pins drop y -12→0 + fade, 320 ms back.out(1.4), 30 ms apart; the 9th pin on lands with the 8th.
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      gsap.from("[data-pin] > span", { y: -12, opacity: 0, duration: 0.32, ease: "back.out(1.4)", stagger: (i) => Math.min(i, 7) * 0.03 });
+    });
+    return () => mm.revert();
+  }, [dropKey]); // replays only for a new product/anchor, not a filter change
   const pins = rows.flatMap((r) => {
     const p = r.store.lat != null && r.store.lng != null ? project(r.store.lat, r.store.lng) : null;
     return p ? [{ r, p }] : [];
@@ -27,11 +44,14 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm }: Pr
   const a = project(anchor.lat, anchor.lng);
 
   return (
-    <div>
+    <div ref={root} data-map className={fill ? "flex h-full flex-col" : ""}>
       <style>{`@keyframes tg-ping{0%{transform:scale(1);opacity:.5}100%{transform:scale(2.6);opacity:0}}
 .tg-ping{transform-box:fill-box;transform-origin:center;animation:tg-ping 1.8s ease-out infinite}
 @media (prefers-reduced-motion:reduce){.tg-ping{animation:none;opacity:.25}}`}</style>
-      <div className="relative aspect-square w-full overflow-hidden rounded-[var(--radius-lg)] shadow-card">
+      <div className={`relative w-full overflow-hidden rounded-[var(--radius-lg)] shadow-card ${fill ? "@container-[size] min-h-0 flex-1" : "aspect-square"}`}>
+        {/* fill: a square of the box's longer side, centred, so pins keep their place on the sketch (slice, not stretch).
+            ponytail: a pin in the outer ~8% east/west can be cropped at lg; none are today — add a pan if one shows up. */}
+        <div className={fill ? "absolute top-1/2 left-1/2 size-[100cqmax] -translate-x-1/2 -translate-y-1/2" : "absolute inset-0"}>
         <DistrictSvg />
         {a && (
           <svg viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
@@ -50,13 +70,15 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm }: Pr
               key={r.store.id}
               type="button"
               aria-pressed={on}
+              data-pin
+              data-hovered={r.store.id === hoveredId ? "" : undefined}
               aria-label={`${r.store.name}، ${price} هزار تومان`}
               onClick={() => onSelect(r.store.id)}
               style={{ left: `${p.x}%`, top: `${p.y}%`, zIndex: on ? 2 : 1 }}
-              className="absolute flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center"
+              className="group/pin absolute flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center"
             >
               <span
-                className={`tabular rounded-[var(--radius-pill)] px-2 py-1 text-[13px] font-extrabold ${
+                className={`tabular rounded-[var(--radius-pill)] px-2 py-1 text-[13px] font-extrabold transition-[scale] duration-(--duration-fast) ease-out group-data-hovered/pin:scale-[1.12] motion-reduce:transition-none ${
                   on ? "bg-orange text-on-orange shadow-pin" : "bg-surface text-ink shadow-card"
                 }`}
               >
@@ -65,11 +87,20 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm }: Pr
             </button>
           );
         })}
+        </div>
       </div>
-      <p className="mt-2 flex flex-wrap items-center gap-x-3 text-[13px] text-ink-muted">
-        <span>فاصله‌ها از {anchor.label}</span>
+      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-muted">
+        <span className="inline-flex items-center gap-1">
+          <MapPin aria-hidden className="size-4 shrink-0 text-orange" />
+          فاصله‌ها از {anchor.label}
+        </span>
         <span>{faNum(pins.length)} فروشگاه روی نقشه</span>
-        {outside > 0 && <span>{faNum(outside)} فروشگاه خارج از نقشه</span>}
+        {outside > 0 && (
+          <span className="inline-flex items-center gap-1">
+            <Info aria-hidden className="size-4 shrink-0" />
+            {faNum(outside)} فروشگاه خارج از نقشه
+          </span>
+        )}
       </p>
     </div>
   );

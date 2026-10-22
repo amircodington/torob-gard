@@ -1,5 +1,5 @@
 import { faGroup, faKm, faNum, faWalk } from "../../lib/fa";
-import { Store as StoreIcon } from "lucide-react";
+import { Clock, Footprints, MapPin, Store as StoreIcon } from "lucide-react";
 import { isOpenNow } from "../../lib/hours";
 import type { OfferRow, Store } from "../../lib/types";
 import { FreshBadge } from "../ui/FreshBadge";
@@ -27,31 +27,43 @@ export function distanceLabel(m: number | null): string {
   return `${m < 1000 ? `${faNum(Math.round(m / 10) * 10)} متر` : faKm(Math.round(km * 10) / 10)} · ${faWalk(km)}`;
 }
 
+/** Latin runs («B-1024/7») stay whole and left-to-right inside the RTL line. */
+const isolateLatin = (t: string) => t.split(/(\S*[A-Za-z]\S*)/).map((part, i) => (i % 2 ? <bdi key={i} className="whitespace-nowrap">{part}</bdi> : part));
+
+const hoverable = () => window.matchMedia("(hover: hover)").matches;
+
 /** The brand ShopCard as a list row; the whole row is the tap target. */
-export function ShopRow({ row, now, onOpen }: { row: OfferRow; now: Date; onOpen: () => void }) {
+export function ShopRow({ row, now, onOpen, active, onHover }: { row: OfferRow; now: Date; onOpen: () => void; active?: boolean; onHover?: (id: string | null) => void }) {
   const { offer, store } = row;
   const open = isOpenNow(store.weeklyHours, now);
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="flex min-h-11 w-full items-start gap-3 rounded-lg bg-surface p-4 text-start shadow-card focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.99]"
+      onPointerEnter={onHover && (() => hoverable() && onHover(store.id))}
+      onPointerLeave={onHover && (() => hoverable() && onHover(null))}
+      className="flex min-h-11 w-full items-start gap-3 rounded-lg bg-surface p-4 text-start shadow-card transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.99]"
     >
-      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-tint text-ink">
-        <StoreIcon className="h-5 w-5" />
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors duration-(--duration-fast) ${active ? "bg-orange text-on-orange" : "bg-surface-tint text-ink"}`}>
+        <StoreIcon aria-hidden className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="line-clamp-2 block break-words text-[15px] font-bold leading-6">{store.name}</span>
-        <span className="mt-0.5 block break-words text-[13px] leading-5 text-ink-muted">{placeLine(store)}</span>
+        <span className="line-clamp-2 block text-[15px] font-bold leading-6 break-words">{store.name}</span>
+        <span className="mt-0.5 flex gap-1 text-[13px] leading-5 text-ink-muted">
+          <MapPin aria-hidden className="mt-0.5 size-4 shrink-0" />
+          <span className="min-w-0 break-words">{isolateLatin(placeLine(store))}</span>
+        </span>
         <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] leading-5 text-ink-muted">
-          <span>{distanceLabel(store.distanceM)}</span>
-          {open === true && (
-            <span className="inline-flex items-center gap-1 font-semibold text-verified">
-              <span aria-hidden className="h-2 w-2 rounded-full bg-verified" />
-              الان باز
+          <span className="inline-flex items-center gap-1">
+            <Footprints aria-hidden className="size-3.5 shrink-0" />
+            {distanceLabel(store.distanceM)}
+          </span>
+          {open != null && (
+            <span className={`inline-flex items-center gap-1 font-semibold ${open ? "text-verified" : "text-signal"}`}>
+              <Clock aria-hidden className="size-3.5 shrink-0" />
+              {open ? "الان باز" : "بسته"}
             </span>
           )}
-          {open === false && <span className="font-semibold text-signal">بسته</span>}
           <StockBadge stock={offer.stock} />
         </span>
         <span className="mt-1 block">

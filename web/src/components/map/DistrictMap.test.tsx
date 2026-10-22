@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { DistrictMap } from "./DistrictMap";
 import type { OfferRow, Store } from "../../lib/types";
 
 afterEach(cleanup);
+beforeAll(() => {
+  // jsdom has no matchMedia; the pin drop asks for reduced motion (→ no drop).
+  window.matchMedia = (q: string) => ({ matches: q.includes("reduce"), media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} }) as unknown as MediaQueryList;
+});
 
 const row = (id: string, lat: number, lng: number, price = 23_500_000): OfferRow => ({
   offer: { offerId: `o${id}`, productId: "p", storeId: id, priceToman: price, updatedMinAgo: 5, stock: "confirmed" },
@@ -40,5 +44,17 @@ describe("DistrictMap", () => {
   it("omits the out-of-map line when all rows fit", () => {
     render(<DistrictMap rows={rows.slice(0, 2)} anchor={anchor} onSelect={() => {}} />);
     expect(screen.queryByText(/خارج از نقشه/)).toBeNull();
+  });
+  it("fill drops the square box", () => {
+    const { container, rerender } = render(<DistrictMap rows={rows} anchor={anchor} onSelect={() => {}} />);
+    expect(container.querySelector(".aspect-square")).toBeTruthy();
+    rerender(<DistrictMap rows={rows} anchor={anchor} onSelect={() => {}} fill />);
+    expect(container.querySelector(".aspect-square")).toBeNull();
+  });
+  it("marks the hovered row's pin", () => {
+    render(<DistrictMap rows={rows} anchor={anchor} hoveredId="b" onSelect={() => {}} />);
+    const [a, b] = screen.getAllByRole("button");
+    expect(a.hasAttribute("data-hovered")).toBe(false);
+    expect(b.hasAttribute("data-hovered")).toBe(true);
   });
 });
