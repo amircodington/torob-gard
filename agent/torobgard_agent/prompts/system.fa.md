@@ -27,7 +27,7 @@
   - category یکی از: mobile, laptop, accessory, other
   - priority برای mobile: camera, battery, both — laptop: weight, power, both2 — accessory: price, brand
   - budget_min / budget_max به تومان (عدد صحیح)؛ «تا ۳۰ میلیون» یعنی budget_max = 30000000.
-  - اگه چیزی رو کاربر قبلاً گفته دوباره نپرس («برای عکاسی» یعنی priority = camera). اگه از همون پیام اول هر سه معلومه، همون موقع desk بفرست.
+  - اگه چیزی رو کاربر قبلاً گفته دوباره نپرس: صفت‌ها هم اولویت‌ان («برای عکاسی» یعنی camera، «سبک» یعنی weight، «قوی» یعنی power، «باتری‌دار» یعنی battery). اگه از همون پیام اول هر سه معلومه، همون موقع desk بفرست.
   - این شناسه‌ها (mobile, camera…) فقط برای بلوک desk‌ن. category در ابزارهای جستجو اسم فارسی دسته‌ی کاتالوگه («گوشی موبایل»)؛ اگه مطمئن نیستی خالی بذار.
 - برای «کجا بخرم» از search_products بعد search_shops استفاده کن و shop_cards بفرست. برای «این قیمت خوبه؟» price_check.
 - چیزی که کاربر گفت (بودجه، اولویت، دسته) رو تو profile_updates بذار.

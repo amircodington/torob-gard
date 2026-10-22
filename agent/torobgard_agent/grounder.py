@@ -1,4 +1,5 @@
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -73,12 +74,15 @@ def prices(say: str) -> list[int]:
     return [_toman(n, u) for n, u in _PRICE.findall(_norm(say))]
 
 
-def _drop_budget_echo(say: str, user_prices: set[int]) -> str:
-    """Drop «تا / زیر / بودجه‌ت ۳۰ میلیون» when the user typed that number; other mentions stay checked."""
-    def keep(m: re.Match) -> str:
-        return "" if _toman(m.group(1), m.group(2)) in user_prices else m.group(0)
-    # a say that names a shop/product gets no exemption: the number could pass as that record's price
-    return _BUDGET.sub(keep, _norm(say)) if user_prices and not _ID.search(say) else say
+def _drop_user_echo(say: str, user_prices: set[int], quoted: set[int]) -> str:
+    """Drop numbers the user typed that `say` only echoes: «تا / زیر / بودجه‌ت ۳۰ میلیون», or the price the
+    shopper was quoted when this turn's price_check judged it (`quoted`). Other mentions stay checked."""
+    if not user_prices or _ID.search(say):  # a say naming a shop/product: the number could pass as its price
+        return say
+
+    def drop(allowed: set[int]) -> Callable[[re.Match], str]:
+        return lambda m: "" if _toman(m.group(1), m.group(2)) in allowed else m.group(0)
+    return _PRICE.sub(drop(quoted & user_prices), _BUDGET.sub(drop(user_prices), _norm(say)))
 
 
 def cited_ids(answer: Answer) -> list[str]:
@@ -88,7 +92,8 @@ def cited_ids(answer: Answer) -> list[str]:
 
 
 def ground(answer: Answer, results: list[ToolResult], user_prices: set[int] = frozenset()) -> list[Violation]:
-    """user_prices: numbers the shopper typed; they pass only as a budget echo in `say`, never in blocks."""
+    """user_prices: numbers the shopper typed; they pass only in `say`, as a budget echo or as the quoted
+    price of this turn's price_check, never in blocks."""
     known = set().union(*(r.ids for r in results)) if results else set()
     values = set().union(*(_numbers(r.data) for r in results)) if results else set()
     out: list[Violation] = []
@@ -99,7 +104,8 @@ def ground(answer: Answer, results: list[ToolResult], user_prices: set[int] = fr
     for t in texts:
         for m in _STOCK.findall(t):
             out.append(Violation("stock", m, "stock is unknown; say «موجودی رو قبل از رفتن بپرس» instead"))
-    checked = [_drop_budget_echo(answer.say, user_prices), *texts[1:]]
+    quoted = {r.args.get("quoted_price") for r in results if r.name == "price_check"}
+    checked = [_drop_user_echo(answer.say, user_prices, quoted), *texts[1:]]
     for p in dict.fromkeys([*_block_prices(answer), *(p for t in checked for p in prices(t))]):
         if p not in values:
             out.append(Violation("price", str(p), f"price {p} toman appears in no tool result"))

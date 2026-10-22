@@ -106,3 +106,15 @@ async def test_all_shop_text_is_wrapped(conn):
     assert '"floor": null' in out and "<data>t-venue-a</data>" in out  # venue_name
     n = serialise(type(r)("x", {"seller_title": "s", "note": "n", "floor": "2", "unit": "3"}))
     assert n.count("<data>") == 4
+
+
+async def test_search_products_category_never_empties_the_search(conn, monkeypatch):
+    monkeypatch.setattr("torobgard_agent.tools.search.embed_query", test_search.near_target)
+    def call(cat: str) -> ToolCall:
+        return ToolCall("1", "search_products", {"q": "کابل ۱۶×۵ مشهد", "category": cat})
+    ok = await run_tool(call("کابل"), db=conn)
+    assert ok.data[0]["id"] == T  # a matching category filters as before: a plain list
+    for cat in ["accessory", "لوازم جانبی", "لپ‌تاپ", "هواشناسی"]:  # no product of the test DB in these
+        r = await run_tool(call(cat), db=conn)
+        assert r.data["products"][0]["id"] == T and cat in r.data["note"]
+        assert T in r.ids

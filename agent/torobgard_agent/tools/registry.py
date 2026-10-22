@@ -9,7 +9,7 @@ from ..llm import ToolCall
 from .locate import locate_shop
 from .memory import State, remember
 from .price import price_check
-from .search import LatLng, search_products, search_shops
+from .search import LatLng, ProductHit, search_products, search_shops
 from .trip import plan_trip
 
 
@@ -51,10 +51,19 @@ class RememberArgs(BaseModel):  # user_id is the session's, never the model's: r
     note: str | None = None
 
 
+async def _search_products(a: dict, db: AsyncConnection | None) -> list[ProductHit] | dict:
+    """A category that finds nothing is dropped rather than ending the search; the note tells the model."""
+    hits = await search_products(**a, db=db)
+    if hits or not a["category"]:
+        return hits
+    return {"note": f"category «{a['category']}» matched no products; searched every category",
+            "products": await search_products(**{**a, "category": None}, db=db)}
+
+
 # name -> (args model, description, fn(args dict, db))
 _TOOLS: dict[str, tuple[type[BaseModel], str, Any]] = {
     "search_products": (SearchProductsArgs, "Find products by words (hybrid keyword + meaning search).",
-                        lambda a, db, u: search_products(**a, db=db)),
+                        lambda a, db, u: _search_products(a, db)),
     "search_shops": (SearchShopsArgs, "Find shops holding products, or matching a category or venue.",
                      lambda a, db, u: search_shops(a["product_ids"], a["category"], a["venue_slug"],
                                                    a["near"], a["limit"], db=db)),
@@ -84,6 +93,7 @@ class ToolResult:
     name: str
     data: Any
     ids: set[str] = field(default_factory=set)
+    args: dict = field(default_factory=dict)  # the validated call args (the grounder reads quoted_price)
 
 
 def _ids(data: Any) -> set[str]:
@@ -128,4 +138,4 @@ async def run_tool(
         data = await fn(args, db, user_id)
     except (ValidationError, ValueError) as e:
         return ToolResult(call.name, {"error": str(e)})
-    return ToolResult(call.name, data, _ids(data))
+    return ToolResult(call.name, data, _ids(data), args)

@@ -64,3 +64,17 @@ def test_user_numbers_only_pass_as_a_budget_echo_in_say():
     assert len(ground(Answer(say="shop_1 تا ۱۰۰ هزار تومان"), R, user)) == 1
     blk = Answer(say="تا ۱۰۰ هزار تومان", blocks=[PriceCheckBlock(product_id="product_1", min=100_000)])
     assert [(i.kind, i.value) for i in ground(blk, R, user)] == [("price", "100000")]
+
+
+def test_quoted_price_of_this_turns_price_check_passes_in_say_only():
+    pc = ToolResult("price_check", DATA, {"product_1", "shop_1"},
+                    {"product_id": "product_1", "quoted_price": 120_000_000})
+    user = {120_000_000}
+    assert ground(Answer(say="بهت ۱۲۰ میلیون تومان گفتن؛ از میانه‌ی بازار بالاتره"), [pc], user) == []
+    assert len(ground(Answer(say="۱۲۰ میلیون تومان گفتن"), [pc])) == 1  # the shopper never typed it
+    assert len(ground(Answer(say="۱۲۰ میلیون تومان گفتن"), R, user)) == 1  # no price_check quoted it
+    assert len(ground(Answer(say="shop_1 ۱۲۰ میلیون تومنه"), [pc], user)) == 1  # dictated shop price
+    blk = Answer(say="x", blocks=[PriceCheckBlock(product_id="product_1", max=120_000_000)])
+    assert [(i.kind, i.value) for i in ground(blk, [pc], user)] == [("price", "120000000")]
+    why = Answer(say="x", blocks=[ShopCardsBlock(shop_ids=["shop_1"], why={"shop_1": "۱۲۰ میلیون تومان"})])
+    assert len(ground(why, [pc], user)) == 1

@@ -32,6 +32,8 @@ def test_floor_price_banned_words_block_and_fallback():
     assert not hard_checks({"must_not_say": ["0 تومان"]}, outcome(says=["میانه ۹۷٬۹۰۰٬۰۰۰ تومان"]))
     assert not hard_checks({"must_not_say": ["موجوده"]}, outcome(says=["نتونستم تأیید کنم موجوده یا نه"]))
     assert hard_checks({"must_not_say": ["موجوده"]}, outcome(says=["آره موجوده."]))
+    # the «… یا نه» question skip is for stock phrases only
+    assert hard_checks({"must_not_say": ["تومان"]}, outcome(says=["۵ تومان یا نه؟"]))
     desk = {"type": "desk", "category": "mobile", "budget_max": 18_000_000}
     assert not hard_checks({"must_block": {"type": "desk", "budget_max": 18_000_000}}, outcome(blocks=[desk]))
     assert hard_checks({"must_block": {"type": "desk", "budget_max": 20_000_000}}, outcome(blocks=[desk]))

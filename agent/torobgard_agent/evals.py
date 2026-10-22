@@ -72,8 +72,9 @@ def hard_checks(expected: dict, o: Outcome) -> list[str]:
         if over:
             out.append(f"price {max(over)} over max_price {cap}")
     for banned in expected.get("must_not_say", []):
-        # «0 تومان» is not inside «97٬900٬000 تومان»; «موجوده یا نه» is a question, as in the grounder
-        if re.search(rf"(?<![\d٬,.]){re.escape(normalize(banned))}(?!\s*یا\s*نه)", says):
+        # «0 تومان» is not inside «97٬900٬000 تومان»
+        question = r"(?!\s*یا\s*نه)" if "موجود" in banned else ""  # «موجوده یا نه» asks, never claims
+        if re.search(rf"(?<![\d٬,.]){re.escape(normalize(banned))}{question}", says):
             out.append(f"said «{banned}»")
     if (want := expected.get("must_block")) and not any(
             all(b.get(k) == v for k, v in want.items()) for b in o.blocks):

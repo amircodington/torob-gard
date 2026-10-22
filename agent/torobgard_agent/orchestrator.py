@@ -152,10 +152,11 @@ async def _run(call: ToolCall, user_id: str) -> tuple[ToolResult, dict]:
     t0 = monotonic()
     res = await run_tool(call, user_id=user_id)  # tools use their own short connections
     err = res.data.get("error") if isinstance(res.data, dict) else None
+    rows = res.data.get("products", res.data) if isinstance(res.data, dict) else res.data  # noted search
     return res, ({
         "name": call.name, "args": call.args, "error": err, "duration_ms": int((monotonic() - t0) * 1000),
         "summary": {"ids": sorted(res.ids),
-                    "count": len(res.data) if isinstance(res.data, list) else int(not err)}})
+                    "count": len(rows) if isinstance(rows, list) else int(not err)}})
 
 
 def _correction(violations: list[Violation]) -> dict:

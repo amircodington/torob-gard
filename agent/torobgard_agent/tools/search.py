@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from functools import cache
@@ -17,6 +18,21 @@ POOL = 50  # candidates per ranker before fusion
 RRF_K = 60
 NEAR_VENUE_M = 150  # the shopper "is in" the nearest venue within this radius
 Embedder = Callable[[str], Awaitable[list[float]]]
+
+# ponytail: copy of api/catalog/desk_config.py DESK_CATEGORIES (the agent image has no api/); keep in sync
+DESK_CATEGORIES: dict[str, list[str]] = {
+    "mobile": ["گوشی موبایل"],
+    "laptop": ["لپ تاپ و نوت بوک"],
+    "accessory": [
+        "هدفون، هدست و هندزفری", "شارژر گوشی", "کیف و کاور گوشی", "محافظ صفحه نمایش گوشی",
+    ],
+}
+# desk ids and their everyday Persian names, keyed by _compact(); the model often sends these
+_DESK_WORDS = {"mobile": "mobile", "موبایل": "mobile", "گوشی": "mobile", "laptop": "laptop",
+               "لپتاپ": "laptop", "accessory": "accessory", "accessories": "accessory",
+               "لوازمجانبی": "accessory"}
+_SEPARATORS = "[\\s\u200c،,_-]"  # spaces, ZWNJ, punctuation: «لپ‌تاپ» == «لپ تاپ»
+MIN_TRIGRAM = 0.5
 
 
 class LatLng(TypedDict):
@@ -82,11 +98,39 @@ def _query_text(q: str) -> str:
     return normalize(q).replace("×", "x")
 
 
+def _compact(t: str) -> str:
+    return re.sub(_SEPARATORS, "", normalize(t).lower())
+
+
+async def resolve_category(category: str, *, db: AsyncConnection | None = None) -> list[str] | None:
+    """The catalog category names (name_norm) a loose `category` means; None when none match.
+
+    Desk ids / their Persian names first, then the exact name, else names containing it (separators
+    ignored), else trigram neighbours.
+    """
+    c = _compact(category)
+    if desk := _DESK_WORDS.get(c):
+        return [normalize(n) for n in DESK_CATEGORIES[desk]]
+    async with _connect(db) as conn:
+        rows = (await conn.execute(text("""
+            SELECT name_norm, regexp_replace(name_norm, :sep, '', 'g') = :c AS exact FROM catalog_category
+            WHERE position(:c IN regexp_replace(name_norm, :sep, '', 'g')) > 0 ORDER BY name_norm"""),
+            {"c": c, "sep": _SEPARATORS})).all()
+        names = [n for n, exact in rows if exact] or [n for n, _ in rows]  # «گوشی موبایل» not its batteries
+        if not names:
+            names = (await conn.execute(text("""
+                SELECT name_norm FROM catalog_category WHERE similarity(name_norm, :q) >= :min
+                ORDER BY similarity(name_norm, :q) DESC, name_norm LIMIT 5"""),
+                {"q": normalize(category), "min": MIN_TRIGRAM})).scalars().all()
+    return list(names) or None
+
+
 async def search_products(
     q: str, category: str | None = None, budget_max: int | None = None, near: LatLng | None = None,
     limit: int = 10, *, db: AsyncConnection | None = None, embed: Embedder | None = None,
 ) -> list[ProductHit]:
     """Hybrid search: tsvector top 50 ∪ vector top 50, reciprocal-rank fusion, top `limit`.
+    `category` is resolved loosely (resolve_category); one that matches no catalog name finds nothing.
 
     ponytail: `near` is accepted but unused here; distance ranking lives in search_shops.
     """
@@ -97,8 +141,10 @@ async def search_products(
         where.append("p.min_price <= :budget_max")
         params["budget_max"] = budget_max
     if category:
-        where.append("c.name_norm = :category")
-        params["category"] = normalize(category)
+        if not (names := await resolve_category(category, db=db)):
+            return []
+        where.append("c.name_norm = ANY(:categories)")
+        params["categories"] = names
     base = "catalog_product p JOIN catalog_category c ON c.id = p.category_id"
     cond = " AND ".join(where)
     try:
