@@ -22,7 +22,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P0.2 Django API skeleton + health — Mohammad
 - [x] P0.3 Persian normalisation, shared case file — Mohammad
 - [x] P0.4 Catalog models — Mohammad
-- [ ] P0.5 Load the CSVs — Mohammad
+- [x] P0.5 Load the CSVs — Mohammad
 - [ ] P0.6 Address parser (+ score against T-02) — Mohammad
 - [ ] P0.7 Venues from addresses — Mohammad
 - [ ] P0.8 Price stats, outliers, budget band check — Mohammad
