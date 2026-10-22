@@ -82,11 +82,12 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
   const flip = useRef<Flip.FlipState | null>(null);
 
   // Re-rank moment: rows move to their new places (320 ms tg.inOut), new rows fade in; reduced motion → they just swap.
-  const choose = (priority: RecoveryPriority) => {
+  // keyboard: Enter/Space fire a click with detail 0 — no animation on a keyboard action, rows just swap.
+  const choose = (priority: RecoveryPriority, keyboard: boolean) => {
     if (priority === planB.priority) return;
     registerMotion();
     const rowsNow = list.current?.querySelectorAll("li");
-    flip.current = rowsNow?.length && !reduced() ? Flip.getState(rowsNow) : null;
+    flip.current = rowsNow?.length && !reduced() && !keyboard ? Flip.getState(rowsNow) : null;
     dispatch({ type: "PLANB_PRIORITY", priority });
   };
   useLayoutEffect(() => {
@@ -236,7 +237,7 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
                         key={p}
                         type="button"
                         aria-pressed={active}
-                        onClick={() => choose(p)}
+                        onClick={(e) => choose(p, e.detail === 0)}
                         className={`flex min-h-11 items-start gap-3 rounded-lg p-4 text-start shadow-card transition-[background-color,color,scale] duration-(--duration-fast) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.98] ${active ? "bg-orange text-on-orange" : "bg-surface"}`}
                       >
                         <Icon aria-hidden className={`mt-0.5 size-5 shrink-0 ${active ? "" : "text-orange"}`} />

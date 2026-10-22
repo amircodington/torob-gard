@@ -191,6 +191,13 @@ GSAP (`web/src/lib/motion.ts`) gets the same curves as `CustomEase` names `tg.ou
   text. The active row is solid orange.
 - **RouteStep** — the black sheet: floor segments, the big unit stat, time to next stop, two stat
   cards.
+- **ChipGroup** — a labelled row of chips with one orange pill that slides to the selected chip
+  (220 ms `tg.out`, GSAP Flip; reduced motion jumps). The selected chip stays orange before
+  hydration. `useSlidingPill` drives the same pill in the top bar's steps.
+- **Sheet** — the black sheet, `side="auto"`: a bottom sheet below lg (drag the handle down to
+  dismiss, rubber-band up), a side panel docked to the inline-start edge at lg. Modal: the page is
+  inert, Tab cycles inside, focus returns to the opener; `max-h-[90dvh]`, `overscroll-contain`,
+  safe-area bottom padding. `side="bottom"` keeps it a bottom sheet at every width.
 
 Planned: HomeCard (icon, status pill, headline, price, bars), RingCard, PasazhChips, MapPin,
 Composer (black pill with orange send), InterviewCard.

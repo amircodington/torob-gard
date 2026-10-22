@@ -34,12 +34,10 @@ export function Typing({ status }: { status: string }) {
             <span key={i} style={{ animationDelay: `${i * 160}ms` }} className="size-1.5 animate-typing rounded-full bg-orange opacity-40" />
           ))}
         </span>
-        {/* keyed: each new status fades in, so a long wait reads as progress */}
-        {status && (
-          <span key={status} className="animate-fade text-ink-muted">
-            {status}
-          </span>
-        )}
+        {/* keyed: each new status fades in, so a long wait reads as progress; the fallback keeps the live region from being silent */}
+        <span key={status} className="animate-fade text-ink-muted">
+          {status || "دارم فکر می‌کنم…"}
+        </span>
       </span>
     </Bubble>
   );

@@ -7,7 +7,8 @@ Order inside a phase is the order to build in; student tasks run in parallel.
 Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 [P1](superpowers/plans/2026-10-22-p1-journey.md) ·
 [P2](superpowers/plans/2026-10-22-p2-agent.md) ·
-[P3](superpowers/plans/2026-10-22-p3-public-harden.md) · Spec: [PLAN.md](PLAN.md)
+[P3](superpowers/plans/2026-10-22-p3-public-harden.md) ·
+[Redesign](superpowers/plans/2026-10-22-redesign.md) · Spec: [PLAN.md](PLAN.md)
 
 ## Planning (done 2026-10-22)
 
@@ -80,6 +81,11 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [ ] P3.5 Production deploy + backups — Mohammad
 - [ ] P3.6 Load and cost check — Mohammad + T-13
 - [ ] T-14 Content and copy review — student
+
+## Redesign — gate: e2e green at phone/tablet/desktop, mobile-native pass, T-08 re-run (students)
+
+- [x] Redesign Tasks 1–10: motion system, icons, wider layouts, sheet, desk, radar, Plan B, trip, walk ([plan](superpowers/plans/2026-10-22-redesign.md), [gate](evidence/redesign/gate.md))
+- [ ] T-08 UI walk test, redesign re-run (Chrome, Bale, Eitaa on a ≤ 3 GB Android) — students · table in the redesign gate.md
 
 ## Open questions
 

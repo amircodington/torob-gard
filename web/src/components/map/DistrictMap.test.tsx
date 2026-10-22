@@ -76,4 +76,10 @@ describe("DistrictMap", () => {
     render(<DistrictMap rows={rows} anchor={anchor} onSelect={() => {}} dropKey="k" />);
     expect((screen.getAllByRole("button")[0].firstElementChild as HTMLElement).style.opacity).toBe("");
   });
+
+  it("without onSelect the pins are labelled images, not buttons", () => {
+    render(<DistrictMap rows={rows} anchor={anchor} selectedId="a" />);
+    expect(screen.queryAllByRole("button")).toHaveLength(0);
+    expect(screen.getAllByRole("img", { name: /فروشگاه a/ })).toHaveLength(1);
+  });
 });

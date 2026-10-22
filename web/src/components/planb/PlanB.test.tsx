@@ -93,11 +93,24 @@ describe("PlanB", () => {
     const names = () => within(screen.getByRole("list", { name: "گزینه‌های جایگزین" })).getAllByRole("heading").map((h) => h.textContent);
     const before = names();
     dispatch.mockImplementationOnce((a) => withState({ ...state, planB: { ...state.planB, priority: a.priority } }));
-    fireEvent.click(screen.getByRole("button", { name: /نزدیکی مهم‌تره/ }));
+    fireEvent.click(screen.getByRole("button", { name: /نزدیکی مهم‌تره/ }), { detail: 1 }); // a pointer click
     expect(Flip.getState).toHaveBeenCalled();
     rerender(<PlanB rows={rows} />);
     expect(names()).not.toEqual(before);
     expect([...names()].sort()).toEqual([...before].sort());
     expect(Flip.from).toHaveBeenCalledTimes(1);
+  });
+
+  it("a keyboard activation re-ranks without Flip", () => {
+    vi.mocked(Flip.getState).mockClear();
+    vi.mocked(Flip.from).mockClear();
+    withState({ ...failA, planB: { open: true, reason: "stock", priority: "price" } });
+    const { rerender } = render(<PlanB rows={rows} />);
+    dispatch.mockImplementationOnce((a) => withState({ ...state, planB: { ...state.planB, priority: a.priority } }));
+    fireEvent.click(screen.getByRole("button", { name: /نزدیکی مهم‌تره/ }), { detail: 0 }); // Enter/Space
+    rerender(<PlanB rows={rows} />);
+    expect(dispatch).toHaveBeenCalledWith({ type: "PLANB_PRIORITY", priority: "distance" });
+    expect(Flip.getState).not.toHaveBeenCalled();
+    expect(Flip.from).not.toHaveBeenCalled();
   });
 });

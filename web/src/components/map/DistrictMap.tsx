@@ -13,7 +13,8 @@ interface Props {
   /** None: a trip saved from the phone's own position stores no coordinates. */
   anchor?: { lat: number; lng: number; label: string };
   selectedId?: string;
-  onSelect: (shopId: string) => void;
+  /** None: pins are labelled images, not buttons (the trip's one-shop map has nothing to select). */
+  onSelect?: (shopId: string) => void;
   radiusKm?: number;
   hoveredId?: string | null;
   /** Fills its parent (lg split view): the square map covers the box and crops its edges. */
@@ -56,6 +57,7 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
   });
   const outside = rows.length - pins.length;
   const a = anchor ? project(anchor.lat, anchor.lng) : null;
+  const Pin = onSelect ? "button" : "span";
 
   return (
     <div ref={root} data-map className={fill ? "flex h-full flex-col" : ""}>
@@ -79,14 +81,12 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
           const on = r.store.id === selectedId;
           const price = faNum(Math.round(r.offer.priceToman / 1000));
           return (
-            <button
+            <Pin
               key={r.store.id}
-              type="button"
-              aria-pressed={on}
+              {...(onSelect ? { type: "button" as const, "aria-pressed": on, onClick: () => onSelect(r.store.id) } : { role: "img" })}
               data-pin
               data-hovered={r.store.id === hoveredId ? "" : undefined}
               aria-label={`${r.store.name}، ${price} هزار تومان`}
-              onClick={() => onSelect(r.store.id)}
               style={{ left: `${p.x}%`, top: `${p.y}%`, zIndex: on ? 3 : r.store.id === hoveredId ? 2 : 1 }}
               className="group/pin absolute flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center"
             >
@@ -97,7 +97,7 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
               >
                 {price}
               </span>
-            </button>
+            </Pin>
           );
         })}
         </div>

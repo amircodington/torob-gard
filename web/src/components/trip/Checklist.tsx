@@ -194,7 +194,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
           </div>
           {copied === "select" && (
             <>
-              <textarea ref={fallback} readOnly value={copyText} rows={2} aria-label="متن آدرس" className="mt-3 w-full rounded-sm bg-surface-tint p-3 text-[15px]" />
+              <textarea ref={fallback} readOnly value={copyText} rows={2} aria-label="متن آدرس" className="mt-3 w-full rounded-sm bg-surface-tint p-3 text-[16px]" />
               <p className="text-[12px] text-ink-muted">متن انتخاب شد؛ نگه دار و کپی کن.</p>
             </>
           )}
@@ -232,7 +232,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
         {thisRow && (
           <div className="hidden lg:mt-4 lg:block">
             {/* no legend: the shop card already says «از مترو سعدی»; saying it twice reads as two facts */}
-            <DistrictMap rows={[thisRow]} anchor={mapAnchor} selectedId={shop.id} onSelect={() => {}} legend={false} />
+            <DistrictMap rows={[thisRow]} anchor={mapAnchor} selectedId={shop.id} legend={false} />
           </div>
         )}
         <Link href={`/trip/${trip.id}/walk`} className={`${btnClass()} mt-5 w-full lg:mt-4`}>

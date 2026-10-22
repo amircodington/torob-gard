@@ -26,6 +26,8 @@ test("trip: shared link renders the checklist, walk shows the unit, «اینجا
   await page.goto(`/trip/${id}`);
   await expect(page.getByRole("heading", { name: "چک‌لیست قبل از حرکت" })).toBeVisible();
   await expect(page.getByTestId("product-title")).not.toBeEmpty();
+  // A shared link has no journey state: the current step must still read as current, not dead.
+  await expect(page.locator('[aria-current="step"]')).not.toHaveAttribute("aria-disabled", "true");
   await expect(page.getByTestId("shop-name")).not.toBeEmpty();
   await expect(page.getByRole("list", { name: "چک‌لیست" }).getByRole("listitem").first()).toBeVisible();
   await expect(page.getByText("از مترو سعدی")).toBeVisible();

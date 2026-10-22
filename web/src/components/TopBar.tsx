@@ -36,8 +36,9 @@ export function TopBar() {
             const active = i === cur;
             const { label, icon: Icon } = STEPS[stage];
             // Step ۴ has a page only once a trip is saved; until then it is visibly dead, not a silent no-op.
+            // The current step is never dead: a shared /trip link has no journey state but is on step ۴.
             const path = stagePath({ ...state, stage });
-            const dead = stage === "summary" && path == null;
+            const dead = stage === "summary" && path == null && !active;
             return (
               <button
                 key={stage}

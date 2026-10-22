@@ -28,9 +28,9 @@ function floorsAround(floor: string | null): number[] | null {
 }
 
 /** A stat's icon in the brand's translucent white circle (the sheet is black: no mascot, no colour). */
-function Dot({ icon: Icon, small }: { icon: LucideIcon; small?: boolean }) {
+function Dot({ icon: Icon, small, className = "" }: { icon: LucideIcon; small?: boolean; className?: string }) {
   return (
-    <span aria-hidden className={`grid shrink-0 place-items-center rounded-full bg-white/12 ${small ? "size-8" : "size-11"}`}>
+    <span aria-hidden className={`grid shrink-0 place-items-center rounded-full bg-white/12 ${small ? "size-8" : "size-11"} ${className}`}>
       <Icon className={small ? "size-4" : "size-5"} />
     </span>
   );
@@ -161,7 +161,8 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
           </div>
 
           <div className="flex items-center gap-3">
-            <Dot icon={Layers} />
+            {/* under 380 px five pills («منفی ۲») need the Dot's 56 px */}
+            <Dot icon={Layers} className={floors ? "max-[379px]:hidden" : ""} />
             {floors ? (
               <ul aria-label="طبقه‌ها" className="flex min-w-0 flex-1 gap-2">
                 {floors.map((f) => {
