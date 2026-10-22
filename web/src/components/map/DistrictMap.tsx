@@ -15,6 +15,8 @@ interface Props {
 
 // ponytail: the bbox is ≈3.6 km wide east–west; no zoom/pan, no map library.
 const BBOX_KM = 3.6;
+// 0.02° lat ≈ 2.22 km north–south, so the ring is an ellipse in the 0–100 square.
+const BBOX_KM_NS = 2.22;
 
 export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm }: Props) {
   const pins = rows.flatMap((r) => {
@@ -34,7 +36,7 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm }: Pr
         {a && (
           <svg viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
             {radiusKm != null && (
-              <circle cx={a.x} cy={a.y} r={(radiusKm / BBOX_KM) * 100} fill="none" strokeDasharray="2 2" strokeWidth="0.5" className="stroke-orange" />
+              <ellipse cx={a.x} cy={a.y} rx={(radiusKm / BBOX_KM) * 100} ry={(radiusKm / BBOX_KM_NS) * 100} fill="none" strokeDasharray="2 2" strokeWidth="0.5" className="stroke-orange" />
             )}
             <circle cx={a.x} cy={a.y} r="3" className="tg-ping fill-orange" />
             <circle cx={a.x} cy={a.y} r="1.8" className="fill-orange stroke-surface" strokeWidth="0.6" />
@@ -48,7 +50,7 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm }: Pr
               key={r.store.id}
               type="button"
               aria-pressed={on}
-              aria-label={`${r.store.name}، ${price}`}
+              aria-label={`${r.store.name}، ${price} هزار تومان`}
               onClick={() => onSelect(r.store.id)}
               style={{ left: `${p.x}%`, top: `${p.y}%`, zIndex: on ? 2 : 1 }}
               className="absolute flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center"

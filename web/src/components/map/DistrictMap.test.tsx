@@ -19,6 +19,12 @@ describe("DistrictMap", () => {
     expect(screen.getAllByRole("button")).toHaveLength(2);
     expect(screen.getByText("۱ فروشگاه خارج از نقشه")).toBeTruthy();
   });
+  it("labels markers with Persian digits and the price unit", () => {
+    render(<DistrictMap rows={rows} anchor={anchor} onSelect={() => {}} />);
+    const label = screen.getAllByRole("button")[0].getAttribute("aria-label")!;
+    expect(label).toContain("۲۳۵۰۰");
+    expect(label).toContain("هزار تومان");
+  });
   it("calls onSelect with the shop id", () => {
     const onSelect = vi.fn();
     render(<DistrictMap rows={rows} anchor={anchor} onSelect={onSelect} />);
