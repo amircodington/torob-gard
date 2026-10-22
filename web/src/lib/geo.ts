@@ -8,6 +8,7 @@ export const LANDMARKS = {
 } as const;
 
 export type LandmarkId = keyof typeof LANDMARKS;
+export const DEFAULT_LANDMARK: LandmarkId = "saadi";
 
 export const BBOX = { lat: [35.684, 35.704], lng: [51.398, 51.438] } as const;
 

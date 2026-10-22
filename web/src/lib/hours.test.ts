@@ -31,3 +31,13 @@ it("labels today's hours", () => {
     "امروز ۱۰ تا ۱۴ و ۱۶:۳۰ تا ۲۱",
   );
 });
+
+it("treats unfilled or unsupported hours as unknown", () => {
+  const unsupported = { sun: { status: "unsupported", shifts: [{ start_time: "08:00:00", end_time: "08:00:00" }] } };
+  const unfilled = { sun: { status: "declared", shifts: [{ start_time: "00:00:00", end_time: "00:00:00" }] } };
+  expect(isOpenNow(unsupported, sun12)).toBeNull();
+  expect(todayHoursLabel(unsupported, sun12)).toBe("ساعت کاری ثبت نشده");
+  expect(isOpenNow(unfilled, sun12)).toBeNull();
+  expect(todayHoursLabel(unfilled, sun12)).toBe("ساعت کاری ثبت نشده");
+  expect(isOpenNow({ sun: day(["18:00:00", "02:00:00"]) }, sun01)).toBe(true);
+});
