@@ -84,7 +84,7 @@ export const initialState = (): SessionState => ({
   compare: [],
   filters: { maxPrice: null, maxDistanceKm: null, openNow: false, installment: false },
   sort: "price",
-  radarView: "map",
+  radarView: "list", // phones open on the list; md+ shows map and list together
   selectedStoreId: null,
   chosenStoreId: null,
   failures: [],

@@ -43,7 +43,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P1.6 Consult `/start` on the ported reducer — Mohammad
 - [x] P1.7 Decision desk `/desk` + compare — Mohammad
 - [x] P1.8 District map — Mohammad
-- [ ] P1.9 Store radar + store sheet + anchor picker — Mohammad
+- [x] P1.9 Store radar + store sheet + anchor picker — Mohammad
 - [ ] P1.10 Plan B overlay — Mohammad
 - [ ] P1.11 Trip checklist `/trip/[id]` + walk mode — Mohammad
 - [ ] P1.12 Landing `/`, about, privacy, 404 — Mohammad
