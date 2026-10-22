@@ -22,12 +22,15 @@ export function Sheet({
   onClose,
   labelledby,
   side = "auto",
+  className = "",
   children,
 }: {
   open: boolean;
   onClose: () => void;
   labelledby: string;
   side?: "auto" | "bottom";
+  /** Extra panel classes, e.g. a wider lg max-width for a bottom sheet that holds a table. */
+  className?: string;
   children: ReactNode;
 }) {
   const panel = useRef<HTMLDivElement>(null);
@@ -145,7 +148,7 @@ export function Sheet({
       <div
         ref={panel}
         data-sheet-panel
-        className={`absolute inset-x-0 bottom-0 mx-auto flex max-h-[90dvh] w-full max-w-2xl flex-col rounded-t-sheet bg-panel text-on-dark shadow-sheet ${desk}`}
+        className={`absolute inset-x-0 bottom-0 mx-auto flex max-h-[90dvh] w-full max-w-2xl flex-col rounded-t-sheet bg-panel text-on-dark shadow-sheet ${desk} ${className}`}
       >
         <div
           aria-hidden

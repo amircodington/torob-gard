@@ -131,9 +131,10 @@ function Desk() {
 
   return (
     <>
-      <div data-page-head className="flex animate-rise items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="mt-4 text-[28px] leading-[40px]">
+      {/* Phone/md: title | mascot, chips under. lg: title · chips · mascot in one row. */}
+      <div data-page-head className="mt-4 grid animate-rise grid-cols-[minmax(0,1fr)_auto] items-start gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,auto)_auto] lg:items-center lg:gap-x-8">
+        <div className="min-w-0">
+          <h1 className="text-[28px] leading-[40px]">
             <span className="font-light">میز </span>
             <span className="font-extrabold">تصمیم</span>
           </h1>
@@ -142,18 +143,18 @@ function Desk() {
           </p>
         </div>
         {/* ponytail: the mascot WebPs carry an opaque grey ground, so they sit cropped in a circle until transparent exports land. */}
-        <Mascot pose="idle" className="mt-4 size-20" />
-      </div>
-      <div className="mt-3">
-        <ReqChips req={req} onEdit={edit} />
+        <Mascot pose="idle" react="hop" className="size-20 lg:col-start-3 lg:row-start-1" />
+        <ReqChips req={req} onEdit={edit} className="col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1" />
       </div>
 
       {tiers ? (
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          {tiers.map((t) => (
+        // lg: five shared rows (pills · product · price · notes · actions); each card subgrids into them so prices line up.
+        <div className="mt-5 grid gap-4 [--stagger:60ms] motion-safe:[--rise:12px] lg:mt-8 lg:grid-cols-3 lg:grid-rows-[auto_auto_auto_1fr_auto] lg:gap-x-5">
+          {tiers.map((t, i) => (
             <TierCard
               key={t.productId}
               t={t}
+              index={i}
               minAgo={t.newestPriceAt ? Math.max(0, Math.round((current!.now! - Date.parse(t.newestPriceAt)) / 60_000)) : null}
               priorityLabel={prio?.label ?? null}
               selected={state.selectedProductId === t.productId}
@@ -164,11 +165,18 @@ function Desk() {
           ))}
         </div>
       ) : (
-        <div aria-busy="true" aria-label="در حال آماده کردن گزینه‌ها" className="mt-5 grid gap-4 md:grid-cols-3">
+        <div aria-busy="true" aria-label="در حال آماده کردن گزینه‌ها" className="mt-5 grid gap-4 lg:mt-8 lg:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <div key={i} className="h-[420px] rounded-lg bg-surface-tint motion-safe:animate-pulse" />
           ))}
         </div>
+      )}
+
+      {tiers && tiers.length < 3 && (
+        <p className="mt-4 text-[13px] leading-6 text-ink-muted">
+          {tiers.length === 1 ? "فقط یک مدل" : "فقط دو مدل"} با دست‌کم دو فروشنده تو این بودجه و دسته پیدا کردم، پس سه گزینه نمی‌بینی؛
+          برای گزینه‌های بیشتر بودجه رو باز کن.
+        </p>
       )}
 
       {tiers && (
@@ -178,8 +186,8 @@ function Desk() {
       )}
 
       {picked.length >= 2 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 mx-auto w-full max-w-md p-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-          <div className="flex items-center gap-3 rounded-md bg-panel px-4 py-3 text-on-dark shadow-sheet">
+        <div className="page tray-in fixed inset-x-0 bottom-0 z-30 py-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+          <div className="flex items-center gap-3 rounded-md bg-panel px-4 py-3 text-on-dark shadow-sheet lg:px-6">
             <p className="flex-1 text-[14px] font-bold leading-5">
               {faNum(picked.length)} مدل برای مقایسه آماده‌ست
               <span className="block text-[12px] font-medium text-on-dark/60">مصالحه‌ها رو شفاف می‌بینی، نه تبلیغ</span>
@@ -207,7 +215,7 @@ function Desk() {
 export default function DeskPage() {
   return (
     <JourneyShell stage="products">
-      <main className="mx-auto max-w-md px-4 pb-32 pt-2 md:max-w-5xl">
+      <main className="page pb-32 pt-2">
         <Desk />
       </main>
     </JourneyShell>

@@ -13,3 +13,6 @@ __pycache__/
 .DS_Store
 web/test-results/
 web/playwright-report/
+
+# Redesign visual checks: screenshots are local evidence, not history (Ruling D5).
+docs/evidence/redesign/t*/

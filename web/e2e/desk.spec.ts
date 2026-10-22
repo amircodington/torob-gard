@@ -46,3 +46,32 @@ test("desk: three tiers, compare tray, pick goes to the radar", async ({ page })
   await cards.nth(1).getByRole("button", { name: "انتخاب این مدل" }).click();
   await page.waitForURL(/\/radar\//);
 });
+
+test("desk (desktop): the three price boxes line up, before and after the agent text swaps in", async ({ page }) => {
+  test.skip(test.info().project.name !== "desktop", "the columns exist at lg only");
+  let release = () => {};
+  const held = new Promise<void>((r) => (release = r));
+  await page.route("**/agent/explain", async (r) => {
+    const { tiers } = r.request().postDataJSON();
+    await held;
+    // A much longer fit note on one card only: the price boxes must not move apart.
+    const long = "این متن عمداً بلند است تا ببینیم ردیف قیمت‌ها جابه‌جا نمی‌شود. ".repeat(4);
+    await r.fulfill({ json: { [tiers[0].product_id]: { bullets: tiers[0].bullets, tradeoffs: tiers[0].tradeoffs, fit_note: long } } });
+  });
+  await page.goto("/start?seed=phone-camera");
+  await page.getByRole("button", { name: "نمایش گزینه‌های مناسب" }).click();
+  await expect(page.getByRole("article")).toHaveCount(3);
+  const tops = async () => {
+    await page.waitForTimeout(400); // the 60 ms card stagger + 240 ms rise
+    return page.locator("[data-price-box]").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+  };
+  const near = (xs: number[]) => expect(Math.max(...xs) - Math.min(...xs)).toBeLessThanOrEqual(2);
+  const before = await tops();
+  expect(before).toHaveLength(3);
+  near(before);
+  release();
+  await expect(page.getByText("ردیف قیمت‌ها جابه‌جا").first()).toBeVisible();
+  const after = await tops();
+  near(after);
+  expect(Math.abs(after[0] - before[0])).toBeLessThanOrEqual(2);
+});
