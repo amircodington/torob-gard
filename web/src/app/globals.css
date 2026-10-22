@@ -47,8 +47,10 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* page-in is opacity only: a transform on <main> would trap the fixed tray and walk sheet. */
-  --animate-page-in: fade var(--duration-base) var(--ease-out) both;
+  /* page-in is opacity only: a transform on <main> would trap the fixed tray and walk sheet.
+     Fill backwards, not both: a filling opacity animation keeps a stacking context, which would put the
+     sticky top bar (z-40) over Plan B (z-50) and the walk sheet. */
+  --animate-page-in: fade var(--duration-base) var(--ease-out) backwards;
   --animate-rise: rise var(--duration-base) var(--ease-out) both;
   --animate-fade: fade var(--duration-fast) var(--ease-out) both;
   /* P1 moment 3: bars grow from inline-start (set the origin on the bar). */

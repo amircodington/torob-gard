@@ -44,6 +44,9 @@ test("shots: journey", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "پلن B" })).toBeVisible();
   await page.waitForTimeout(300);
   await shot(page, "planb", false);
+  await page.getByRole("dialog", { name: "پلن B" }).getByRole("button", { name: /نزدیکی مهم‌تره/ }).click();
+  await page.waitForTimeout(400); // the Flip re-rank (320 ms)
+  await shot(page, "planb-ranked", false);
 });
 
 test("shots: trip, walk, 404", async ({ page, request }) => {
@@ -63,6 +66,10 @@ test("shots: trip, walk, 404", async ({ page, request }) => {
   await expect(page.getByTestId("unit")).toBeVisible();
   await page.waitForTimeout(500);
   await shot(page, "walk");
+  await page.getByRole("button", { name: "پیداش کردم" }).click();
+  await page.getByRole("button", { name: "آره" }).click();
+  await page.waitForTimeout(700); // the success moment (600 ms)
+  await shot(page, "walk-success", false);
 
   await page.goto("/nope");
   await shot(page, "404");

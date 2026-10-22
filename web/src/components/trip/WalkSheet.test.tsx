@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { api } from "../../lib/api";
 import type { Store, Trip } from "../../lib/types";
 import { initialState } from "../../state/session";
 import { WalkSheet } from "./WalkSheet";
@@ -61,5 +62,13 @@ describe("WalkSheet", () => {
   it("floor null → one «طبقه ثبت نشده» pill", () => {
     render(<WalkSheet trip={trip({ floor: null })} rows={[]} />);
     expect(screen.getByText("طبقه ثبت نشده")).toBeTruthy();
+  });
+
+  it("found it → had it → the success status with the existing copy", () => {
+    vi.spyOn(api, "report").mockResolvedValue({ id: "x" } as never);
+    render(<WalkSheet trip={trip({})} rows={[]} />);
+    fireEvent.click(screen.getByRole("button", { name: "پیداش کردم" }));
+    fireEvent.click(screen.getByRole("button", { name: "آره" }));
+    expect(screen.getByRole("status").textContent).toContain("خرید خوب!");
   });
 });

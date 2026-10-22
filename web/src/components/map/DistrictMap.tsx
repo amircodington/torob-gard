@@ -10,7 +10,8 @@ import { DistrictSvg } from "./district.svg";
 
 interface Props {
   rows: OfferRow[];
-  anchor: { lat: number; lng: number; label: string };
+  /** None: a trip saved from the phone's own position stores no coordinates. */
+  anchor?: { lat: number; lng: number; label: string };
   selectedId?: string;
   onSelect: (shopId: string) => void;
   radiusKm?: number;
@@ -19,6 +20,8 @@ interface Props {
   fill?: boolean;
   /** Pins drop in once per value (product + anchor); filter changes do not replay it. */
   dropKey?: string;
+  /** false: no caption under the map (the trip header already says where distances are from). */
+  legend?: boolean;
 }
 
 // ponytail: the bbox is ≈3.6 km wide east–west; no zoom/pan, no map library.
@@ -26,7 +29,7 @@ const BBOX_KM = 3.6;
 // 0.02° lat ≈ 2.22 km north–south, so the ring is an ellipse in the 0–100 square.
 const BBOX_KM_NS = 2.22;
 
-export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hoveredId, fill, dropKey }: Props) {
+export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hoveredId, fill, dropKey, legend = true }: Props) {
   const root = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = root.current!;
@@ -52,7 +55,7 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
     return p ? [{ r, p }] : [];
   });
   const outside = rows.length - pins.length;
-  const a = project(anchor.lat, anchor.lng);
+  const a = anchor ? project(anchor.lat, anchor.lng) : null;
 
   return (
     <div ref={root} data-map className={fill ? "flex h-full flex-col" : ""}>
@@ -99,11 +102,13 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
         })}
         </div>
       </div>
-      <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-muted">
-        <span className="inline-flex items-center gap-1">
-          <MapPin aria-hidden className="size-4 shrink-0 text-orange" />
-          فاصله‌ها از {anchor.label}
-        </span>
+      {legend && <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-ink-muted">
+        {anchor && (
+          <span className="inline-flex items-center gap-1">
+            <MapPin aria-hidden className="size-4 shrink-0 text-orange" />
+            فاصله‌ها از {anchor.label}
+          </span>
+        )}
         <span>{faNum(pins.length)} فروشگاه روی نقشه</span>
         {outside > 0 && (
           <span className="inline-flex items-center gap-1">
@@ -111,7 +116,7 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
             {faNum(outside)} فروشگاه خارج از نقشه
           </span>
         )}
-      </p>
+      </p>}
     </div>
   );
 }

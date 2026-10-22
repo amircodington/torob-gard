@@ -4,12 +4,14 @@ import gsap from "gsap";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { BadgeCheck, Banknote, CircleCheck, DoorOpen, Info, Layers, SearchX, type LucideIcon } from "lucide-react";
 import { api, type ReportInput } from "../../lib/api";
 import { project } from "../../lib/gesture";
 import { faFreshness, faGroup, faNum, isStale } from "../../lib/fa";
 import type { FailReason, OfferRow, Trip } from "../../lib/types";
 import { useSession } from "../../state/session";
 import { PlanB } from "../planb/PlanB";
+import { Success } from "./Success";
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
 const PEEK = 0.45; // of the viewport: the 85% sheet slides down to show ~40%
@@ -25,13 +27,20 @@ function floorsAround(floor: string | null): number[] | null {
   return out;
 }
 
-function StatCard({ tone, icon, children }: { tone: string; icon: ReactNode; children: ReactNode }) {
+/** A stat's icon in the brand's translucent white circle (the sheet is black: no mascot, no colour). */
+function Dot({ icon: Icon, small }: { icon: LucideIcon; small?: boolean }) {
+  return (
+    <span aria-hidden className={`grid shrink-0 place-items-center rounded-full bg-white/12 ${small ? "size-8" : "size-11"}`}>
+      <Icon className={small ? "size-4" : "size-5"} />
+    </span>
+  );
+}
+
+function StatCard({ tone, icon: Icon, children }: { tone: string; icon: LucideIcon; children: ReactNode }) {
   return (
     <div className={`flex min-h-21 items-center gap-3 rounded-md p-4 ${tone}`}>
       <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-white/12">
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
-          {icon}
-        </svg>
+        <Icon className="size-6" />
       </span>
       <div className="min-w-0">{children}</div>
     </div>
@@ -119,7 +128,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
 
   return (
     <main className="min-h-dvh">
-      <div className="mx-auto flex max-w-md items-center gap-3 px-4">
+      <div className="mx-auto flex max-w-md items-center gap-3 px-4 lg:max-w-lg">
         <p className="min-w-0 flex-1 truncate text-[13px] text-ink-muted">{trip.product.title}</p>
         <Link href={`/trip/${trip.id}`} className="inline-flex min-h-11 shrink-0 items-center text-[13px] font-bold underline underline-offset-4">
           برگشت به چک‌لیست
@@ -129,7 +138,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
       <section
         ref={sheet}
         aria-label="مسیر تا فروشگاه"
-        className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-[85dvh] max-w-md flex-col rounded-t-sheet bg-panel text-on-dark shadow-sheet"
+        className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-[85dvh] max-w-md flex-col lg:max-w-lg rounded-t-sheet bg-panel text-on-dark shadow-sheet"
       >
         <button
           type="button"
@@ -151,41 +160,52 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
             <p className="break-words text-[13px] leading-5 text-on-dark/70">{shop.name}</p>
           </div>
 
-          {floors ? (
-            <ul aria-label="طبقه‌ها" className="flex gap-2">
-              {floors.map((f) => {
-                const here = String(f) === shop.floor;
-                return (
-                  <li
-                    key={f}
-                    aria-current={here ? "location" : undefined}
-                    className={`grid min-h-11 flex-1 place-items-center rounded-pill px-1 text-[14px] font-semibold ${here ? "bg-orange text-on-orange" : "bg-panel-2"}`}
-                  >
-                    {floorName(f)}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="grid min-h-11 place-items-center rounded-pill bg-panel-2 text-[14px] font-semibold">
-              {shop.floor == null ? "طبقه ثبت نشده" : `طبقه ${faNum(shop.floor)}`}
+          <div className="flex items-center gap-3">
+            <Dot icon={Layers} />
+            {floors ? (
+              <ul aria-label="طبقه‌ها" className="flex min-w-0 flex-1 gap-2">
+                {floors.map((f) => {
+                  const here = String(f) === shop.floor;
+                  return (
+                    <li
+                      key={f}
+                      aria-current={here ? "location" : undefined}
+                      className={`grid min-h-11 flex-1 place-items-center rounded-pill px-1 text-[14px] font-semibold ${here ? "bg-orange text-on-orange" : "bg-panel-2"}`}
+                    >
+                      {floorName(f)}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="grid min-h-11 flex-1 place-items-center rounded-pill bg-panel-2 px-3 text-center text-[14px] font-semibold">
+                {shop.floor == null ? "طبقه ثبت نشده" : `طبقه ${faNum(shop.floor)}`}
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Dot icon={DoorOpen} />
+            <div data-testid="unit" className="min-w-0">
+              {shop.unit != null ? (
+                <p className="tabular text-[30px] font-bold leading-tight">
+                  {maybe && <span className="text-[15px] font-semibold text-on-dark/75">{maybe}</span>}
+                  واحد {faNum(shop.unit)}
+                </p>
+              ) : (
+                <p className="text-[15px] leading-6">شماره‌ی واحد ثبت نشده — {shop.mall ? "از اطلاعات پاساژ بپرس" : "قبل از رفتن زنگ بزن"}</p>
+              )}
+            </div>
+          </div>
+          {shop.locationHint && (
+            <p className="-mt-1 flex items-center gap-3 break-words text-[13px] leading-5 text-on-dark/75">
+              <span className="grid w-11 shrink-0 place-items-center"><Dot icon={Info} small /></span>
+              <span className="min-w-0">{faNum(shop.locationHint)}</span>
             </p>
           )}
 
-          <div data-testid="unit">
-            {shop.unit != null ? (
-              <p className="tabular text-[30px] font-bold leading-tight">
-                {maybe && <span className="text-[15px] font-semibold text-on-dark/75">{maybe}</span>}
-                واحد {faNum(shop.unit)}
-              </p>
-            ) : (
-              <p className="text-[15px] leading-6">شماره‌ی واحد ثبت نشده — {shop.mall ? "از اطلاعات پاساژ بپرس" : "قبل از رفتن زنگ بزن"}</p>
-            )}
-          </div>
-          {shop.locationHint && <p className="-mt-2 break-words text-[13px] leading-5 text-on-dark/75">{faNum(shop.locationHint)}</p>}
-
           <div className="grid gap-3 sm:grid-cols-2">
-            <StatCard tone="bg-panel-brown" icon={<><rect x="3" y="6" width="18" height="12" rx="2" /><circle cx="12" cy="12" r="2.5" /></>}>
+            <StatCard tone="bg-panel-brown" icon={Banknote}>
               {offer ? (
                 <>
                   <p className="tabular text-[22px] font-bold leading-8">{faGroup(offer.priceToman)}</p>
@@ -195,7 +215,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
                 <p className="text-[13px]">{rowsFailed ? "قیمت الان در دسترس نیست" : "قیمتی از این فروشگاه پیدا نشد"}</p>
               )}
             </StatCard>
-            <StatCard tone="bg-panel-plum" icon={<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>}>
+            <StatCard tone="bg-panel-plum" icon={BadgeCheck}>
               {offer ? (
                 <>
                   <p className="text-[17px] font-bold leading-7">به‌روزرسانی {faFreshness(offer.updatedMinAgo)}</p>
@@ -218,16 +238,18 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
                   report("open");
                   setStep("asked");
                 }}
-                className="min-h-11 rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
               >
+                <CircleCheck aria-hidden className="size-5" />
                 پیداش کردم
               </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => toPlanB("closed", "closed")}
-                className="min-h-11 rounded-pill bg-panel-2 px-4 text-[15px] font-bold focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-panel-2 px-4 text-[15px] font-bold transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
               >
+                <SearchX aria-hidden className="size-5" />
                 اینجا نیست
               </button>
             </div>
@@ -258,11 +280,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
               </div>
             </div>
           )}
-          {step === "had" && (
-            <p role="status" className="text-[17px] font-extrabold">
-              خرید خوب! 🎉
-            </p>
-          )}
+          {step === "had" && <Success />}
           <p className="text-[12px] leading-5 text-on-dark/70">ترب‌گرد — پروژه‌ی چالش ترب/استارکوچ؛ محصول رسمی ترب نیست.</p>
         </div>
       </section>

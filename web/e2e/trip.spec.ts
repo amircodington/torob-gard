@@ -30,6 +30,13 @@ test("trip: shared link renders the checklist, walk shows the unit, «اینجا
   await expect(page.getByRole("list", { name: "چک‌لیست" }).getByRole("listitem").first()).toBeVisible();
   await expect(page.getByText("از مترو سعدی")).toBeVisible();
   await expect(page.getByRole("link", { name: "باز کردن مسیر در نقشه" })).toHaveAttribute("href", /^https:\/\/neshan\.org\/maps\/@/);
+  // Desktop: the side map shows this one shop, with «شروع مسیر» under it (phone: no map, the buttons end the page).
+  const aside = page.getByRole("complementary", { name: "مسیر روی نقشه" });
+  if (test.info().project.name === "desktop") {
+    await expect(aside.locator("[data-pin]")).toHaveCount(1);
+    await expect(aside.locator("[data-map]")).toBeVisible();
+    await expect(aside.getByRole("link", { name: "شروع مسیر" })).toBeVisible();
+  } else await expect(aside.locator("[data-map]")).toBeHidden();
 
   await page.getByRole("link", { name: "شروع مسیر" }).click();
   await page.waitForURL(new RegExp(`/trip/${id}/walk$`));

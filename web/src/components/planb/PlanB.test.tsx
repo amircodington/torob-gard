@@ -4,7 +4,11 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { api } from "../../lib/api";
 import type { OfferRow } from "../../lib/types";
 import { initialState, type SessionState } from "../../state/session";
+import { Flip } from "gsap/Flip";
 import { PlanB } from "./PlanB";
+
+vi.mock("gsap/Flip", () => ({ Flip: { getState: vi.fn(() => ({})), from: vi.fn() } }));
+vi.mock("../../lib/motion", async (orig) => ({ ...(await orig<typeof import("../../lib/motion")>()), registerMotion: () => {}, reduced: () => false }));
 
 let state: SessionState = initialState();
 const dispatch = vi.fn();
@@ -81,5 +85,19 @@ describe("PlanB", () => {
     patch.mockResolvedValueOnce({} as never);
     fireEvent.click(screen.getAllByRole("button", { name: "انتخاب این فروشگاه" })[0]);
     await waitFor(() => expect(onAccepted).toHaveBeenCalled());
+  });
+
+  it("changing priority re-ranks with Flip and keeps every row", () => {
+    withState({ ...failA, planB: { open: true, reason: "stock", priority: "price" } });
+    const { rerender } = render(<PlanB rows={rows} />);
+    const names = () => within(screen.getByRole("list", { name: "گزینه‌های جایگزین" })).getAllByRole("heading").map((h) => h.textContent);
+    const before = names();
+    dispatch.mockImplementationOnce((a) => withState({ ...state, planB: { ...state.planB, priority: a.priority } }));
+    fireEvent.click(screen.getByRole("button", { name: /نزدیکی مهم‌تره/ }));
+    expect(Flip.getState).toHaveBeenCalled();
+    rerender(<PlanB rows={rows} />);
+    expect(names()).not.toEqual(before);
+    expect([...names()].sort()).toEqual([...before].sort());
+    expect(Flip.from).toHaveBeenCalledTimes(1);
   });
 });

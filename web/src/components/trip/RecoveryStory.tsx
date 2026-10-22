@@ -1,3 +1,4 @@
+import { History } from "lucide-react";
 import { FAIL_COPY } from "../../lib/ranking";
 import type { FailureRecord } from "../../lib/types";
 
@@ -5,7 +6,10 @@ import type { FailureRecord } from "../../lib/types";
 export function RecoveryStory({ failures, names, finalName }: { failures: FailureRecord[]; names: Record<string, string>; finalName: string }) {
   return (
     <section className="mt-3 rounded-lg bg-surface p-5 shadow-card">
-      <h2 className="text-[15px] font-extrabold">روایت این سفر</h2>
+      <h2 className="flex items-center gap-2 text-[15px] font-extrabold">
+        <History aria-hidden className="size-5 text-orange" />
+        روایت این سفر
+      </h2>
       <ul className="mt-2 grid gap-1.5 text-[13px] leading-5 text-ink-muted">
         {failures.length === 0 ? (
           <li>از شروع همین فروشگاه بوده؛ هنوز پلن B لازم نشده.</li>

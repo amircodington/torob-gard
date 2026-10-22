@@ -8,7 +8,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const { trip, rows, rowsFailed } = await loadTrip((await params).id);
   return (
     <JourneyShell stage="summary" productId={trip.productId}>
-      <main className="mx-auto max-w-md px-4 pb-16 pt-2 md:max-w-3xl">
+      <main className="page pb-16 pt-2">
         <Checklist trip={trip} rows={rows} rowsFailed={rowsFailed} />
       </main>
     </JourneyShell>
