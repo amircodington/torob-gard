@@ -86,3 +86,8 @@ def test_spelling_variants(raw, floor, unit):
 def test_nearby_venue_is_a_hint(raw, hint):
     p = parse_address(raw)
     assert (p.venue_name, p.hint) == (None, hint)
+
+
+def test_floor_typo_is_dropped():
+    p = parse_address("پاساژ X، طبقه ۱۱۱، واحد ۵")
+    assert (p.floor, p.unit, p.confidence) == (None, "5", 0.7)

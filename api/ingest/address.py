@@ -58,6 +58,8 @@ def parse_address(raw: str | None) -> ParsedAddress:
     segments = [s.strip() for s in re.split(r"[،,]", text) if s.strip()]
     venue = _venue(segments)
     floor = _first(_FLOORS, text)
+    if floor not in (None, "M") and not -5 <= int(floor) <= 20:
+        floor = None  # ponytail: typo guard; Tehran pasazhs top out around 10 floors
     unit = _first([(rx, lambda m: m[1]) for rx in _UNIT_RES], text)
     hint = next((s for s in segments if _HINT.search(s)), None)
     conf = round(0.4 * bool(venue) + 0.3 * bool(floor) + 0.3 * bool(unit), 2)
