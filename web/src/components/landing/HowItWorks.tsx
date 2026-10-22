@@ -10,7 +10,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section>
+    <section id="how" className="scroll-mt-20">
       <h2 className="text-[22px] leading-8 font-light">
         چطور <span className="font-extrabold">کار می‌کنه؟</span>
       </h2>

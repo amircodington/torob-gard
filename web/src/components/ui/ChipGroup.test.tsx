@@ -9,7 +9,7 @@ vi.mock("gsap/Flip", () => ({ Flip: { getState: vi.fn(() => ({})), from: vi.fn()
 vi.mock("../../lib/motion", () => ({ registerMotion: () => {}, reduced: () => motion.reduce }));
 
 import { Chip } from "./Chip";
-import { ChipGroup } from "./ChipGroup";
+import { ChipGroup, useSlidingPill } from "./ChipGroup";
 
 afterEach(() => {
   cleanup();
@@ -58,5 +58,27 @@ describe("ChipGroup", () => {
   it("no pressed chip: no pill", () => {
     const { container } = render(<Sorts start="" />);
     expect(pillOf(container)[0].hidden).toBe(true);
+  });
+});
+
+describe("useSlidingPill memo", () => {
+  function Steps({ on }: { on: string }) {
+    const { group, pill } = useSlidingPill<HTMLDivElement>('[aria-current="step"]', "test-steps");
+    return (
+      <div ref={group}>
+        <span ref={pill} data-pill hidden />
+        {["قیمت", "فاصله"].map((s) => (
+          <button key={s} aria-current={s === on ? "step" : undefined}>{s}</button>
+        ))}
+      </div>
+    );
+  }
+  it("a remounted group slides on from the last box instead of appearing", () => {
+    render(<Steps on="قیمت" />);
+    expect(Flip.from).not.toHaveBeenCalled(); // first ever placement: no tween from nowhere
+    cleanup();
+    const { container } = render(<Steps on="فاصله" />);
+    expect(pillOf(container)[0].style.left).toBe("120px");
+    expect(Flip.from).toHaveBeenCalledTimes(1);
   });
 });

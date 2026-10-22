@@ -9,7 +9,8 @@ export function JourneyShell({ stage, productId, children }: { stage: Stage; pro
   return (
     <SessionProvider stage={stage} productId={productId}>
       <TopBar />
-      {children}
+      {/* opacity only: a transform here would trap the fixed compare tray and walk sheet (Review Focus 3) */}
+      <div className="animate-page-in">{children}</div>
     </SessionProvider>
   );
 }

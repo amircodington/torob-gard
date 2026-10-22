@@ -5,7 +5,7 @@ const BTN = "inline-flex min-h-11 items-center justify-center rounded-pill px-6 
 
 export function Hero() {
   return (
-    <section className="flex flex-col items-center pt-16 text-center">
+    <section className="flex flex-col items-center pt-8 text-center">
       <Mascot pose="wave" className="size-44" />
       <h1 className="mt-8 text-[34px] leading-[48px] font-light">
         بیا با هم <span className="font-extrabold">خریدِ خوب</span> رو پیدا کنیم!

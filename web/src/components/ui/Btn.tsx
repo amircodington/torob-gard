@@ -10,6 +10,10 @@ const VARIANTS: Record<Variant, string> = {
   panel: "bg-panel text-on-dark",
 };
 
+/** Btn's look, for a Link that should read as a button. */
+export const btnClass = (variant: Variant = "primary") =>
+  `inline-flex min-h-11 items-center justify-center gap-2 rounded-pill px-4 text-[15px] font-bold transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50 ${VARIANTS[variant]}`;
+
 export function Btn({
   variant = "primary",
   icon: Icon,
@@ -24,7 +28,7 @@ export function Btn({
     <button
       type={type}
       {...props}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-pill px-4 text-[15px] font-bold transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50 ${VARIANTS[variant]} ${className}`}
+      className={`${btnClass(variant)} ${className}`}
     >
       {!iconEnd && icon}
       {children}

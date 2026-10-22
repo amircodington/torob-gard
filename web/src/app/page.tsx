@@ -1,3 +1,4 @@
+import { SiteHeader } from "../components/SiteHeader";
 import { Faq } from "../components/landing/Faq";
 import { Hero } from "../components/landing/Hero";
 import { Honesty } from "../components/landing/Honesty";
@@ -31,21 +32,24 @@ async function loadLive() {
 export default async function Home() {
   const live = await loadLive().catch(() => null);
   return (
-    <main className="mx-auto flex max-w-md flex-col gap-12 px-4 pb-12">
-      <Hero />
-      <ul className="grid gap-3">
-        {VALUE_PROPS.map((v) => (
-          <li key={v.t} className="rounded-lg bg-surface p-5 shadow-card">
-            <span className="block text-[15px] leading-6 font-extrabold">{v.t}</span>
-            <span className="block text-[15px] leading-6 text-ink-muted">{v.d}</span>
-          </li>
-        ))}
-      </ul>
-      <HowItWorks />
-      <LiveNumbers stats={live?.stats ?? null} priceDaysAgo={live?.priceDaysAgo ?? null} />
-      <PasazhStrip venues={live?.venues ?? []} />
-      <Honesty />
-      <Faq />
-    </main>
+    <>
+      <SiteHeader />
+      <main className="page flex flex-col gap-12 pb-12">
+        <Hero />
+        <ul className="grid gap-3">
+          {VALUE_PROPS.map((v) => (
+            <li key={v.t} className="rounded-lg bg-surface p-5 shadow-card">
+              <span className="block text-[15px] leading-6 font-extrabold">{v.t}</span>
+              <span className="block text-[15px] leading-6 text-ink-muted">{v.d}</span>
+            </li>
+          ))}
+        </ul>
+        <HowItWorks />
+        <LiveNumbers stats={live?.stats ?? null} priceDaysAgo={live?.priceDaysAgo ?? null} />
+        <PasazhStrip venues={live?.venues ?? []} />
+        <Honesty />
+        <Faq />
+      </main>
+    </>
   );
 }

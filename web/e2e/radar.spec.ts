@@ -92,7 +92,9 @@ test("radar: the store sheet takes focus, closes by «بستن», Escape and (ph
     await expect(sheet.locator("[data-sheet-handle]")).toBeHidden();
   }
   // Modal: the page behind is inert and Tab wraps inside the sheet.
-  await expect(page.locator("main")).toHaveJSProperty("inert", true);
+  // main sits in the page-in wrapper, so its inert comes from an ancestor; the top bar is benched too.
+  await expect.poll(() => page.locator("main").evaluate((m) => m.closest("[inert]") != null)).toBe(true);
+  await expect(page.locator("header")).toHaveJSProperty("inert", true);
   await page.keyboard.press("Shift+Tab");
   await expect(sheet.getByRole("button", { name: "بستن" })).not.toBeFocused();
   await expect(sheet.locator(":focus")).toHaveCount(1);

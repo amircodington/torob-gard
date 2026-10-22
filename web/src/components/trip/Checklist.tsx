@@ -109,7 +109,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
 
   return (
     <>
-      <div className="mt-4 flex items-start gap-3">
+      <div data-page-head className="mt-4 flex animate-rise items-start gap-3">
         <Mascot pose="point" react="hop" className="size-24" alt="ترب‌گرد مسیر را نشان می‌دهد" />
         <div className="min-w-0 pt-2">
           <span className="rounded-pill bg-panel px-3 py-1 text-[12px] font-bold text-on-dark">آماده‌ی رفتن</span>

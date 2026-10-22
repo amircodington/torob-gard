@@ -75,7 +75,7 @@ function Radar({ id }: { id: string }) {
 
   return (
     <>
-      <div className="mt-4 flex items-start gap-3">
+      <div data-page-head className="mt-4 flex animate-rise items-start gap-3">
         <div className="min-w-0 flex-1">
           <h1 className="text-[22px] leading-8">
             <span className="font-light">رادار </span>

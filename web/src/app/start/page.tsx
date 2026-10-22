@@ -43,11 +43,11 @@ function Consult() {
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-60px)] max-w-md flex-col px-4 pt-2">
-      <h1 className="mt-4 text-[28px] leading-[40px]">
+      <h1 data-page-head className="mt-4 animate-rise text-[28px] leading-[40px]">
         <span className="font-light">مشاوره‌ی </span>
         <span className="font-extrabold">خرید</span>
       </h1>
-      <p className="text-[15px] leading-6 text-ink-muted">چند سوال کوتاه، بعد سه گزینه با دلیل.</p>
+      <p data-page-head className="animate-rise text-[15px] leading-6 text-ink-muted">چند سوال کوتاه، بعد سه گزینه با دلیل.</p>
       {state.agentOffline && (
         <p role="status" className="mt-3 rounded-md bg-surface-tint px-4 py-2 text-[13px] font-semibold leading-5 text-ink">
           دستیار هوشمند موقتاً در دسترس نیست

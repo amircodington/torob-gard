@@ -9,7 +9,7 @@ const FA = "۰۱۲۳۴۵۶۷۸۹";
 
 /** The stage is in step `n` of the TopBar, and the page never scrolls sideways. */
 async function stage(page: Page, n: number) {
-  await expect(page.getByRole("navigation", { name: "مراحل خرید" }).locator('[aria-current="step"]')).toHaveText(FA[n]);
+  await expect(page.getByRole("navigation", { name: "مراحل خرید" }).locator('[aria-current="step"] [data-step-num]')).toHaveText(FA[n]);
   const [scroll, vw] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
   expect(scroll).toBeLessThanOrEqual(vw);
 }
@@ -19,7 +19,7 @@ test.use({ permissions: [] }); // geolocation denied → distances from the Saad
 test("journey: landing → chat → desk → radar → closed → Plan B → trip → walk", async ({ page }) => {
   test.slow();
   await page.goto("/");
-  await page.getByRole("link", { name: "شروع کن" }).click();
+  await page.getByRole("main").getByRole("link", { name: "شروع کن" }).click();
   await page.waitForURL(/\/start$/);
   await stage(page, 1);
 
