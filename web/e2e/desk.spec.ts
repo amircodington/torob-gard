@@ -62,7 +62,8 @@ test("desk (desktop): the three price boxes line up, before and after the agent 
   await page.getByRole("button", { name: "نمایش گزینه‌های مناسب" }).click();
   await expect(page.getByRole("article")).toHaveCount(3);
   const tops = async () => {
-    await page.waitForTimeout(400); // the 60 ms card stagger + 240 ms rise
+    // Measure once the cards' stagger + rise have finished, not after a guessed delay.
+    await page.getByRole("article").evaluateAll((els) => Promise.all(els.flatMap((e) => e.getAnimations().map((a) => a.finished))));
     return page.locator("[data-price-box]").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
   };
   const near = (xs: number[]) => expect(Math.max(...xs) - Math.min(...xs)).toBeLessThanOrEqual(2);

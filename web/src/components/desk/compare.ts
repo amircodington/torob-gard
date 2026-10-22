@@ -1,3 +1,5 @@
+import { isStale } from "../../lib/fa";
+
 /** Compared ids that are not on the current desk (left over from earlier needs); the desk prunes them on load. */
 export const staleCompareIds = (compare: string[], tiers: { productId: string }[]): string[] =>
   compare.filter((id) => !tiers.some((t) => t.productId === id));
@@ -7,15 +9,19 @@ export const deskEmpty = (category: string | null, tiers: unknown[] | undefined)
   category === "other" ? "other" : tiers?.length === 0 ? "budget" : null;
 
 type Row = { productId: string; price: number; offerCount: number; newestPriceAt: string | null };
-/** Ids holding the best value of `score` (higher wins); ties keep every tied id; NaN (no data) never wins. */
+/** Ids holding the best value of `score` (higher wins); ties keep every tied id; NaN (no data) never wins; a row where every column ties marks nothing. */
 const top = (rows: Row[], score: (r: Row) => number): string[] => {
   const max = Math.max(...rows.map(score).filter((s) => !Number.isNaN(s)));
-  return rows.filter((r) => score(r) === max).map((r) => r.productId);
+  const ids = rows.filter((r) => score(r) === max).map((r) => r.productId);
+  return ids.length === rows.length && rows.length > 1 ? [] : ids;
 };
 
-/** The compare table's highlights: lowest price, most shops, newest recorded price. */
-export const bestOf = (rows: Row[]) => ({
+/** The compare table's highlights: lowest price, most shops, newest recorded price. A stale price (past 60 days, PLAN §2) is never crowned freshest. */
+export const bestOf = (rows: Row[], now: number) => ({
   price: top(rows, (r) => -r.price),
   offers: top(rows, (r) => r.offerCount),
-  fresh: top(rows, (r) => (r.newestPriceAt ? Date.parse(r.newestPriceAt) : NaN)),
+  fresh: top(rows, (r) => {
+    const at = r.newestPriceAt ? Date.parse(r.newestPriceAt) : NaN;
+    return isStale((now - at) / 60_000) ? NaN : at;
+  }),
 });

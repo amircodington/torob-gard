@@ -20,15 +20,23 @@ describe("deskEmpty", () => {
 });
 
 describe("bestOf", () => {
+  const NOW = Date.parse("2026-10-22T00:00:00Z");
   const t = (productId: string, price: number, offerCount: number, newestPriceAt: string | null) => ({ productId, price, offerCount, newestPriceAt });
   it("names the lowest price, the most shops and the newest price", () => {
-    expect(bestOf([t("a", 10, 2, "2026-10-01T00:00:00Z"), t("b", 20, 9, null), t("c", 30, 3, "2026-10-20T00:00:00Z")])).toEqual({
+    expect(bestOf([t("a", 10, 2, "2026-10-01T00:00:00Z"), t("b", 20, 9, null), t("c", 30, 3, "2026-10-20T00:00:00Z")], NOW)).toEqual({
       price: ["a"],
       offers: ["b"],
       fresh: ["c"],
     });
   });
-  it("ties return every tied id; no recorded time means no freshest", () => {
-    expect(bestOf([t("a", 10, 5, null), t("b", 10, 5, null)])).toEqual({ price: ["a", "b"], offers: ["a", "b"], fresh: [] });
+  it("ties keep every tied id; no recorded time means no freshest", () => {
+    expect(bestOf([t("a", 10, 5, null), t("b", 10, 7, null), t("c", 30, 7, null)], NOW)).toEqual({ price: ["a", "b"], offers: ["b", "c"], fresh: [] });
+  });
+  it("a row where every column ties marks nothing", () => {
+    expect(bestOf([t("a", 10, 5, "2026-10-20T00:00:00Z"), t("b", 10, 5, "2026-10-20T00:00:00Z")], NOW)).toEqual({ price: [], offers: [], fresh: [] });
+  });
+  it("never crowns a stale price (past 60 days) as freshest", () => {
+    expect(bestOf([t("a", 10, 2, "2026-06-01T00:00:00Z"), t("b", 20, 3, null)], NOW).fresh).toEqual([]);
+    expect(bestOf([t("a", 10, 2, "2026-06-01T00:00:00Z"), t("b", 20, 3, "2026-10-01T00:00:00Z")], NOW).fresh).toEqual(["b"]);
   });
 });

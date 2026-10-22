@@ -46,7 +46,7 @@ export function CompareSheet({
   onPick: (id: string) => void;
 }) {
   const specLabels = [...new Set(tiers.flatMap((t) => t.specsTop3.map((s) => s.label)))];
-  const best = bestOf(tiers);
+  const best = bestOf(tiers, now);
   return (
     // A table wants width, not a 440 px side panel: a bottom sheet at every width, centred and wider at lg.
     <Sheet open={open} onClose={onClose} labelledby="compare-title" side="bottom" className="lg:max-w-3xl">

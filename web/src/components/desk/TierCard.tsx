@@ -49,7 +49,7 @@ const specIcon = (label: string) => SPEC_ICON.find(([k]) => label.includes(k))?.
 
 /** Plus→Check: both stacked in one cell, the inactive one at 0.9 and transparent (reduced motion: opacity only). */
 const swap = (on: boolean) =>
-  `col-start-1 row-start-1 size-5 transition-[opacity,scale] duration-(--duration-fast) ease-out ${on ? "" : "opacity-0 scale-90 motion-reduce:scale-100"}`;
+  `col-start-1 row-start-1 size-5 transition-[opacity,scale] duration-(--duration-fast) ease-(--ease-out) ${on ? "" : "opacity-0 scale-90 motion-reduce:scale-100"}`;
 
 function ProductImage({ src, alt }: { src: string | null; alt: string }) {
   const [broken, setBroken] = useState(false);
@@ -168,7 +168,7 @@ export function TierCard({
           className="mt-1 flex min-h-11 items-center justify-between rounded-md bg-surface-tint px-3 text-[14px] font-bold focus-visible:outline-2 focus-visible:outline-focus"
         >
           چرا این گزینه؟
-          <ChevronDown aria-hidden className={`size-5 transition-transform duration-(--duration-fast) ease-out ${why ? "rotate-180" : ""}`} />
+          <ChevronDown aria-hidden className={`size-5 transition-transform duration-(--duration-fast) ease-(--ease-out) ${why ? "rotate-180" : ""}`} />
         </button>
         {why && (
           <div id={whyId} className="space-y-1.5 px-1 text-[13px] leading-6">
