@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { Footer } from "../components/landing/Footer";
 import "./globals.css";
 
+const DESCRIPTION = "همراه خرید حضوری تو بازار الکترونیک مرکز تهران: مدل مناسب رو با دلیل انتخاب کن و بدون از کدوم مغازه و کدوم طبقه بخری.";
+
 export const metadata: Metadata = {
-  title: "ترب‌گرد",
-  description: "از چی بخرم تا از کجا بخرم!",
+  title: { default: "ترب‌گرد | از چی بخرم تا از کجا بخرم!", template: "%s | ترب‌گرد" },
+  description: DESCRIPTION,
+  openGraph: { title: "ترب‌گرد | از چی بخرم تا از کجا بخرم!", description: DESCRIPTION, locale: "fa_IR", type: "website" },
   icons: "/mascot/torob-gard-icon.webp",
 };
 
@@ -12,9 +16,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="fa" dir="rtl" className="h-full antialiased">
       <body className="min-h-full">
         {children}
-        <footer className="mx-auto max-w-md px-4 pb-6 pt-2 text-center text-[11px] font-semibold leading-5 text-ink-muted">
-          ترب‌گرد — پروژه‌ی چالش ترب/استارکوچ؛ محصول رسمی ترب نیست.
-        </footer>
+        <Footer />
       </body>
     </html>
   );
