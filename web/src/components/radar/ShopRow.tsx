@@ -27,8 +27,8 @@ export function distanceLabel(m: number | null): string {
   return `${m < 1000 ? `${faNum(Math.round(m / 10) * 10)} متر` : faKm(Math.round(km * 10) / 10)} · ${faWalk(km)}`;
 }
 
-/** Latin runs («B-1024/7») stay whole and left-to-right inside the RTL line. */
-const isolateLatin = (t: string) => t.split(/(\S*[A-Za-z]\S*)/).map((part, i) => (i % 2 ? <bdi key={i} className="whitespace-nowrap">{part}</bdi> : part));
+/** Latin runs («B-1024/7») stay whole and left-to-right inside the RTL line; one wider than the line still breaks. */
+const isolateLatin = (t: string) => t.split(/(\S*[A-Za-z]\S*)/).map((part, i) => (i % 2 ? <bdi key={i} className="inline-block max-w-full [overflow-wrap:anywhere]">{part}</bdi> : part));
 
 const hoverable = () => window.matchMedia("(hover: hover)").matches;
 
@@ -48,7 +48,7 @@ export function ShopRow({ row, now, onOpen, active, onHover }: { row: OfferRow; 
         <StoreIcon aria-hidden className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="line-clamp-2 block text-[15px] font-bold leading-6 break-words">{store.name}</span>
+        <span className="line-clamp-2 text-[15px] font-bold leading-6 break-words">{store.name}</span>
         <span className="mt-0.5 flex gap-1 text-[13px] leading-5 text-ink-muted">
           <MapPin aria-hidden className="mt-0.5 size-4 shrink-0" />
           <span className="min-w-0 break-words">{isolateLatin(placeLine(store))}</span>

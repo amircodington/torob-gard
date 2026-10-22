@@ -25,6 +25,12 @@ describe("ShopRow", () => {
     expect(screen.getByText(/شماره‌ی واحد ثبت نشده/)).toBeTruthy();
   });
 
+  it("isolates a Latin unit in one bdi, so «B-1024/7» never splits at the hyphen", () => {
+    const { container } = show(row({ unit: "B-1024/7" }));
+    expect([...container.querySelectorAll("bdi")].map((b) => b.textContent)).toEqual(["B-۱۰۲۴/۷"]);
+    expect(container.textContent).toContain("پاساژ علاءالدین · طبقه ۲ · واحد B-۱۰۲۴/۷");
+  });
+
   it("hedges a low-confidence place with «احتمالاً»", () => {
     show(row({ parseConfidence: 0.6 }));
     expect(screen.getByText(/احتمالاً/)).toBeTruthy();

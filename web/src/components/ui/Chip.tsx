@@ -1,14 +1,13 @@
 "use client";
 
-import { createContext, useContext } from "react";
-import type { LucideIcon } from "lucide-react";
+import { createContext, useContext, type ComponentType } from "react";
 import { isDirectional } from "./chipIcon";
 
 /** True inside a ChipGroup: its sliding pill is the selected shape, so the chip itself only changes text colour. */
 export const InChipGroup = createContext(false);
 
 /** A pill; a button when it has onClick, orange when selected. */
-export function Chip({ label, selected, onClick, icon: Icon }: { label: string; selected?: boolean; onClick?: () => void; icon?: LucideIcon }) {
+export function Chip({ label, selected, onClick, icon: Icon }: { label: string; selected?: boolean; onClick?: () => void; icon?: ComponentType<{ className?: string; "aria-hidden"?: boolean }> }) {
   const inGroup = useContext(InChipGroup);
   // Text on orange is 15px bold or larger (brand contrast rule); the resting pill stays 13px.
   // In a group the track is the white shape and the pill the orange one; the selected chip keeps its own orange

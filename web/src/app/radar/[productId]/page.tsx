@@ -10,7 +10,7 @@ import { AnchorPicker, landmarkAnchor, type RadarAnchor } from "../../../compone
 import { FilterPanel, NO_FILTERS } from "../../../components/radar/FilterPanel";
 import { ShopRow } from "../../../components/radar/ShopRow";
 import { StoreSheet } from "../../../components/radar/StoreSheet";
-import { Toolbar } from "../../../components/radar/Toolbar";
+import { Toolbar, ViewSwitch } from "../../../components/radar/Toolbar";
 import { Btn } from "../../../components/ui/Btn";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { api, ApiError } from "../../../lib/api";
@@ -104,8 +104,11 @@ function Radar({ id }: { id: string }) {
         <EmptyState pose="stuck" title="برای این مدل فروشگاهی ثبت نشده" body="هیچ فروشگاهی در ترب این مدل رو پیشنهاد نداده." actions={changeModel} />
       ) : (
         <>
-          {/* Sticky under the 60 px top bar so sort and filters stay in reach while the rows scroll. */}
-          <div className="sticky top-[60px] z-20 -mx-4 mt-2 bg-paper/80 px-4 py-1 backdrop-blur-md md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
+          <div className="mt-4 flex md:hidden">
+            <ViewSwitch />
+          </div>
+          {/* Sticky under the top bar so sort and filters stay in reach while the rows scroll. Solid paper: no backdrop-filter on low-end phones (D11). */}
+          <div className="sticky top-(--bar) z-20 -mx-4 mt-2 flex min-h-(--tools) items-center bg-paper px-4 md:-mx-6 md:px-6 lg:-mx-8 lg:px-8">
             <Toolbar onFilters={() => setFiltersOpen(true)} />
           </div>
           {/* lg: the list takes the inline-start 440 px (where the store sheet docks), the map fills the rest and stays put. */}
@@ -149,7 +152,7 @@ function Radar({ id }: { id: string }) {
                 </>
               )}
             </div>
-            <div className={`md:sticky md:top-[124px] lg:h-[calc(100dvh-140px)] ${state.radarView === "list" ? "hidden md:block" : ""}`}>
+            <div className={`md:sticky md:top-[calc(var(--bar)+var(--tools)+4px)] lg:aspect-square lg:max-h-[calc(100dvh-var(--bar)-var(--tools)-20px)] ${state.radarView === "list" ? "hidden md:block" : ""}`}>
               {all && (
                 <DistrictMap
                   rows={rows}
@@ -180,7 +183,8 @@ export default function RadarPage() {
   const { productId } = useParams<{ productId: string }>();
   return (
     <JourneyShell stage="radar" productId={productId}>
-      <main className="page pb-32 pt-2">
+      {/* --bar: the TopBar's height; --tools: the sticky toolbar band. The map sticks below both. */}
+      <main className="page pb-32 pt-2 [--bar:60px] [--tools:60px]">
         <Radar id={productId} />
       </main>
     </JourneyShell>

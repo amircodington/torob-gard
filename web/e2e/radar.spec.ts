@@ -167,3 +167,28 @@ test("radar (desktop): the map stays beside the list, and the docked sheet leave
   expect(p.y).toBeGreaterThanOrEqual(0);
   expect(p.y + p.height).toBeLessThanOrEqual(900);
 });
+
+test("radar (desktop): every pin lies inside the map box at 1280×720, 1440×900 and 1920×1080", async ({ page }, info) => {
+  test.skip(info.project.name !== "desktop", "fill map is lg only");
+  // Two shops near opposite corners of the bbox (8% and 92%): a crop would hide them first.
+  await page.route(`**/api/products/${PRODUCT}/offers*`, async (r) => {
+    const res = await r.fetch();
+    const rows = await res.json();
+    Object.assign(rows[0].shop, { lat: 35.7024, lng: 51.4012 });
+    Object.assign(rows[1].shop, { lat: 35.6856, lng: 51.4348 });
+    await r.fulfill({ response: res, json: rows });
+  });
+  for (const [width, height] of [[1280, 720], [1440, 900], [1920, 1080]]) {
+    await page.setViewportSize({ width, height });
+    await page.goto(`/radar/${PRODUCT}`);
+    await expect(page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem").first()).toBeVisible();
+    await page.waitForTimeout(700); // the pin drop
+    const { pins, out } = await page.evaluate(() => {
+      const box = document.querySelector("[data-map-box]")!.getBoundingClientRect();
+      const rs = [...document.querySelectorAll("[data-pin] > span")].map((b) => b.getBoundingClientRect());
+      return { pins: rs.length, out: rs.filter((r) => r.left < box.left || r.right > box.right || r.top < box.top || r.bottom > box.bottom).length };
+    });
+    expect(pins, `${width}×${height}`).toBeGreaterThan(0);
+    expect(out, `${width}×${height}`).toBe(0);
+  }
+});

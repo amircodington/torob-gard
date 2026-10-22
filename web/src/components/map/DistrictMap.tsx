@@ -29,12 +29,23 @@ const BBOX_KM_NS = 2.22;
 export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hoveredId, fill, dropKey }: Props) {
   const root = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    const mm = gsap.matchMedia(root);
-    // Radar moment: pins drop y -12→0 + fade, 320 ms back.out(1.4), 30 ms apart; the 9th pin on lands with the 8th.
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from("[data-pin] > span", { y: -12, opacity: 0, duration: 0.32, ease: "back.out(1.4)", stagger: (i) => Math.min(i, 7) * 0.03 });
+    const el = root.current!;
+    const mm = gsap.matchMedia(el);
+    // Drop when the map is first laid out: on a phone it mounts hidden (list view) and drops when switched to.
+    // ResizeObserver reports before paint, so pins never flash before they drop.
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(([e]) => {
+      if (!e.contentRect.width) return;
+      ro!.disconnect();
+      // Radar moment: pins drop y -12→0 + fade, 320 ms back.out(1.4), 30 ms apart; the 9th pin on lands with the 8th.
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.from("[data-pin] > span", { y: -12, opacity: 0, duration: 0.32, ease: "back.out(1.4)", stagger: (i) => Math.min(i, 7) * 0.03 });
+      });
     });
-    return () => mm.revert();
+    ro?.observe(el);
+    return () => {
+      ro?.disconnect();
+      mm.revert();
+    };
   }, [dropKey]); // replays only for a new product/anchor, not a filter change
   const pins = rows.flatMap((r) => {
     const p = r.store.lat != null && r.store.lng != null ? project(r.store.lat, r.store.lng) : null;
@@ -48,10 +59,9 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
       <style>{`@keyframes tg-ping{0%{transform:scale(1);opacity:.5}100%{transform:scale(2.6);opacity:0}}
 .tg-ping{transform-box:fill-box;transform-origin:center;animation:tg-ping 1.8s ease-out infinite}
 @media (prefers-reduced-motion:reduce){.tg-ping{animation:none;opacity:.25}}`}</style>
-      <div className={`relative w-full overflow-hidden rounded-[var(--radius-lg)] shadow-card ${fill ? "@container-[size] min-h-0 flex-1" : "aspect-square"}`}>
-        {/* fill: a square of the box's longer side, centred, so pins keep their place on the sketch (slice, not stretch).
-            ponytail: a pin in the outer ~8% east/west can be cropped at lg; none are today — add a pan if one shows up. */}
-        <div className={fill ? "absolute top-1/2 left-1/2 size-[100cqmax] -translate-x-1/2 -translate-y-1/2" : "absolute inset-0"}>
+      <div data-map-box className={`relative w-full overflow-hidden rounded-[var(--radius-lg)] shadow-card ${fill ? "@container-[size] min-h-0 flex-1 bg-blush-soft" : "aspect-square"}`}>
+        {/* fill: a square of the box's shorter side, centred (contain, letterboxed on blush): every pin stays visible. */}
+        <div className={fill ? "absolute top-1/2 left-1/2 size-[100cqmin] -translate-x-1/2 -translate-y-1/2" : "absolute inset-0"}>
         <DistrictSvg />
         {a && (
           <svg viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
@@ -74,7 +84,7 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
               data-hovered={r.store.id === hoveredId ? "" : undefined}
               aria-label={`${r.store.name}، ${price} هزار تومان`}
               onClick={() => onSelect(r.store.id)}
-              style={{ left: `${p.x}%`, top: `${p.y}%`, zIndex: on ? 2 : 1 }}
+              style={{ left: `${p.x}%`, top: `${p.y}%`, zIndex: on ? 3 : r.store.id === hoveredId ? 2 : 1 }}
               className="group/pin absolute flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center"
             >
               <span

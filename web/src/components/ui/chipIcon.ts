@@ -43,6 +43,6 @@ export function chipIcon(id: string): LucideIcon | null {
   return EXACT[id] ?? PREFIX[id.split(":")[0]] ?? null;
 }
 
-const DIRECTIONAL = new Set<LucideIcon>([ArrowRight, ArrowLeft, ChevronRight, ChevronLeft, SendHorizontal, Undo2, LogOut]);
+const DIRECTIONAL = new Set<unknown>([ArrowRight, ArrowLeft, ChevronRight, ChevronLeft, SendHorizontal, Undo2, LogOut]);
 /** Icons that imply direction mirror under RTL (plan's RTL icon rule); Btn and Chip add `flip-rtl` for them. */
-export const isDirectional = (icon: LucideIcon) => DIRECTIONAL.has(icon);
+export const isDirectional = (icon: unknown) => DIRECTIONAL.has(icon);

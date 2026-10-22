@@ -5,9 +5,19 @@ import { DistrictMap } from "./DistrictMap";
 import type { OfferRow, Store } from "../../lib/types";
 
 afterEach(cleanup);
+let reduce = true;
 beforeAll(() => {
-  // jsdom has no matchMedia; the pin drop asks for reduced motion (→ no drop).
-  window.matchMedia = (q: string) => ({ matches: q.includes("reduce"), media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} }) as unknown as MediaQueryList;
+  // jsdom has no matchMedia or ResizeObserver. The stub answers the two motion queries apart; the observer reports a laid-out map at once.
+  window.matchMedia = (q: string) =>
+    ({ matches: q.includes("no-preference") ? !reduce : q.includes("reduce") && reduce, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} }) as unknown as MediaQueryList;
+  globalThis.ResizeObserver = class {
+    constructor(private cb: ResizeObserverCallback) {}
+    observe() {
+      this.cb([{ contentRect: { width: 300 } } as ResizeObserverEntry], this as unknown as ResizeObserver);
+    }
+    disconnect() {}
+    unobserve() {}
+  };
 });
 
 const row = (id: string, lat: number, lng: number, price = 23_500_000): OfferRow => ({
@@ -56,5 +66,14 @@ describe("DistrictMap", () => {
     const [a, b] = screen.getAllByRole("button");
     expect(a.hasAttribute("data-hovered")).toBe(false);
     expect(b.hasAttribute("data-hovered")).toBe(true);
+  });
+  it("drops the pins in once laid out, unless motion is reduced", () => {
+    reduce = false;
+    const { unmount } = render(<DistrictMap rows={rows} anchor={anchor} onSelect={() => {}} dropKey="k" />);
+    expect((screen.getAllByRole("button")[0].firstElementChild as HTMLElement).style.opacity).toBe("0");
+    unmount();
+    reduce = true;
+    render(<DistrictMap rows={rows} anchor={anchor} onSelect={() => {}} dropKey="k" />);
+    expect((screen.getAllByRole("button")[0].firstElementChild as HTMLElement).style.opacity).toBe("");
   });
 });

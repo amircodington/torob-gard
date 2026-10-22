@@ -8,7 +8,7 @@ import { ChipGroup } from "../ui/ChipGroup";
 
 const ICONS: Record<LandmarkId, LucideIcon> = { saadi: TrainFront, baharestan: Landmark, istanbul: Landmark, aladdin2: Building2 };
 // Bounded loop: spins only while the phone is asked (≤ 5 s timeout).
-const Spinner = ((p: { className?: string }) => <Loader2 {...p} className={`${p.className} motion-safe:animate-spin`} />) as unknown as LucideIcon;
+const Spinner = ({ className }: { className?: string }) => <Loader2 aria-hidden className={`${className} motion-safe:animate-spin`} />;
 
 export interface RadarAnchor {
   lat: number;
