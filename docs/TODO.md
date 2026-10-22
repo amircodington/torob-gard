@@ -47,10 +47,10 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P1.10 Plan B overlay — Mohammad
 - [x] P1.11 Trip checklist `/trip/[id]` + walk mode — Mohammad
 - [x] P1.12 Landing `/`, about, privacy, 404 — Mohammad
-- [ ] P1.13 Demo gate (journey e2e at 390/768/1440) — Mohammad
+- [x] P1.13 Demo gate (journey e2e at 390/768/1440) — Mohammad
 - [ ] T-05 Eval set v1 (50 cases) — student
 - [ ] T-07 Persian normalisation cases → 30 — student
-- [ ] T-08 UI walk test round 1 (Chrome, Bale, Eitaa) — students
+- [ ] T-08 UI walk test round 1 (Chrome, Bale, Eitaa) — students · round 1 pending — gate.md has the table
 
 ## P2 Agent — gate: evals ≥ 85%, 0 grounding failures on known-item
 

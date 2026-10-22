@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Footer } from "../components/landing/Footer";
 import "./globals.css";
 
@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   openGraph: { title: "ترب‌گرد | از چی بخرم تا از کجا بخرم!", description: DESCRIPTION, locale: "fa_IR", type: "website" },
   icons: "/mascot/torob-gard-icon.webp",
 };
+
+// viewport-fit=cover lets the sheets' env(safe-area-inset-*) padding work; theme-color = paper.
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#fbf7f3" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

@@ -60,3 +60,18 @@ body {
 @utility tabular {
   font-feature-settings: "tnum";
 }
+
+/* mobile-native: no grey flash on tap, no double-tap-zoom delay, no text selection on a long-press of a control. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
