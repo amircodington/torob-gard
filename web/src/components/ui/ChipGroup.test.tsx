@@ -4,9 +4,9 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { Flip } from "gsap/Flip";
 
-const motion = vi.hoisted(() => ({ reduce: false }));
+const motion = vi.hoisted(() => ({ reduce: false, keyboard: false }));
 vi.mock("gsap/Flip", () => ({ Flip: { getState: vi.fn(() => ({})), from: vi.fn() } }));
-vi.mock("../../lib/motion", () => ({ registerMotion: () => {}, reduced: () => motion.reduce }));
+vi.mock("../../lib/motion", () => ({ registerMotion: () => {}, reduced: () => motion.reduce, byKeyboard: () => motion.keyboard }));
 
 import { Chip } from "./Chip";
 import { ChipGroup, useSlidingPill } from "./ChipGroup";
@@ -15,6 +15,7 @@ afterEach(() => {
   cleanup();
   vi.mocked(Flip.from).mockClear();
   motion.reduce = false;
+  motion.keyboard = false;
 });
 // jsdom has no layout: give each chip a distinct offset so the pill's position names its chip.
 beforeAll(() => {
@@ -51,6 +52,13 @@ describe("ChipGroup", () => {
   it("reduced motion: the pill jumps", () => {
     motion.reduce = true;
     const { container } = render(<Sorts />);
+    fireEvent.click(screen.getByRole("button", { name: "فاصله" }));
+    expect(pillOf(container)[0].style.left).toBe("120px");
+    expect(Flip.from).not.toHaveBeenCalled();
+  });
+  it("keyboard action: the pill jumps", () => {
+    const { container } = render(<Sorts />);
+    motion.keyboard = true;
     fireEvent.click(screen.getByRole("button", { name: "فاصله" }));
     expect(pillOf(container)[0].style.left).toBe("120px");
     expect(Flip.from).not.toHaveBeenCalled();

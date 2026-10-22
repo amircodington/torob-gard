@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ArrowRight } from "lucide-react";
 import { Bubble, Typing } from "../../components/chat/Bubble";
 import { Chips } from "../../components/chat/Chips";
 import { Composer } from "../../components/chat/Composer";
@@ -17,9 +18,11 @@ function Consult() {
   // The agent's turn in flight: the user's text and the latest status line (not in the session until done).
   const [pending, setPending] = useState<{ text: string; status: string } | null>(null);
 
+  // Not when the turn leaves for the desk: the smooth scroll would outlive the page and leave the desk scrolled under the TopBar.
   useEffect(() => {
+    if (state.stage !== "consult") return;
     if (state.chat.length > 1 || pending) end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [state.chat.length, pending]);
+  }, [state.chat.length, pending, state.stage]);
 
   const send = async (raw: string) => {
     const text = raw.trim();
@@ -78,14 +81,15 @@ function Consult() {
         <div ref={end} className="scroll-mb-36" />
       </div>
 
-      <div className="sticky bottom-0 -mx-4 mt-4 flex flex-col gap-1 bg-paper/90 px-4 backdrop-blur-md pb-[max(12px,env(safe-area-inset-bottom))] pt-2">
+      <div className="sticky bottom-0 -mx-4 mt-4 flex flex-col gap-1 bg-paper/90 px-4 backdrop-blur-md md:-mx-6 md:px-6 lg:-mx-8 lg:px-8 pb-[max(12px,env(safe-area-inset-bottom))] pt-2">
         {state.req.category && (
           <button
             type="button"
             onClick={() => dispatch({ type: "GO", stage: "products" })}
-            className="min-h-11 self-center rounded-pill px-4 text-[15px] lg:hidden font-bold text-orange-deep focus-visible:outline-2 focus-visible:outline-focus"
+            className="inline-flex min-h-11 items-center gap-1 self-center rounded-pill px-4 text-[15px] lg:hidden font-bold text-orange-deep focus-visible:outline-2 focus-visible:outline-focus"
           >
-            بدون سوال بیشتر، نمایش گزینه‌ها ←
+            بدون سوال بیشتر، نمایش گزینه‌ها
+            <ArrowRight aria-hidden className="flip-rtl size-4" />
           </button>
         )}
         <Composer onSend={send} disabled={!!pending} />

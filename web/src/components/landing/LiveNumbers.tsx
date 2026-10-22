@@ -26,8 +26,11 @@ export function LiveNumbers({ stats, priceDaysAgo }: { stats: Stats | null; pric
           {cells.map(({ n, l, icon: Icon }) => (
             <div key={l} className="flex flex-col-reverse gap-1 rounded-lg bg-surface p-5 shadow-card">
               <dt className="text-[13px] leading-5 font-semibold text-ink-muted">{l}</dt>
-              <dd className="text-[22px] leading-8 font-bold tabular lg:text-[28px] lg:leading-10">{n}</dd>
-              <Icon aria-hidden className="mb-2 size-5 text-ink-muted" />
+              {/* the icon sits inside <dd>: a <dl> group may hold only <dt>/<dd> (axe) */}
+              <dd className="text-[22px] leading-8 font-bold tabular lg:text-[28px] lg:leading-10">
+                <Icon aria-hidden className="mb-2 block size-5 text-ink-muted" />
+                {n}
+              </dd>
             </div>
           ))}
         </dl>

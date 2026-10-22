@@ -93,7 +93,9 @@ describe("PlanB", () => {
     const names = () => within(screen.getByRole("list", { name: "گزینه‌های جایگزین" })).getAllByRole("heading").map((h) => h.textContent);
     const before = names();
     dispatch.mockImplementationOnce((a) => withState({ ...state, planB: { ...state.planB, priority: a.priority } }));
-    fireEvent.click(screen.getByRole("button", { name: /نزدیکی مهم‌تره/ }), { detail: 1 }); // a pointer click
+    const near = screen.getByRole("button", { name: /نزدیکی مهم‌تره/ });
+    fireEvent.pointerDown(near); // a pointer click
+    fireEvent.click(near);
     expect(Flip.getState).toHaveBeenCalled();
     rerender(<PlanB rows={rows} />);
     expect(names()).not.toEqual(before);
@@ -107,7 +109,9 @@ describe("PlanB", () => {
     withState({ ...failA, planB: { open: true, reason: "stock", priority: "price" } });
     const { rerender } = render(<PlanB rows={rows} />);
     dispatch.mockImplementationOnce((a) => withState({ ...state, planB: { ...state.planB, priority: a.priority } }));
-    fireEvent.click(screen.getByRole("button", { name: /نزدیکی مهم‌تره/ }), { detail: 0 }); // Enter/Space
+    const near = screen.getByRole("button", { name: /نزدیکی مهم‌تره/ });
+    fireEvent.keyDown(near, { key: "Enter" }); // Enter/Space: the shared byKeyboard() sees the key
+    fireEvent.click(near);
     rerender(<PlanB rows={rows} />);
     expect(dispatch).toHaveBeenCalledWith({ type: "PLANB_PRIORITY", priority: "distance" });
     expect(Flip.getState).not.toHaveBeenCalled();

@@ -1,19 +1,19 @@
 "use client";
 
-import gsap from "gsap";
+import { gsap } from "gsap";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { BadgeCheck, Banknote, CircleCheck, DoorOpen, Info, Layers, SearchX, type LucideIcon } from "lucide-react";
 import { api, type ReportInput } from "../../lib/api";
 import { project } from "../../lib/gesture";
+import { byKeyboard, DUR, reduced, registerMotion } from "../../lib/motion";
 import { faFreshness, faGroup, faNum, isStale } from "../../lib/fa";
 import type { FailReason, OfferRow, Trip } from "../../lib/types";
 import { useSession } from "../../state/session";
 import { PlanB } from "../planb/PlanB";
 import { Success } from "./Success";
 
-const REDUCED = "(prefers-reduced-motion: reduce)";
 const PEEK = 0.45; // of the viewport: the 85% sheet slides down to show ~40%
 
 export const floorName = (f: number) => (f === 0 ? "همکف" : f < 0 ? `منفی ${faNum(-f)}` : faNum(f));
@@ -58,11 +58,12 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
   const [step, setStep] = useState<"idle" | "asked" | "had">("idle");
   const [busy, setBusy] = useState(false);
 
-  // Motion moment: the sheet rises over the paper (power3.out); reduced motion → it is simply there.
+  // Motion moment: the sheet rises over the paper (DUR.sheet, tg.drawer); reduced motion → it is simply there.
   useLayoutEffect(() => {
+    registerMotion();
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from(sheet.current, { yPercent: 100, duration: 0.4, ease: "power3.out" });
+      gsap.from(sheet.current, { yPercent: 100, duration: DUR.sheet, ease: "tg.drawer" });
     });
     return () => mm.revert();
   }, []);
@@ -85,8 +86,8 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
   const snapTo = (toFull: boolean) => {
     setFull(toFull);
     const y = toFull ? 0 : peekY();
-    if (window.matchMedia(REDUCED).matches) gsap.set(sheet.current, { y });
-    else gsap.to(sheet.current, { y, duration: 0.35, ease: "power3.out", overwrite: "auto" });
+    if (reduced() || byKeyboard()) gsap.set(sheet.current, { y }); // a keyboard toggle jumps
+    else gsap.to(sheet.current, { y, duration: DUR.sheet, ease: "tg.drawer", overwrite: "auto" });
   };
   const down = (e: PointerEvent<HTMLButtonElement>) => {
     gsap.killTweensOf(sheet.current, "y");

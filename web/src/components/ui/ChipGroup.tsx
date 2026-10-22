@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import { Flip } from "gsap/Flip";
-import { registerMotion, reduced } from "../../lib/motion";
+import { byKeyboard, registerMotion, reduced } from "../../lib/motion";
 import { InChipGroup } from "./Chip";
 
 const box = (s: CSSStyleDeclaration) => `${s.left},${s.top},${s.width},${s.height}`;
@@ -11,7 +11,7 @@ type Box = Pick<CSSStyleDeclaration, "left" | "top" | "width" | "height">;
 // Last pill box per `memo` key: a group that remounts on the next page (the TopBar) slides on from where it was.
 const lastBox = new Map<string, Box>();
 
-/** Puts the pill on the `on` element; tweens from where it was unless this is the first placement or motion is reduced. */
+/** Puts the pill on the `on` element; tweens from where it was unless this is the first placement, motion is reduced or a key moved it. */
 function place(g: HTMLElement, p: HTMLElement, sel: string, animate: boolean, memo?: string) {
   const on = g.querySelector<HTMLElement>(sel);
   const prev = memo ? lastBox.get(memo) : undefined;
@@ -29,10 +29,10 @@ function place(g: HTMLElement, p: HTMLElement, sel: string, animate: boolean, me
   }
   Object.assign(p.style, { left: `${on.offsetLeft}px`, top: `${on.offsetTop}px`, width: `${on.offsetWidth}px`, height: `${on.offsetHeight}px` });
   if (memo) lastBox.set(memo, { left: p.style.left, top: p.style.top, width: p.style.width, height: p.style.height });
-  if (state && !reduced() && box(p.style) !== was) Flip.from(state, { duration: 0.22, ease: "tg.out" });
+  if (state && !reduced() && !byKeyboard() && box(p.style) !== was) Flip.from(state, { duration: 0.22, ease: "tg.out" });
 }
 
-/** One orange pill under the element matching `sel` inside the group (P1 moment 2: 220 ms tg.out; reduced motion jumps). */
+/** One orange pill under the element matching `sel` inside the group (P1 moment 2: 220 ms tg.out; reduced motion or a keyboard action jumps). */
 export function useSlidingPill<T extends HTMLElement>(sel: string, memo?: string) {
   const group = useRef<T>(null);
   const pill = useRef<HTMLSpanElement>(null);

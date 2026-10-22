@@ -168,7 +168,7 @@ export function TierCard({
           className="mt-1 flex min-h-11 items-center justify-between rounded-md bg-surface-tint px-3 text-[14px] font-bold focus-visible:outline-2 focus-visible:outline-focus"
         >
           چرا این گزینه؟
-          <ChevronDown aria-hidden className={`size-5 transition-transform duration-(--duration-fast) ease-(--ease-out) ${why ? "rotate-180" : ""}`} />
+          <ChevronDown aria-hidden className={`size-5 transition-transform duration-(--duration-fast) ease-(--ease-out) motion-reduce:transition-none in-data-[input=keyboard]:transition-none ${why ? "rotate-180" : ""}`} />
         </button>
         {why && (
           <div id={whyId} className="space-y-1.5 px-1 text-[13px] leading-6">
@@ -198,7 +198,8 @@ export function TierCard({
             <Plus className={swap(!inCompare)} />
             <Check className={swap(inCompare)} />
           </span>
-          مقایسه
+          {/* 1024–1279: three cards are too narrow for both labels, so «انتخاب این مدل» keeps one line and this goes icon-only */}
+          <span className="lg:max-xl:sr-only">مقایسه</span>
         </Btn>
       </div>
     </article>

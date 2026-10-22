@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { gsap } from "gsap";
-import { DUR, registerMotion, STAGGER } from "./motion";
+import { DUR, registerMotion } from "./motion";
 
 // The CSS tokens and the GSAP mirror never drift.
 const css = readFileSync("src/app/globals.css", "utf8");
@@ -15,7 +15,6 @@ it("easings match", () => {
 it("durations match DUR", () => {
   expect(Object.keys(DUR)).toEqual(["press", "fast", "base", "sheet", "slow"]);
   for (const [k, s] of Object.entries(DUR)) expect(css).toContain(`--duration-${k}: ${Math.round(s * 1000)}ms`);
-  expect(css).toContain(`--stagger: ${STAGGER * 1000}ms`);
 });
 
 it("registers the brand curves once", () => {

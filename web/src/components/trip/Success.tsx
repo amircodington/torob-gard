@@ -3,13 +3,13 @@
 import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { Check } from "lucide-react";
-import { DUR, REDUCED, registerMotion } from "../../lib/motion";
+import { byKeyboard, DUR, REDUCED, registerMotion } from "../../lib/motion";
 
 const DOTS = 6;
 
 /**
  * Walk mode's one rare moment («داشت؟» → آره): the verified check settles (scale 0.9→1 + fade, 240 ms) while
- * six orange dots burst 28 px out and fade (600 ms), with a 12 ms buzz. Reduced motion: the check fades in, no dots, no buzz.
+ * six orange dots burst 28 px out and fade (600 ms), with a 12 ms buzz. Reduced motion or «آره» pressed by key: the check fades in, no dots, no buzz.
  */
 export function Success() {
   const root = useRef<HTMLDivElement>(null);
@@ -17,7 +17,7 @@ export function Success() {
     registerMotion();
     const mm = gsap.matchMedia(root.current!);
     mm.add({ calm: REDUCED, full: "(prefers-reduced-motion: no-preference)" }, ({ conditions }) => {
-      if (conditions!.calm) {
+      if (conditions!.calm || byKeyboard()) {
         gsap.from("[data-check], [data-copy]", { opacity: 0, duration: DUR.base });
         return;
       }

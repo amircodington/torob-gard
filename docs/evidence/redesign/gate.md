@@ -14,11 +14,15 @@ branch `redesign` (worktree), Tasks 1–10.
 | Check | Result |
 |---|---|
 | `next typegen && tsc --noEmit` | ✅ |
-| `vitest run` | ✅ 23 files, 127 tests |
+| `vitest run` | ✅ 24 files, 130 tests (after the review fixes) |
 | `eslint .` | ✅ |
 | Playwright phone (390×844, touch) | ✅ 23 passed, 5 skipped |
 | Playwright tablet (768×1024) | ✅ 23 passed, 5 skipped |
 | Playwright desktop (1440×900) | ✅ 26 passed, 2 skipped |
+| Playwright phone360 (360×780, touch) — honesty + shots only | ✅ 4 passed; shots 2 passed with `SHOTS` |
+| Playwright laptop (1024×768) — honesty + shots only | ✅ 4 passed; shots 2 passed with `SHOTS` |
+| Playwright wide (1920×1080) — honesty + shots only | ✅ 4 passed; shots 2 passed with `SHOTS` |
+| JS bundle (`next build`; Next 16 prints no sizes, so gzip of the route's client entry chunks + root main files) | `/` 180 kB · `/start` 198 kB · `/desk` 200 kB · `/radar/[id]` 209 kB · `/trip/[id]` 207 kB · `/trip/[id]/walk` 202 kB (gzip; main not measured for comparison) |
 | `make check` | ⏳ controller, after merge |
 
 Skips are by design: `shots.spec` (2 tests) runs only with `SHOTS=<set>`; the desk price-box
@@ -58,8 +62,13 @@ frame; that contradicts the shipped reduced-motion rule (opacity fade kept), so 
 | Needs a phone | sticky hover, keyboard + composer, safe areas on a notched device, sheet drag feel, 60 fps — T-08 below |
 
 review-animations sweep: no `transition-all`, no `ease-in` UI curves, no `scale(0)`; transitions name
-their properties; every movement has a reduced-motion branch. Approved; the one keyboard-triggered
-animation (Plan B Flip) is fixed above.
+their properties; every movement has a reduced-motion branch. The gate first claimed Plan B's Flip
+was the only keyboard-triggered animation; the final review found four more. After the review fixes,
+`byKeyboard()` in `lib/motion.ts` (last input = keydown vs pointerdown, document capture phase) makes
+every keyboard action jump: the ChipGroup pill and the TopBar step pill, Plan B's re-rank (replaces
+`e.detail === 0`), the walk success burst (check fades, no dots, no buzz), the walk sheet's peek/full
+snap, and the TierCard/Faq chevrons (`in-data-[input=keyboard]:transition-none`, plus
+`motion-reduce:transition-none`).
 
 ## Before / after (t1 = before, not committed per Ruling D5; gate = after, committed)
 
@@ -75,7 +84,7 @@ animation (Plan B Flip) is fixed above.
 | walk | stat rows without icons | `gate/*-walk.webp`, `gate/*-walk-success.webp` — icon circles, success moment |
 | 404 | stuck mascot | `gate/*-404.webp` |
 
-23 WebP files, 0.78 MB total, largest 90 KB (`cwebp -q 80`).
+28 WebP files, 0.96 MB total, largest 90 KB (`cwebp -q 80`).
 
 ## T-08 · redesign re-run (students) — see `docs/TASKS.md` T-08
 
@@ -88,15 +97,27 @@ Check: page-in, desk stagger, sheet drag, Plan B Flip at 60 fps; widths 360 px a
 | | Bale | | | | | | | | |
 | | Eitaa | | | | | | | | |
 
+## Review fixes (final-review.md)
+
+| Item | Fix |
+|---|---|
+| Important 1 — keyboard motion | Shared `byKeyboard()` (above). Vitest: `motion-input.test.ts`, ChipGroup "keyboard action: the pill jumps", Plan B keyboard path now goes through a real keydown. |
+| Important 2 — 360 / 1024 / 1920 | Projects `phone360`, `laptop`, `wide` run `honesty.spec` + `shots.spec`. Shots: `gate/phone360-{desk,radar}.webp`, `gate/laptop1024-{desk,radar-sheet}.webp`, `gate/wide1920-desk.webp`. |
+| Found at 1024 | «انتخاب این مدل» broke onto two lines in the three-card row → «مقایسه» is icon-only (label `sr-only`) between 1024 and 1279. |
+| Found at 1024 | Leaving `/start` by the «نمایش گزینه‌های مناسب» chip started a smooth scroll-to-end that outlived the page, so the desk opened scrolled 60 px with its title under the TopBar (main lands 3 px down by the same race). The scroll now runs only while the stage is consult. |
+| Minors | `STAGGER` deleted; WalkSheet uses `DUR.sheet` + `tg.drawer` and `reduced()`; composer bleed matches `page` padding at md/lg; LiveNumbers icon inside `<dd>`; skip link uses `ArrowRight flip-rtl` (the house "forward" icon, as in ReqSummary). |
+
 ## Known issues (deferred minors still open)
 
 1. Sheet: two stacked sheets closed in open order un-inert `main` early; Next's route announcer is inert while a sheet is open; a parent-driven close (FilterPanel «دیدن») is instant; snap-back is a fixed 240 ms; drag/keyboard not verified on a real phone (T-08).
 2. Chip pill ease-out ≈ `tg.out` (curves differ slightly).
 3. Tests: honesty and trip specs POST a real trip on each run; landing scroll check is viewport-relative; hero e2e checks only vertical overlap; desk rail assertion checks only the priority chip; pin-bounds e2e was never seen failing on the old geometry.
 4. Step pill unmount capture includes ancestor transforms.
-5. Landing: CountUp skips numbers already in view at load; a bare `svg` inside `dl > div` (axe); mascot wave delay 0.6 s hard-coded against the CSS rise.
-6. Consult: skip link «←» glyph; some un-indented JSX; ReqChips icons on the desk.
+5. Landing: CountUp skips numbers already in view at load; mascot wave delay 0.6 s hard-coded against the CSS rise.
+6. Consult: some un-indented JSX; ReqChips icons on the desk.
 7. Desk: the compare table scrolls sideways on a phone; Torob product images are absent in headless shots.
 8. Radar: ShopRow and pins not memoised (35 rows fine); shops at identical coordinates overlap (out of scope); the lg map letterboxes on blush when the height cap binds.
 9. Walk: stat titles wrap at lg; `Success`'s `role="status"` mounts with its content, so some screen readers skip it.
-10. Real hardware not exercised (Ruling D3): everything above was verified in Playwright emulation only.
+10. Plan B and the walk sheet are `aria-modal` without a focus trap or an inert page (same on main; reuse Sheet's modal effect as a hook).
+11. Gate shots include the Next dev-indicator badge.
+12. Real hardware not exercised (Ruling D3): everything above was verified in Playwright emulation only.

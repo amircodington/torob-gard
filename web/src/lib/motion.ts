@@ -4,7 +4,6 @@ import { Flip } from "gsap/Flip";
 
 /** Seconds; the same values as the --duration-* tokens in globals.css (motion.test.ts keeps them equal). */
 export const DUR = { press: 0.12, fast: 0.18, base: 0.24, sheet: 0.32, slow: 0.6 } as const;
-export const STAGGER = 0.04;
 export const REDUCED = "(prefers-reduced-motion: reduce)";
 
 let registered = false;
@@ -20,3 +19,16 @@ export function registerMotion(): void {
 }
 
 export const reduced = () => typeof window !== "undefined" && window.matchMedia(REDUCED).matches;
+
+// Last input modality, read when a move starts: a keyboard action jumps, a pointer action animates (Global Constraint).
+// Also mirrored on <html data-input> so CSS transitions (chevrons) can opt out with `in-data-[input=keyboard]:`.
+let keyboard = false;
+function track(e: Event) {
+  keyboard = e.type === "keydown";
+  document.documentElement.dataset.input = keyboard ? "keyboard" : "pointer";
+}
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", track, true);
+  document.addEventListener("pointerdown", track, true);
+}
+export const byKeyboard = () => keyboard;
