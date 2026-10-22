@@ -56,7 +56,7 @@ async def _search_products(a: dict, db: AsyncConnection | None) -> list[ProductH
     hits = await search_products(**a, db=db)
     if hits or not a["category"]:
         return hits
-    return {"note": f"category «{a['category']}» matched no products; searched every category",
+    return {"note": f"no products in category «{a['category']}» for this search; searched every category",
             "products": await search_products(**{**a, "category": None}, db=db)}
 
 

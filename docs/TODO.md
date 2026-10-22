@@ -62,8 +62,8 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P2.6 Consult on the agent with fallback; in-shop price check — Mohammad
 - [x] P2.7 Agent-written desk explanations — Mohammad
 - [x] P2.8 Evals (`make eval`) — Mohammad
-  - [ ] gate: ≥ 85% pass, 0 known-item grounding failures (run 1: 42%, 1 known-item failure — [eval-run-1](evidence/P2/eval-run-1.md); run 2: 75%, 0 known-item failures — [eval-run-2](evidence/P2/eval-run-2.md))
-    - left: full need → desk, not a search (2 consult cases now search and send shop_cards); the A37 seed case names one of two 128 GB variants — Mohammad to rule on the case
+  - [ ] gate: ≥ 85% pass, 0 known-item grounding failures (run 1: 42%, 1 known-item failure — [eval-run-1](evidence/P2/eval-run-1.md); run 2: 75%, 0 — [eval-run-2](evidence/P2/eval-run-2.md); run 3: 50%, 0 — [eval-run-3](evidence/P2/eval-run-3.md))
+    - left: category as a ranking boost, not a hard filter (wrong real categories hide known items); price_check errors on an unknown product_id; phone desk case still searches; decide on run variance (mean of 3 runs or temperature 0)
 - [x] P2.9 Student admin + quality page — Mohammad
 - [ ] T-06 Embedding bake-off — student
 - [ ] T-09 Price sanity — student

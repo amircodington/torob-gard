@@ -183,5 +183,9 @@ async def test_category_matches_catalog_names_loosely(conn):
     assert await resolve_category("کابل", db=conn) == ["باتری کابل تست", "کابل تست"]  # part of the name
     assert (await resolve_category("کابل تستی", db=conn))[0] == "کابل تست"  # near spelling (trigram)
     assert await resolve_category("هواشناسی", db=conn) is None
+    assert await resolve_category(" - ", db=conn) is None  # nothing left to match: no filter, not all
+    await conn.execute(text("INSERT INTO catalog_category (name, name_norm, product_count, shop_count)"
+                            " VALUES ('Apple Watch', 'Apple Watch', 0, 0)"))
+    assert await resolve_category("apple watch", db=conn) == ["Apple Watch"]  # Latin case ignored
     hits = await search_products("کابل ۱۶×۵ مشهد", category="کابل", db=conn, embed=near_target)
     assert hits[0]["id"] == T

@@ -109,12 +109,15 @@ async def resolve_category(category: str, *, db: AsyncConnection | None = None) 
     ignored), else trigram neighbours.
     """
     c = _compact(category)
+    if not c:
+        return None
     if desk := _DESK_WORDS.get(c):
         return [normalize(n) for n in DESK_CATEGORIES[desk]]
     async with _connect(db) as conn:
         rows = (await conn.execute(text("""
-            SELECT name_norm, regexp_replace(name_norm, :sep, '', 'g') = :c AS exact FROM catalog_category
-            WHERE position(:c IN regexp_replace(name_norm, :sep, '', 'g')) > 0 ORDER BY name_norm"""),
+            SELECT name_norm, lower(regexp_replace(name_norm, :sep, '', 'g')) = :c AS exact
+            FROM catalog_category
+            WHERE position(:c IN lower(regexp_replace(name_norm, :sep, '', 'g'))) > 0 ORDER BY name_norm"""),
             {"c": c, "sep": _SEPARATORS})).all()
         names = [n for n, exact in rows if exact] or [n for n, _ in rows]  # «گوشی موبایل» not its batteries
         if not names:

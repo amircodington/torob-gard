@@ -76,8 +76,9 @@ def hard_checks(expected: dict, o: Outcome) -> list[str]:
         question = r"(?!\s*یا\s*نه)" if "موجود" in banned else ""  # «موجوده یا نه» asks, never claims
         if re.search(rf"(?<![\d٬,.]){re.escape(normalize(banned))}{question}", says):
             out.append(f"said «{banned}»")
-    if (want := expected.get("must_block")) and not any(
-            all(b.get(k) == v for k, v in want.items()) for b in o.blocks):
+    want = expected.get("must_block")
+    if want and not any(all(b.get(k) == v for k, v in w.items())  # a list: any of these blocks
+                        for w in (want if isinstance(want, list) else [want]) for b in o.blocks):
         out.append(f"no block matching {json.dumps(want, ensure_ascii=False)}")
     return out
 

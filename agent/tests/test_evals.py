@@ -38,6 +38,10 @@ def test_floor_price_banned_words_block_and_fallback():
     assert not hard_checks({"must_block": {"type": "desk", "budget_max": 18_000_000}}, outcome(blocks=[desk]))
     assert hard_checks({"must_block": {"type": "desk", "budget_max": 20_000_000}}, outcome(blocks=[desk]))
     assert hard_checks({}, outcome(fallback=True))  # an ungrounded answer is never a pass
+    either = {"must_block": [{"type": "desk", "budget_max": 20_000_000},
+                             {"type": "desk", "category": "mobile"}]}
+    assert not hard_checks(either, outcome(blocks=[desk]))  # a list: any one of the blocks will do
+    assert hard_checks({"must_block": [{"type": "ask"}, {"type": "route"}]}, outcome(blocks=[desk]))
 
 
 def test_loader_prefers_students_cases_over_seed(tmp_path):
