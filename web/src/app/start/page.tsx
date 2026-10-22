@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Bubble } from "../../components/chat/Bubble";
+import { Bubble, Typing } from "../../components/chat/Bubble";
 import { Chips } from "../../components/chat/Chips";
 import { Composer } from "../../components/chat/Composer";
+import { ConsultFrame } from "../../components/chat/ConsultFrame";
+import { ReqSummary } from "../../components/chat/ReqSummary";
 import { ShopCards } from "../../components/chat/ShopCards";
 import { JourneyShell } from "../../components/JourneyShell";
 import { consult } from "../../state/agentBridge";
-import { useSession, type Chip } from "../../state/session";
+import { useSession, type Chip, type Msg } from "../../state/session";
 
 function Consult() {
   const { state, dispatch } = useSession();
@@ -42,7 +44,8 @@ function Consult() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-60px)] max-w-md flex-col px-4 pt-2">
+    <main className="page flex min-h-[calc(100dvh-60px)] flex-col pt-2">
+      <ConsultFrame aside={<ReqSummary />}>
       <h1 data-page-head className="mt-4 animate-rise text-[28px] leading-[40px]">
         <span className="font-light">مشاوره‌ی </span>
         <span className="font-extrabold">خرید</span>
@@ -55,28 +58,22 @@ function Consult() {
       )}
 
       <div className="mt-5 flex flex-1 flex-col gap-3" aria-live="polite">
-        {state.chat.map((m, i) => (
-          <div key={m.id} className="flex flex-col gap-2">
+        {/* Index keys: the pending user bubble becomes the session's one in place, so it does not enter twice. */}
+        {(pending ? [...state.chat, { id: -1, from: "user", text: pending.text } as Msg] : state.chat).map((m, i, list) => (
+          <div key={i} className="flex flex-col gap-2">
             {m.text && <Bubble from={m.from}>{m.text}</Bubble>}
             {m.shopCards && <ShopCards {...m.shopCards} />}
             {m.chips && (
               <Chips
                 chips={m.chips}
-                selectedLabel={state.chat[i + 1]?.from === "user" ? state.chat[i + 1].text : undefined}
+                selectedLabel={list[i + 1]?.from === "user" ? list[i + 1].text : undefined}
                 disabled={m.id !== lastChipMsgId || !!pending}
                 onPick={pick}
               />
             )}
           </div>
         ))}
-        {pending && (
-          <>
-            <Bubble from="user">{pending.text}</Bubble>
-            <Bubble from="assistant">
-              <span className="text-ink-muted">{pending.status || "…"}</span>
-            </Bubble>
-          </>
-        )}
+        {pending && <Typing status={pending.status} />}
         {/* scroll-margin ≈ the sticky composer's height, so scrolling to the end keeps the last bubble above it */}
         <div ref={end} className="scroll-mb-36" />
       </div>
@@ -86,13 +83,14 @@ function Consult() {
           <button
             type="button"
             onClick={() => dispatch({ type: "GO", stage: "products" })}
-            className="min-h-11 self-center rounded-pill px-4 text-[15px] font-bold text-orange-deep focus-visible:outline-2 focus-visible:outline-focus"
+            className="min-h-11 self-center rounded-pill px-4 text-[15px] lg:hidden font-bold text-orange-deep focus-visible:outline-2 focus-visible:outline-focus"
           >
             بدون سوال بیشتر، نمایش گزینه‌ها ←
           </button>
         )}
         <Composer onSend={send} disabled={!!pending} />
       </div>
+      </ConsultFrame>
     </main>
   );
 }

@@ -3,6 +3,9 @@ import { expect, test } from "@playwright/test";
 test("desk: three tiers, compare tray, pick goes to the radar", async ({ page }) => {
   await page.goto("/start?seed=phone-camera");
   await page.getByText("جمع‌بندی نیازهات").waitFor();
+  // Desktop: the consult's summary rail beside the chat.
+  if (test.info().project.name === "desktop")
+    await expect(page.getByRole("complementary", { name: "نیاز تو تا اینجا" }).getByText("اولویت: دوربین مهم‌تره")).toBeVisible();
   await page.getByRole("button", { name: "نمایش گزینه‌های مناسب" }).click();
   await page.waitForURL(/\/desk$/);
 
