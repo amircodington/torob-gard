@@ -13,7 +13,7 @@ web/node_modules: web/pnpm-lock.yaml
 
 dev: .env hooks web/node_modules
 	docker compose up -d --build db redis api
-	pnpm -C web dev
+	NEXT_TELEMETRY_DISABLED=1 pnpm -C web dev
 
 down:
 	docker compose down
