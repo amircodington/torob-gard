@@ -75,6 +75,15 @@ def test_fewer_than_three(phones):
     assert explain_tiers(t, "camera")["budget"]["bullets"]
 
 
+def test_budget_tier_prefers_a_phone_with_the_priority_spec(phones):
+    # band 19–25M: p3 (19M) is cheapest but has no battery spec; p4 (22M) has one
+    assert pick_tiers("mobile", 19 * M, 25 * M, "battery")[0].product.id == "p4"
+    # band 19–20M: only p3, so it stays, and its missing spec is a trade-off
+    t = pick_tiers("mobile", 19 * M, 20 * M, "battery")
+    assert t[0].product.id == "p3"
+    assert any("ثبت نشده" in s for s in explain_tiers(t, "battery")["budget"]["tradeoffs"])
+
+
 def test_missing_spec_becomes_tradeoff(phones):
     ex = explain_tiers(pick_tiers("mobile", 0, None, "battery"), "battery")
     assert any("ثبت نشده" in s for e in ex.values() for s in e["tradeoffs"])

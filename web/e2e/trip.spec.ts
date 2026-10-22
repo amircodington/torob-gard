@@ -1,4 +1,8 @@
-import { expect, test, type APIRequestContext } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Route } from "@playwright/test";
+
+// Test runs write no shop_report rows: the report POST is answered here (the app still sees a 200).
+const fakeReport = (r: Route) => r.fulfill({ status: 200, json: { id: "test" } });
+test.beforeEach(({ page }) => page.route("**/api/reports", fakeReport));
 
 const PRODUCT = "product_a112c972266b57d0f7eddeab";
 
@@ -17,6 +21,7 @@ test.use({ permissions: [] });
 test("trip: shared link renders the checklist, walk shows the unit, «اینجا نیست» opens Plan B", async ({ browser, request }) => {
   const id = await makeTrip(request, "known");
   const ctx = await browser.newContext(); // fresh: no sessionStorage
+  await ctx.route("**/api/reports", fakeReport); // a new context misses the beforeEach route
   const page = await ctx.newPage();
   await page.goto(`/trip/${id}`);
   await expect(page.getByRole("heading", { name: "چک‌لیست قبل از حرکت" })).toBeVisible();

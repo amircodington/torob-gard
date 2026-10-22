@@ -1,5 +1,8 @@
 import { expect, test, type Locator } from "@playwright/test";
 
+// Test runs write no shop_report rows: the report POST is answered here (the app still sees a 200).
+test.beforeEach(({ page }) => page.route("**/api/reports", (r) => r.fulfill({ status: 200, json: { id: "test" } })));
+
 const PRODUCT = "product_a112c972266b57d0f7eddeab";
 const FA = "۰۱۲۳۴۵۶۷۸۹";
 const ascii = (s: string) => s.replace(/[۰-۹]/g, (d) => String(FA.indexOf(d))).replace(/[٬,]/g, "").replace("٫", ".");

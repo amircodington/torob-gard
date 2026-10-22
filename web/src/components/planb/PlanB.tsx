@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../lib/api";
 import { faNum, faPriceFull } from "../../lib/fa";
 import { diagnoseNoAlternative, FAIL_COPY, planBRank, PRIORITY_META } from "../../lib/ranking";
@@ -60,6 +60,7 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
   const { state, dispatch } = useSession();
   const { open, reason, leave } = usePlanBParam();
   const close = useRef<HTMLButtonElement>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const { planB, failures, req, previousPlan } = state;
   const failedIds = failures.map((f) => f.storeId);
   const failedKey = failedIds.join(",");
@@ -74,9 +75,18 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
   );
 
   const accept = async (storeId: string) => {
+    setSaveFailed(false);
+    // The saved trip follows the pick. PATCH appends failures, so only the newest one goes; the rest are saved already.
+    // A failed save stays here with an error: leaving would show a trip page that still names the old shop.
+    if (state.tripId) {
+      try {
+        await api.patchTrip(state.tripId, { chosenShopId: storeId, failures: failures.slice(-1) });
+      } catch {
+        setSaveFailed(true);
+        return;
+      }
+    }
     dispatch({ type: "PLANB_ACCEPT", storeId });
-    // The saved trip follows the pick; the session goes on even when the patch fails.
-    if (state.tripId) await api.patchTrip(state.tripId, { chosenShopId: storeId, failures }).catch(() => {});
     (onAccepted ?? leave)();
   };
 
@@ -196,6 +206,11 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
             {planB.priority && (
               <>
                 <p className="mt-4 rounded-md bg-surface-tint p-3 text-[13px] leading-5">{PRIORITY_META[planB.priority].why}</p>
+                {saveFailed && (
+                  <p role="alert" className="mt-3 rounded-md bg-surface p-3 text-[13px] font-bold leading-5 text-signal shadow-card">
+                    انتخابت ذخیره نشد؛ به سرور ترب‌گرد نرسیدم. دوباره امتحان کن.
+                  </p>
+                )}
                 <ul aria-label="گزینه‌های جایگزین" className="mt-3 grid gap-3">
                   {ranked.map((r) => {
                     const { offer, store } = r.row;

@@ -85,11 +85,13 @@ Indexes: `gist(geom)`, `btree(venue_id, floor)`, `gin(name_norm gin_trgm_ops)`, 
 | specs_text | text | flattened for search/embedding |
 | search_tsv | tsvector | `simple` config on title_norm + brand + specs_text |
 | min_price, median_price, max_price | bigint null | from offers, refreshed nightly |
-| offer_count | int | |
+| offer_count | int | distinct shops with a non-outlier offer |
 
 Indexes: `gin(search_tsv)`, `btree(category_id)`, `btree(brand_name)`.
 
 ### offer (316,423 rows)
+Loaded: 315,665 offers after dropping null price/date rows (P0).
+
 | column | type |
 |---|---|
 | id | text pk |

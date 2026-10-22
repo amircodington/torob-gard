@@ -13,11 +13,13 @@ FROM (SELECT product_id,
 WHERE m.product_id = o.product_id
 """
 
+# ponytail: offer_count counts distinct shops, because the UI says «فروشگاه»;
+# a shop's second offer is not a second seller.
 PRODUCTS = """
 UPDATE catalog_product p SET min_price = s.mn, median_price = s.med, max_price = s.mx,
   offer_count = coalesce(s.n, 0)
 FROM catalog_product p2
-LEFT JOIN (SELECT product_id, min(price_toman) mn, max(price_toman) mx, count(*) n,
+LEFT JOIN (SELECT product_id, min(price_toman) mn, max(price_toman) mx, count(DISTINCT shop_id) n,
              round(percentile_cont(0.5) WITHIN GROUP (ORDER BY price_toman))::bigint med
            FROM catalog_offer WHERE NOT is_outlier GROUP BY product_id) s ON s.product_id = p2.id
 WHERE p.id = p2.id

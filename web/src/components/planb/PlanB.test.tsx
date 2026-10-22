@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { api } from "../../lib/api";
 import type { OfferRow } from "../../lib/types";
 import { initialState, type SessionState } from "../../state/session";
 import { PlanB } from "./PlanB";
@@ -62,5 +63,21 @@ describe("PlanB", () => {
     for (const li of within(screen.getByRole("list", { name: "گزینه‌های جایگزین" })).getAllByRole("listitem"))
       expect(li.textContent).toContain("به‌روزرسانی");
     expect(screen.getByText("محصول رسمی ترب نیست", { exact: false })).toBeTruthy();
+  });
+
+  it("accept patches the trip with only the newest failure; a failed patch alerts and stays", async () => {
+    const onAccepted = vi.fn();
+    const earlier = { storeId: "b", reason: "closed" as const, at: 0 };
+    withState({ ...failA, failures: [earlier, ...failA.failures], tripId: "t1", planB: { open: true, reason: "stock", priority: "price" } });
+    const patch = vi.spyOn(api, "patchTrip").mockRejectedValueOnce(new Error("down"));
+    render(<PlanB rows={rows} onAccepted={onAccepted} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "انتخاب این فروشگاه" })[0]);
+    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    expect(patch).toHaveBeenCalledWith("t1", { chosenShopId: "c", failures: [failA.failures[0]] });
+    expect(onAccepted).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: "PLANB_ACCEPT" }));
+    patch.mockResolvedValueOnce({} as never);
+    fireEvent.click(screen.getAllByRole("button", { name: "انتخاب این فروشگاه" })[0]);
+    await waitFor(() => expect(onAccepted).toHaveBeenCalled());
   });
 });

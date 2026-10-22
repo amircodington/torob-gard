@@ -56,8 +56,15 @@ exit=0
 
 1. Mascot art has an opaque backdrop (not transparent) — shows a box on the blush glow.
 2. `?planb=` stays in history after «برگشت به میز تصمیم»; Back reopens Plan B.
-3. e2e runs write real `shop_report` rows and trips into the local DB (accepted; no cleanup).
+3. e2e runs still create trips in the local DB (`trip.spec` posts them); report POSTs are now answered by `page.route` in the specs, and the earlier test-written `shop_report` rows were deleted.
 4. Port 3000 is held by an ssh tunnel on this Mac, so dev and Playwright run on 3100.
 5. `API_URL` defaults to localhost in two server loaders; must be set in any deployed env.
 6. Checklist's read-only address fallback textarea is `15px` — iOS may zoom on focus; needs `16px` (component edit).
 7. TopBar has no `env(safe-area-inset-top)`; with `viewport-fit=cover` it only matters in standalone/PWA or landscape notch (component edit).
+8. Seed-link coverage (`?seed=phone-camera`) lives in `desk.spec` / `landing.spec`, not in `journey.spec`.
+9. `make e2e` runs the phone project only (`--project=phone`); the gate ran tablet and desktop with `--project=…` by hand.
+
+### Fixed after the final review
+
+- TopBar step ۴ was a dead tap: it now opens `/trip/<id>` once a trip is saved, and is `aria-disabled` before that.
+- `/start`: the sticky composer and «بدون سوال بیشتر» covered the last bubble at 390 px; the footer has a paper backdrop and the scroll end keeps a margin above it.

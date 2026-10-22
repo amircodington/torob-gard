@@ -17,6 +17,8 @@ All six category names exist exactly as given; none is a nearest match.
 
 The pool is `product.offer_count >= 2` (offer_count counts non-outlier offers only).
 
+Note (P1 final review): these counts were taken before `offer_count` became per-shop (`count(DISTINCT shop_id)`); pools may now be smaller.
+
 ## Prototype bands: products per band (pool, `min_price` inside [min, max])
 
 Mobile bands use گوشی موبایل, laptop bands use لپ تاپ و نوت بوک, accessory bands apply to the other four.

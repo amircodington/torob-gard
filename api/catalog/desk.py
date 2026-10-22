@@ -51,15 +51,21 @@ def _scores(category: str, priority: str | None, cands: list[Product]) -> list[d
     for i, p in enumerate(cands):
         have = [norm[k][i] for k in norm if norm[k][i] is not None]
         s: dict[str, float | None] = {"spec": sum(have) / len(have) if have else 0.0}
+        # "missing" = the priority's own spec is absent (scored 0 / _MISSING);
+        # the budget tier avoids those.
+        s["missing"] = 0.0
         if category == "mobile" and priority in ("camera", "battery"):
             s["priority"] = raw[priority][i] or 0.0
+            s["missing"] = float(raw[priority][i] is None)
         elif category == "mobile" and priority == "both":
             s["priority"] = ((norm["camera"][i] or 0) + (norm["battery"][i] or 0)) / 2
         elif category == "laptop" and priority == "weight":
             kg = _kg(p.specs)
             s["priority"] = _MISSING if kg is None else -kg
+            s["missing"] = float(kg is None)
         elif category == "laptop" and priority == "power":
             s["priority"] = raw["ram"][i] or 0.0
+            s["missing"] = float(raw["ram"][i] is None)
         elif category == "accessory" and priority == "price":
             s["priority"] = -float(p.min_price)
         elif category == "accessory" and priority == "brand":
@@ -111,7 +117,10 @@ def pick_tiers(
             best = min(pool, key=key)
             picked.append(Tier(name, best.product, best.price, best.offer_count, best.scores))
 
-    take("budget", band, lambda r: (r.price, -r.offer_count))
+    # The cheapest that has the priority's spec; if none has it, the cheapest overall
+    # (explain_tiers then adds «…: این مشخصه ثبت نشده»).
+    with_spec = [r for r in band if not r.scores["missing"]]
+    take("budget", with_spec or band, lambda r: (r.price, -r.offer_count))
     has_priority = any(r.scores["priority"] is not None for r in band)
     ranked = "priority" if has_priority else "spec"
     take("balanced", band, lambda r: (-r.scores[ranked], abs(r.price - target), -r.offer_count))
