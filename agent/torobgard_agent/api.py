@@ -4,7 +4,7 @@ import os
 from functools import cache
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
@@ -85,6 +85,13 @@ async def price_check_route(body: PriceCheckIn):
 
 
 @router.post("/agent/explain")
-async def explain_route(body: ExplainIn):
+async def explain_route(body: ExplainIn, request: Request):
     """Desk copy by FAST_MODEL; a tier missing from the answer keeps its P1 template."""
+    # ponytail: no session on a seeded journey, so those share their client address's window
+    key = str(body.session_id or (request.client.host if request.client else "anon"))
+    try:
+        if not await allow(redis(), key):
+            raise HTTPException(429, "too many turns, wait a few minutes")
+    except RedisError:
+        log.exception("rate limit unavailable; letting the request through")
     return await explain(body)

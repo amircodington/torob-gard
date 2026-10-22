@@ -41,7 +41,7 @@ function Desk() {
         if (!live) return;
         setRes({ key, tiers, now: Date.now() });
         // Templates paint first; the agent's grounded rewrite swaps the text in place (same shape, same line counts).
-        api.explain(tiers, input).then(
+        api.explain(tiers, input, state.agentSessionId).then(
           (ex) => live && setRes((r) => (r?.key === key && r.tiers ? { ...r, tiers: r.tiers.map((t) => ({ ...t, ...ex[t.productId] })) } : r)),
           () => {}, // timeout or agent down: the templates stay
         );

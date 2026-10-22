@@ -115,10 +115,11 @@ export const api = {
       category: i.category, budget_min: i.budgetMin, budget_max: i.budgetMax, priority: i.priority,
     }))).tiers.map(mapTier),
   /** The agent's rewrite of the template text, by product id; a tier it could not ground is absent. */
-  explain: async (tiers: DeskTier[], i: DeskInput): Promise<Record<string, Pick<DeskTier, "bullets" | "tradeoffs" | "fitNote">>> => {
+  explain: async (tiers: DeskTier[], i: DeskInput, sessionId?: string | null): Promise<Record<string, Pick<DeskTier, "bullets" | "tradeoffs" | "fitNote">>> => {
     const res = await fetch("/agent/explain", {
       cache: "no-store", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(8000),
       ...send("POST", {
+        session_id: sessionId ?? undefined,
         tiers: tiers.map((t) => ({ tier: t.tier, product_id: t.productId, title: t.title, specs_top3: t.specsTop3, price: t.price, offer_count: t.offerCount, bullets: t.bullets, tradeoffs: t.tradeoffs, fit_note: t.fitNote })),
         req: { category: i.category, budget_min: i.budgetMin, budget_max: i.budgetMax, priority: i.priority },
       }),
