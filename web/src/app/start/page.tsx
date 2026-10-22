@@ -22,7 +22,6 @@ function Consult() {
   const send = async (raw: string) => {
     const text = raw.trim();
     if (!text || pending) return;
-    if (state.agentOffline) return dispatch({ type: "CHAT_TEXT", text });
     setPending({ text, status: "" });
     const body = { session_id: state.agentSessionId ?? undefined, text, context: { req: state.req, anchor: null, stage: "consult" } };
     const actions = await consult(body, (status) => setPending({ text, status }));
@@ -92,7 +91,7 @@ function Consult() {
             بدون سوال بیشتر، نمایش گزینه‌ها ←
           </button>
         )}
-        <Composer onSend={send} />
+        <Composer onSend={send} disabled={!!pending} />
       </div>
     </main>
   );

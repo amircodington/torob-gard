@@ -65,6 +65,15 @@ describe("consult", () => {
     expect(s.req.category).toBe("mobile"); // the P1 reducer answered
   });
 
+  it("a fallback does not latch: the next turn's done clears the banner flag", async () => {
+    async function* ok(): AsyncGenerator<AgentEvent> {
+      yield { event: "done", data: { message_id: "m", receipt_ids: [], session_id: "sid" } };
+    }
+    const offline = reducer(initialState(), { type: "AGENT_OFFLINE" });
+    const s = (await consult(BODY, () => {}, ok)).reduce(reducer, offline);
+    expect(s.agentOffline).toBe(false);
+  });
+
   it("an error event falls back too", async () => {
     async function* stream(): AsyncGenerator<AgentEvent> {
       yield { event: "error", data: { message: "agent unavailable" } };

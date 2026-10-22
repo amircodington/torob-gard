@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from dataclasses import asdict, dataclass, field
 from time import monotonic
 from uuid import UUID, uuid4
@@ -27,6 +27,9 @@ MAX_TOOL_CALLS, MAX_ASKS, MAX_OPTIONS = 4, 2, 4
 
 
 STARTED = "دارم نیازت رو می‌فهمم…"
+THINKING = "دارم جوابت رو آماده می‌کنم…"
+STILL = "هنوز دارم روش کار می‌کنم…"
+HEARTBEAT_S = 5.0  # the web falls back after 8 s without any event (ruling R7)
 TOOL_STATUS = {
     "search_products": "دارم کالاها رو می‌گردم…",
     "search_shops": "دارم مغازه‌ها و قیمت‌ها رو می‌گردم…",
@@ -73,9 +76,11 @@ class _Turn:
     tokens_in: int = 0
     tokens_out: int = 0
     cost: float = 0.0
+    chats: int = 0
 
     async def chat(self, llm, messages, tools, model) -> ChatResult:
         r = await llm.chat(messages, tools, model)
+        self.chats += 1
         self.tokens_in, self.tokens_out, self.cost = (
             self.tokens_in + r.tokens_in, self.tokens_out + r.tokens_out, self.cost + r.cost)
         return r
@@ -117,6 +122,8 @@ async def _complete(
     """Call the model, running its tool calls (≤ MAX_TOOL_CALLS a turn); yields statuses, then the reply."""
     while True:
         budget = MAX_TOOL_CALLS - len(turn.calls)
+        if turn.chats:  # the first call follows STARTED; later ones (after tools, a retry) get their own line
+            yield Status(THINKING)
         r = await turn.chat(llm, messages, TOOLS if budget > 0 else None, config.AGENT_MODEL)
         if not r.tool_calls or budget <= 0:
             yield r.content
@@ -162,6 +169,33 @@ def _chunks(s: str) -> list[str]:
 
 
 async def run_turn(
+    session_id: UUID | None, text_in: str, context: TurnContext, *,
+    llm: LLMClient | None = None, db: AsyncConnection | None = None,
+) -> AsyncIterator[Event]:
+    """_turn's events, plus a STILL status whenever nothing came for HEARTBEAT_S (a slow LLM call)."""
+    gen = _turn(session_id, text_in, context, llm=llm, db=db)
+    nxt = asyncio.ensure_future(gen.__anext__())
+    try:
+        while True:
+            done, _ = await asyncio.wait({nxt}, timeout=HEARTBEAT_S)
+            if not done:
+                yield Status(STILL)
+                continue
+            try:
+                e = nxt.result()
+            except StopAsyncIteration:
+                return
+            yield e
+            nxt = asyncio.ensure_future(gen.__anext__())
+    finally:
+        if not nxt.done():  # the client went away mid-step
+            nxt.cancel()
+            with suppress(asyncio.CancelledError, StopAsyncIteration):
+                await nxt
+        await gen.aclose()
+
+
+async def _turn(
     session_id: UUID | None, text_in: str, context: TurnContext, *,
     llm: LLMClient | None = None, db: AsyncConnection | None = None,
 ) -> AsyncIterator[Event]:

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from uuid import uuid4
@@ -75,9 +76,10 @@ async def test_tool_call_then_grounded_answer_streams_tokens_blocks_done(conn, m
     )
     events = await turn(conn, llm)
     kinds = [type(e).__name__ for e in events]
-    assert kinds[:2] == ["Status", "Status"]  # on request, then one per tool call
-    assert kinds[-2:] == ["BlockEvent", "Done"] and set(kinds[2:-2]) == {"Token"}
+    assert kinds[:3] == ["Status", "Status", "Status"]  # on request, one per tool step, one per next LLM call
+    assert kinds[-2:] == ["BlockEvent", "Done"] and set(kinds[3:-2]) == {"Token"}
     assert events[1].text == orchestrator.TOOL_STATUS["search_shops"]
+    assert events[2].text == orchestrator.THINKING
     assert "".join(e.text for e in events if isinstance(e, Token)) == "اینجا ۶۱۰ هزار تومان می‌دهد."
     tool_msg = llm.calls[1]["messages"][-1]
     assert tool_msg == {"role": "tool", "tool_call_id": "c1", "content": serialise(result)}
@@ -114,6 +116,19 @@ async def test_status_comes_first_before_any_llm_call(conn):
     first = await gen.__anext__()
     assert isinstance(first, Status) and first.text and llm.calls == []
     assert isinstance([e async for e in gen][-1], Done)
+
+
+async def test_slow_llm_call_sends_heartbeat_statuses(conn, monkeypatch):
+    monkeypatch.setattr(orchestrator, "HEARTBEAT_S", 0.02)
+
+    class SlowLLM(FakeLLM):
+        async def chat(self, *a, **kw):
+            await asyncio.sleep(0.1)
+            return await super().chat(*a, **kw)
+    events = await turn(conn, SlowLLM(say({"say": "سلام"})))
+    statuses = [e for e in events if isinstance(e, Status)]
+    assert len(statuses) >= 3 and statuses[1].text == orchestrator.STILL  # the turn never goes silent
+    assert isinstance(events[-1], Done)
 
 
 async def test_user_number_cannot_become_a_shop_price(conn, monkeypatch):

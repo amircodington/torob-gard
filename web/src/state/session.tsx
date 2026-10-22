@@ -56,7 +56,7 @@ export interface SessionState {
   summaryJustReady: boolean;
   tripId: string | null; // the saved trip (/trip/[id]); Plan B patches it
   agentSessionId: string | null;
-  agentOffline: boolean; // the agent failed once: the rule reducer answers for the rest of the session
+  agentOffline: boolean; // the last turn fell back to the rule reducer (banner); every turn still tries the agent
 }
 
 export const STAGE_ORDER: Stage[] = ["consult", "products", "radar", "summary"];
@@ -402,7 +402,7 @@ export function reducer(s: SessionState, a: Action): SessionState {
     case "SET_REQ":
       return { ...s, req: { ...s.req, ...a.req } };
     case "AGENT_DONE":
-      return { ...s, agentSessionId: a.sessionId ?? s.agentSessionId };
+      return { ...s, agentSessionId: a.sessionId ?? s.agentSessionId, agentOffline: false };
     case "AGENT_OFFLINE":
       return { ...s, agentOffline: true };
     case "SEED": {

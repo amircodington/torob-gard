@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 
-export function Composer({ onSend }: { onSend: (text: string) => void }) {
+/** `disabled` (a turn in flight): typing goes on, sending waits; the draft is kept. */
+export function Composer({ onSend, disabled = false }: { onSend: (text: string) => void; disabled?: boolean }) {
   const [draft, setDraft] = useState("");
   const send = () => {
-    if (!draft.trim()) return;
+    if (disabled || !draft.trim()) return;
     onSend(draft);
     setDraft("");
   };
@@ -35,7 +36,7 @@ export function Composer({ onSend }: { onSend: (text: string) => void }) {
       />
       <button
         type="submit"
-        disabled={!draft.trim()}
+        disabled={disabled || !draft.trim()}
         aria-label="ارسال"
         className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange text-on-orange transition-transform focus-visible:outline-2 focus-visible:outline-focus active:scale-95 disabled:opacity-50"
       >

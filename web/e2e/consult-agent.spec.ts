@@ -61,13 +61,20 @@ test("shop cards in chat open the radar sheet; the price check marks the quote",
   await expect(result).toContainText("ممکن است تغییر کرده باشد"); // a 2020 price is stale
 });
 
-test("agent down: the rule reducer answers and the banner shows once", async ({ page }) => {
-  await page.route("**/agent/chat", (r) => r.abort());
+test("agent down: the rule reducer answers, the banner shows once, the next turn tries the agent again", async ({ page }) => {
+  let calls = 0;
+  await page.route("**/agent/chat", (r) => (++calls <= 2 ? r.abort() : r.fulfill({
+    status: 200, contentType: "text/event-stream", body: sse(["token", { text: "برگشتم! دوربین یا باتری؟" }], done) })));
   await page.goto("/start");
+  const banner = page.getByText("دستیار هوشمند موقتاً در دسترس نیست");
   await say(page, "گوشی برای عکاسی");
-  await expect(page.getByText("دستیار هوشمند موقتاً در دسترس نیست")).toBeVisible();
+  await expect(banner).toBeVisible();
   await expect(page.getByRole("button", { name: "۵ تا ۵۰ میلیون" })).toBeVisible();
   await say(page, "۱۰ تا ۲۰");
   await expect(page.getByRole("button", { name: /دوربین مهم‌تره/ })).toBeVisible();
-  await expect(page.getByText("دستیار هوشمند موقتاً در دسترس نیست")).toHaveCount(1);
+  await expect(banner).toHaveCount(1);
+  await say(page, "دوربین");
+  await expect(page.getByText("برگشتم! دوربین یا باتری؟")).toBeVisible();
+  await expect(banner).toHaveCount(0);
+  expect(calls).toBe(3);
 });
