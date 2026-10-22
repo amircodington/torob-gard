@@ -35,7 +35,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 
 ## P1 Journey on real data — gate: full journey e2e at 390 px + T-08 on a cheap Android
 
-- [ ] P1.1 `/api/stats`, `/api/venues` — Mohammad
+- [x] P1.1 `/api/stats`, `/api/venues` — Mohammad
 - [ ] P1.2 Decision desk `pick_tiers` + `POST /api/desk` — Mohammad
 - [ ] P1.3 Product + offer rows (distance, stock from reports, installments) — Mohammad
 - [ ] P1.4 Reports + trips — Mohammad
