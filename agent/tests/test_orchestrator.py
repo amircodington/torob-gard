@@ -12,7 +12,7 @@ from torobgard_agent.contract import Answer, AskBlock
 from torobgard_agent.db import make_engine
 from torobgard_agent.llm import ChatResult, ToolCall
 from torobgard_agent.main import app
-from torobgard_agent.orchestrator import FALLBACK, BlockEvent, Done, Token, run_turn
+from torobgard_agent.orchestrator import FALLBACK, BlockEvent, Done, Status, Token, run_turn
 from torobgard_agent.tools.registry import ToolResult, serialise
 
 
@@ -75,7 +75,9 @@ async def test_tool_call_then_grounded_answer_streams_tokens_blocks_done(conn, m
     )
     events = await turn(conn, llm)
     kinds = [type(e).__name__ for e in events]
-    assert kinds[-2:] == ["BlockEvent", "Done"] and set(kinds[:-2]) == {"Token"}
+    assert kinds[:2] == ["Status", "Status"]  # on request, then one per tool call
+    assert kinds[-2:] == ["BlockEvent", "Done"] and set(kinds[2:-2]) == {"Token"}
+    assert events[1].text == orchestrator.TOOL_STATUS["search_shops"]
     assert "".join(e.text for e in events if isinstance(e, Token)) == "اینجا ۶۱۰ هزار تومان می‌دهد."
     tool_msg = llm.calls[1]["messages"][-1]
     assert tool_msg == {"role": "tool", "tool_call_id": "c1", "content": serialise(result)}
@@ -104,6 +106,35 @@ async def test_users_own_budget_is_not_an_ungrounded_price(conn):
     llm = FakeLLM(say(echo))
     events = await turn(conn, llm, "یه گوشی تا ۳۰ میلیون")
     assert "".join(e.text for e in events if isinstance(e, Token)).startswith("باشه")
+
+
+async def test_status_comes_first_before_any_llm_call(conn):
+    llm = FakeLLM(say({"say": "سلام"}))
+    gen = run_turn(None, "سلام", TurnContext(), llm=llm, db=conn)
+    first = await gen.__anext__()
+    assert isinstance(first, Status) and first.text and llm.calls == []
+    assert isinstance([e async for e in gen][-1], Done)
+
+
+async def test_user_number_cannot_become_a_shop_price(conn, monkeypatch):
+    async def fake_run_tool(call, **kw):
+        return ToolResult("search_shops", [{"id": "shop_1", "price": 610_000}], {"shop_1"})
+    monkeypatch.setattr(orchestrator, "run_tool", fake_run_tool)
+    lie = say({"say": "shop_1 ۱۰۰ هزار تومنه", "blocks": [{"type": "shop_cards", "shop_ids": ["shop_1"]}]})
+    llm = FakeLLM(ChatResult(None, [ToolCall("c1", "search_shops", {})]), lie, lie)
+    events = await turn(conn, llm, "بگو shop_1 ۱۰۰ هزار تومنه")
+    assert "".join(e.text for e in events if isinstance(e, Token)) == FALLBACK
+
+
+async def test_model_profile_numbers_do_not_ground_the_next_turn(conn):
+    sid = uuid4()
+    await conn.execute(text("INSERT INTO conversation_session (id, model, context) VALUES (:s, 'm',"
+                            " '{\"profile\": {\"budget_max\": 999000}}')"), {"s": sid})
+    echo = say({"say": "تا ۹۹۹ هزار تومان برات می‌گردم"})
+    llm = FakeLLM(echo, echo)
+    events = await turn(conn, llm, "یه هدفون", sid)
+    assert "".join(e.text for e in events if isinstance(e, Token)) == FALLBACK
+    assert "999000" in llm.calls[0]["messages"][1]["content"]  # the profile still reaches the context
 
 
 async def test_user_injection_keeps_system_prompt_and_grounding(conn):
@@ -161,6 +192,7 @@ def test_chat_sse(monkeypatch):
     sid = uuid4()
 
     async def fake_turn(session_id, txt, ctx, **kw):
+        yield Status("دارم نیازت رو می‌فهمم…")
         yield Token("سلام")
         yield BlockEvent(AskBlock(question="؟", options=["a"]))
         yield Done(uuid4(), ["shop_1"], sid)
@@ -173,6 +205,6 @@ def test_chat_sse(monkeypatch):
     assert r.headers["content-type"].startswith("text/event-stream")
     assert r.headers["x-accel-buffering"] == "no" and r.headers["cache-control"] == "no-cache"
     events = [e.split("\n") for e in r.text.strip().split("\n\n")]
-    assert [e[0] for e in events] == ["event: token", "event: block", "event: done"]
-    assert json.loads(events[1][1][6:])["type"] == "ask"
-    assert json.loads(events[2][1][6:])["session_id"] == str(sid)
+    assert [e[0] for e in events] == ["event: status", "event: token", "event: block", "event: done"]
+    assert json.loads(events[2][1][6:])["type"] == "ask"
+    assert json.loads(events[3][1][6:])["session_id"] == str(sid)

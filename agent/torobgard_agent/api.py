@@ -11,7 +11,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 from .context import TurnContext
-from .orchestrator import BlockEvent, Done, Token, run_turn
+from .orchestrator import BlockEvent, Done, Status, Token, run_turn
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -54,7 +54,9 @@ async def chat(body: ChatIn):
     async def events():
         try:
             async for e in run_turn(body.session_id, body.text, body.context):
-                if isinstance(e, Token):
+                if isinstance(e, Status):
+                    yield _sse("status", {"text": e.text})
+                elif isinstance(e, Token):
                     yield _sse("token", {"text": e.text})
                 elif isinstance(e, BlockEvent):
                     yield _sse("block", e.block.model_dump())

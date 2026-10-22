@@ -177,7 +177,7 @@ flowchart LR
 
 | Method | Path | Who | Notes |
 |---|---|---|---|
-| POST | `/agent/chat` | web | body `{session_id?, text, context}` → SSE events `token`, `block`, `done{message_id}` |
+| POST | `/agent/chat` | web | body `{session_id?, text, context}` → SSE events `status{text}` (first, at once, and one per tool step: progress only, ungated), then grounded `token{text}`, `block`, `done{message_id, receipt_ids, session_id}`; `error` if the turn fails. Any event resets the client's stall timer |
 | POST | `/agent/interview` | web | image-card answers → profile updates |
 | GET | `/api/venues/{slug}` | web SSR | venue + floors + shops grouped by floor |
 | GET | `/api/shops/{id}` `/api/products/{id}` | web SSR | with offers / stats |

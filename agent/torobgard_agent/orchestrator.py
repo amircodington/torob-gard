@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import re
@@ -25,6 +26,24 @@ FALLBACK = "نتونستم تأیید کنم…"
 MAX_TOOL_CALLS, MAX_ASKS, MAX_OPTIONS = 4, 2, 4
 
 
+STARTED = "دارم نیازت رو می‌فهمم…"
+TOOL_STATUS = {
+    "search_products": "دارم کالاها رو می‌گردم…",
+    "search_shops": "دارم مغازه‌ها و قیمت‌ها رو می‌گردم…",
+    "price_check": "دارم قیمت رو با بازار مقایسه می‌کنم…",
+    "locate_shop": "دارم جای مغازه رو پیدا می‌کنم…",
+    "plan_trip": "دارم مسیرت رو می‌چینم…",
+    "remember": "دارم یادداشت می‌کنم…",
+}
+
+
+@dataclass
+class Status:
+    """Progress line, sent before grounding; never a claim about shops or prices."""
+
+    text: str
+
+
 @dataclass
 class Token:
     text: str
@@ -42,7 +61,7 @@ class Done:
     session_id: UUID
 
 
-Event = Token | BlockEvent | Done
+Event = Status | Token | BlockEvent | Done
 
 
 @dataclass
@@ -92,13 +111,16 @@ def _trim(answer: Answer) -> Answer:
     return answer
 
 
-async def _complete(llm: LLMClient, messages: list[dict], turn: _Turn, user_id: str) -> str | None:
-    """Call the model, running its tool calls (≤ MAX_TOOL_CALLS a turn) until it gives a final reply."""
+async def _complete(
+    llm: LLMClient, messages: list[dict], turn: _Turn, user_id: str,
+) -> AsyncIterator[Status | str | None]:
+    """Call the model, running its tool calls (≤ MAX_TOOL_CALLS a turn); yields statuses, then the reply."""
     while True:
         budget = MAX_TOOL_CALLS - len(turn.calls)
         r = await turn.chat(llm, messages, TOOLS if budget > 0 else None, config.AGENT_MODEL)
         if not r.tool_calls or budget <= 0:
-            return r.content
+            yield r.content
+            return
         calls = r.tool_calls[:budget]
         if llm.supports_tools:
             messages.append({"role": "assistant", "content": r.content, "tool_calls": [
@@ -107,24 +129,26 @@ async def _complete(llm: LLMClient, messages: list[dict], turn: _Turn, user_id: 
                 for c in calls]})
         else:
             messages.append({"role": "assistant", "content": r.content})
-        for c in calls:
-            res = await _run(c, turn, user_id)
+        for name in dict.fromkeys(c.name for c in calls):
+            yield Status(TOOL_STATUS.get(name, "دارم می‌گردم…"))
+        done = await asyncio.gather(*(_run(c, user_id) for c in calls))  # one step's calls are independent
+        for c, (res, log_row) in zip(calls, done, strict=True):
+            turn.results.append(res)
+            turn.calls.append(log_row)
             if llm.supports_tools:
                 messages.append({"role": "tool", "tool_call_id": c.id, "content": serialise(res)})
             else:
                 messages.append({"role": "user", "content": f"نتیجه‌ی ابزار {c.name}:\n{serialise(res)}"})
 
 
-async def _run(call: ToolCall, turn: _Turn, user_id: str) -> ToolResult:
+async def _run(call: ToolCall, user_id: str) -> tuple[ToolResult, dict]:
     t0 = monotonic()
     res = await run_tool(call, user_id=user_id)  # tools use their own short connections
     err = res.data.get("error") if isinstance(res.data, dict) else None
-    turn.results.append(res)
-    turn.calls.append({
+    return res, ({
         "name": call.name, "args": call.args, "error": err, "duration_ms": int((monotonic() - t0) * 1000),
         "summary": {"ids": sorted(res.ids),
                     "count": len(res.data) if isinstance(res.data, list) else int(not err)}})
-    return res
 
 
 def _correction(violations: list[Violation]) -> dict:
@@ -143,6 +167,7 @@ async def run_turn(
 ) -> AsyncIterator[Event]:
     """One agent turn: context → LLM ⇄ tools → Answer → ground (retry once) → persist → events."""
     t0, llm, sid = monotonic(), llm or LLMClient(), session_id or uuid4()
+    yield Status(STARTED)  # ARCHITECTURE §7: first event well under 2.5 s, before any DB or LLM work
     turn = _Turn()
     async with _tx(db) as conn:
         sctx, history = await load_session(conn, sid)
@@ -155,15 +180,22 @@ async def run_turn(
     profile = sctx.get("profile", {})
     messages = build(recent, summary, profile, context, venue, text_in)
 
-    # the shopper's own numbers («تا ۳۰ میلیون») may be echoed back without a tool behind them
-    said = ToolResult("user", {"text": prices(text_in), "profile": profile})
+    # numbers the shopper typed (this turn or earlier) may come back only as a budget echo in `say`;
+    # the profile is model-written, so it never grounds anything
+    user_prices = {p for t in [text_in, *(m["content"] for m in history if m["role"] == "user")]
+                   for p in prices(t)}
     violations: list[Violation] = []
     answer = None
     for _attempt in range(2):
         # ponytail: guests remember under the session id (R4); the real user id arrives with auth (P3)
-        raw = await _complete(llm, messages, turn, str(sid))
+        raw = None
+        async for x in _complete(llm, messages, turn, str(sid)):
+            if isinstance(x, Status):
+                yield x
+            else:
+                raw = x
         answer = _parse(raw)
-        found = ground(answer, [*turn.results, said]) if answer else [
+        found = ground(answer, turn.results, user_prices) if answer else [
             Violation("format", "", "reply was not the Answer JSON object")]
         violations += found
         if not found:

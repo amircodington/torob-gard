@@ -52,3 +52,15 @@ def test_stock_claims_are_ungrounded():
     assert [v.kind for v in ground(Answer(say="آره موجوده"), R)] == ["stock"]
     assert len(ground(Answer(say="موجود است"), R)) == 1
     assert ground(Answer(say="ناموجوده؛ موجودی رو بپرس؛ نمی‌دونم موجوده یا نه"), R) == []
+
+
+def test_user_numbers_only_pass_as_a_budget_echo_in_say():
+    user = {30_000_000, 100_000}
+    assert ground(Answer(say="باشه، گوشی تا ۳۰ میلیون تومان"), [], user) == []
+    assert ground(Answer(say="بودجه‌ت ۳۰ میلیون تومان"), [], user) == []
+    assert len(ground(Answer(say="تا ۳۰ میلیون تومان"), [])) == 1  # not typed by the user
+    v = ground(Answer(say="shop_1 ۱۰۰ هزار تومنه"), R, user)  # a shop price, not a budget
+    assert [(i.kind, i.value) for i in v] == [("price", "100000")]
+    assert len(ground(Answer(say="shop_1 تا ۱۰۰ هزار تومان"), R, user)) == 1
+    blk = Answer(say="تا ۱۰۰ هزار تومان", blocks=[PriceCheckBlock(product_id="product_1", min=100_000)])
+    assert [(i.kind, i.value) for i in ground(blk, R, user)] == [("price", "100000")]
