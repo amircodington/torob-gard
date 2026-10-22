@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     "catalog",
     "ingest",
+    "trips",
 ]
 
 MIDDLEWARE = [
