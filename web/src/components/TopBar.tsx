@@ -18,7 +18,9 @@ export function TopBar() {
   const max = STAGE_ORDER.indexOf(state.maxStage);
 
   return (
-    <header className="sticky top-0 z-40 mx-auto flex max-w-md items-center gap-2 px-4 py-2">
+    // Full-width blurred paper so chat text never shows through the wordmark when it scrolls under.
+    <header className="sticky top-0 z-40 bg-paper/80 backdrop-blur-md">
+      <div className="mx-auto flex max-w-md items-center gap-2 px-4 py-2">
       <span className="text-[17px] leading-none">
         <span className="font-light">ترب‌</span>
         <span className="font-extrabold">گرد</span>
@@ -61,6 +63,7 @@ export function TopBar() {
           <path d="M3 3v5h5" />
         </svg>
       </button>
+      </div>
     </header>
   );
 }

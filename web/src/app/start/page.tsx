@@ -18,7 +18,7 @@ function Consult() {
   const lastChipMsgId = state.chat.findLast((m) => m.from === "assistant" && m.chips?.length)?.id;
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-60px)] max-w-md flex-col px-4">
+    <main className="mx-auto flex min-h-[calc(100dvh-60px)] max-w-md flex-col px-4 pt-2">
       <h1 className="mt-4 text-[28px] leading-[40px]">
         <span className="font-light">مشاوره‌ی </span>
         <span className="font-extrabold">خرید</span>
@@ -60,7 +60,7 @@ function Consult() {
 
 export default function StartPage() {
   return (
-    <JourneyShell>
+    <JourneyShell stage="consult">
       <Consult />
     </JourneyShell>
   );

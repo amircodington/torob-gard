@@ -16,6 +16,25 @@ describe("consult reducer", () => {
     expect(last(s).from).toBe("assistant");
     expect(last(s).text).toContain("بودجه");
     expect(last(s).chips?.map((c) => c.id)).toContain("budget:m2");
+    expect(last(s).chips?.map((c) => c.id)).not.toContain("skip:budget"); // «مهم نیست» band already says it
+  });
+
+  it("an accessory for a phone is an accessory, not a phone", () => {
+    const s = reducer(initialState(), { type: "CHAT_TEXT", text: "شارژر گوشی می‌خوام" });
+    expect(s.req.category).toBe("accessory");
+  });
+
+  it("Arabic yeh («گوشي») still detects mobile", () => {
+    const s = reducer(initialState(), { type: "CHAT_TEXT", text: "گوشي" });
+    expect(s.req.category).toBe("mobile");
+  });
+
+  it("HYDRATE with the page stage: the URL owns the stage, the furthest stage is kept", () => {
+    const stored = { ...askedBudget(), stage: "products" as const, maxStage: "products" as const };
+    const s = reducer(initialState(), { type: "HYDRATE", state: stored, stage: "consult" });
+    expect(s.stage).toBe("consult");
+    expect(s.maxStage).toBe("products");
+    expect(s.chat).toEqual(stored.chat);
   });
 
   it("budget chip moves to the priority question", () => {

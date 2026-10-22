@@ -3,10 +3,10 @@
 /* Shopping-session state, ported from the prototype (docs/torob-gard-ux-prototype/src/state/session.tsx).
  * The reducer stays pure; the provider mirrors state to sessionStorage and pushes the route on stage change. */
 
-import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import { BUDGETS, PRIORITIES, SEEDS } from "../config/journey";
-import { toAsciiDigits, toFaDigits } from "../lib/persian";
+import { normalize, toAsciiDigits, toFaDigits } from "../lib/persian";
 import type {
   BudgetBand,
   Category,
@@ -114,7 +114,7 @@ export type Action =
   | { type: "PLANB_CLOSE" }
   | { type: "CLEAR_SUMMARY_FLAG" }
   | { type: "RESET" }
-  | { type: "HYDRATE"; state: SessionState }
+  | { type: "HYDRATE"; state: SessionState; stage?: Stage }
   | { type: "SEED"; seedId: string };
 
 /* --------------------------- chat helpers --------------------------- */
@@ -122,10 +122,11 @@ export type Action =
 const push = (chat: Msg[], ...msgs: Omit<Msg, "id">[]): Msg[] => [...chat, ...msgs.map((m) => ({ ...m, id: nextId() }))];
 
 function detectCategory(text: string): Category | null {
-  const t = text.replace(/‌/g, " ");
+  const t = normalize(text).replace(/‌/g, " ");
+  // Accessory first: «شارژر گوشی», «قاب گوشی» are accessories that name the phone.
+  if (/(هدفون|هندزفری|ایرپاد|شارژر|کاور|قاب|گلس|محافظ صفحه|پاوربانک|جانبی|اسپیکر)/i.test(t)) return "accessory";
   if (/(گوشی|موبایل|آیفون|سامسونگ|شیائومی|پیکسل)/i.test(t)) return "mobile";
   if (/(لپ تاپ|لپتاپ|notebook|نوت بوک|مک بوک|کامپیوتر)/i.test(t)) return "laptop";
-  if (/(هدفون|هندزفری|ایرپاد|شارژر|کاور|قاب|گلس|محافظ صفحه|پاوربانک|جانبی|اسپیکر)/i.test(t)) return "accessory";
   return null;
 }
 
@@ -144,7 +145,10 @@ function budgetAsk(cat: Category): Omit<Msg, "id"> {
   return {
     from: "assistant",
     text: `عالیه، ${catLabel(cat)} می‌خوای!\nحدود بودجه‌ات چقدره؟ (مثلاً «۱۵ تا ۲۵»؛ اگه مطمئن نیستی، رد ش کن)`,
-    chips: [...BUDGETS[cat].map((b) => ({ id: `budget:${b.id}`, label: b.label })), { id: "skip:budget", label: "فعلا مهم نیست" }],
+    chips: [
+      ...BUDGETS[cat].map((b) => ({ id: `budget:${b.id}`, label: b.label })),
+      ...(BUDGETS[cat].some((b) => b.label === "مهم نیست") ? [] : [{ id: "skip:budget", label: "فعلاً مهم نیست" }]),
+    ],
   };
 }
 
@@ -350,8 +354,11 @@ export function reducer(s: SessionState, a: Action): SessionState {
       return { ...s, summaryJustReady: false };
     case "RESET":
       return initialState();
-    case "HYDRATE":
-      return a.state;
+    case "HYDRATE": {
+      // The page's stage wins over the stored one (browser Back); the furthest stage is kept.
+      const stage = a.stage ?? a.state.stage;
+      return { ...a.state, stage, maxStage: later(stage, a.state.maxStage) };
+    }
     case "SEED": {
       const steps = SEEDS[a.seedId];
       return steps ? steps.reduce(reducer, initialState()) : s;
@@ -407,23 +414,21 @@ export function resetStorage() {
 
 const Ctx = createContext<{ state: SessionState; dispatch: React.Dispatch<Action> } | null>(null);
 
-export function SessionProvider({ children }: { children: ReactNode }) {
+export function SessionProvider({ stage, children }: { stage: Stage; children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   // Server and first client render share initialState(); storage is read after mount (no hydration mismatch).
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const [ready, setReady] = useState(false);
   const hydrated = useRef(false);
-  const lastPath = useRef<string | null>(null);
 
-  // Declared first: on mount it records the path without navigating, so the URL the user opened wins.
+  // After hydration the URL and the stage agree; a stage change that the URL does not show is a navigation.
   useEffect(() => {
+    if (!ready) return;
     const path = stagePath(state);
-    if (lastPath.current === null) lastPath.current = path ?? "";
-    else if (path && path !== lastPath.current) {
-      lastPath.current = path;
-      router.push(path);
-    }
+    if (path && path !== pathname) router.push(path);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- navigate only when the stage or its id changes
-  }, [state.stage, state.selectedProductId, router]);
+  }, [ready, state.stage, state.selectedProductId]);
 
   useEffect(() => {
     if (!hydrated.current) {
@@ -437,17 +442,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // ponytail: ?seed= replays on every load of that URL; fine for a demo link.
       if (seed && SEEDS[seed]) dispatch({ type: "SEED", seedId: seed });
       else {
-        let stored: SessionState | null = null;
+        let stored = initialState();
         try {
           stored = loadState(sessionStorage);
         } catch {
           /* storage blocked */
         }
-        if (stored) {
-          lastPath.current = stagePath(stored) ?? lastPath.current;
-          dispatch({ type: "HYDRATE", state: stored });
-        }
+        dispatch({ type: "HYDRATE", state: stored, stage });
       }
+      setReady(true);
       return;
     }
     try {
@@ -455,7 +458,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     } catch {
       /* storage full/blocked — session continues in memory */
     }
-  }, [state]);
+  }, [state, stage]);
 
   const value = useMemo(() => ({ state, dispatch }), [state]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
