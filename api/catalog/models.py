@@ -35,8 +35,10 @@ class Venue(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            # Pure-Persian names slugify to "", so fall back to a random id.
-            self.slug = slugify(self.name, allow_unicode=False) or f"venue-{uuid4().hex[:8]}"
+            # Pure-Persian names slugify to "" or collide ("پاساژ 2" -> "2"); suffix hex.
+            base = slugify(self.name)[:90] or f"venue-{uuid4().hex[:8]}"
+            taken = Venue.objects.filter(slug=base).exclude(pk=self.pk).exists()
+            self.slug = f"{base}-{uuid4().hex[:8]}" if taken else base
         super().save(*args, **kwargs)
 
 

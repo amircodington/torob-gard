@@ -22,9 +22,20 @@ def test_catalog_chain():
     assert venue.slug == "aladdin-2"
     assert Offer.objects.filter(shop__venue=venue).count() == 1
     ShopReport(kind="no_answer", shop=shop).save()
+    assert ShopReport.objects.filter(kind="no_answer").count() == 1
 
 
 @pytest.mark.django_db
 def test_persian_venue_slug_fallback():
     v = Venue.objects.create(name="پاساژ علاءالدین", name_norm="پاساژ علاءالدین", kind="pasazh")
     assert v.slug.startswith("venue-") and len(v.slug) == 14
+
+
+@pytest.mark.django_db
+def test_venue_slugs_unique_and_stable():
+    a = Venue.objects.create(name="پاساژ 2", name_norm="a", kind="pasazh")
+    b = Venue.objects.create(name="علاءالدین 2", name_norm="b", kind="pasazh")
+    assert a.slug == "2" and b.slug != a.slug
+    a.save()
+    a.refresh_from_db()
+    assert a.slug == "2"
