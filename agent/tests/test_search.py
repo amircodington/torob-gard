@@ -125,3 +125,24 @@ async def test_shops_without_near_by_price(conn):
     assert hits[0]["distance_m"] is None
     venue = await search_shops([T], None, "t-venue-b", near=None, db=conn)
     assert [h["id"] for h in venue] == ["t_shop_b1"]
+
+
+async def test_shops_empty_product_list_is_empty(conn):
+    assert await search_shops([], None, None, near=NEAR, db=conn) == []
+
+
+async def test_vector_pool_reaches_50_under_a_filter(conn):
+    for n in range(60):  # 60 near-identical priced products; HNSW alone (ef_search 40) stops short
+        await conn.execute(text(
+            "INSERT INTO catalog_product (id, persian_title, title_norm, category_id, image_urls, specs,"
+            " specs_text, min_price, median_price, max_price, offer_count) SELECT :i, 'x', 'x', id, '{}',"
+            " '[]', '', :p, :p, :p, 1 FROM catalog_category WHERE name = 'کابل تست'"),
+            {"i": f"t_bulk_{n:02}", "p": 100 if n % 2 else 10_000_000})
+        await conn.execute(
+            text("INSERT INTO catalog_productembedding VALUES (:p, :m, CAST(:v AS vector), 'h')"),
+            {"p": f"t_bulk_{n:02}", "m": config.EMBED_MODEL, "v": str(onehot(3 + n))},
+        )
+    for off in ("enable_seqscan", "enable_sort"):  # tiny table: make the planner use HNSW
+        await conn.execute(text(f"SET LOCAL {off} = off"))
+    hits = await search_products("ناموجود", budget_max=1000, limit=100, db=conn, embed=near_target)
+    assert len(hits) == 30 and all(h["min_price"] <= 1000 for h in hits)

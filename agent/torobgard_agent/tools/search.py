@@ -114,7 +114,10 @@ async def search_products(
             ORDER BY ts_rank(p.search_tsv, tq) DESC, p.offer_count DESC, p.id LIMIT :pool"""), params)
         ranked = [kw.scalars().all()]
         if "vec" in params:
-            # ponytail: HNSW filters after the index scan, so tight filters can return < 50; fine for now
+            # ef_search defaults to 40 (< POOL); iterative scan keeps going when filters drop rows.
+            # SET LOCAL lasts for this transaction (the connection autobegins on first execute).
+            await conn.execute(text("SET LOCAL hnsw.ef_search = 100"))
+            await conn.execute(text("SET LOCAL hnsw.iterative_scan = relaxed_order"))
             vec = await conn.execute(text(f"""
                 SELECT p.id FROM catalog_productembedding e JOIN {base} ON p.id = e.product_id
                 WHERE e.model = :model AND {cond}
@@ -141,6 +144,8 @@ async def search_shops(
 
     With `near`: shops in the venue the shopper stands in first, then by distance.
     """
+    if product_ids is not None and not product_ids:
+        return []  # no products asked: never fall back to unpriced busiest shops
     params: dict = {"limit": limit}
     where, order = ["true"], []
     if product_ids:
