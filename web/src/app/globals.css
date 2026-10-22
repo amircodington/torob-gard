@@ -41,6 +41,44 @@
   --shadow-sheet: 0 -12px 40px rgba(0, 0, 0, 0.25);
 
   --font-sans: "Vazirmatn", system-ui, sans-serif;
+
+  /* Motion system (decision 12; brand README "Motion"). lib/motion.ts mirrors these for GSAP. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* page-in is opacity only: a transform on <main> would trap the fixed tray and walk sheet. */
+  --animate-page-in: fade var(--duration-base) var(--ease-out) both;
+  --animate-rise: rise var(--duration-base) var(--ease-out) both;
+  --animate-fade: fade var(--duration-fast) var(--ease-out) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      translate: 0 var(--rise, 8px);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+:root {
+  --duration-press: 120ms;
+  --duration-fast: 180ms;
+  --duration-base: 240ms;
+  --duration-sheet: 320ms;
+  --duration-slow: 600ms;
+  --stagger: 40ms; /* desk cards set 60ms on their list */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rise: 0;
+    --animate-rise: fade var(--duration-base) var(--ease-out) both;
+  }
 }
 
 /* Light only (decision 8): paper ground with the blush glow, ~520px tall at the top centre. */
@@ -61,6 +99,34 @@ body {
   font-feature-settings: "tnum";
 }
 
+/* One container for every page: phone column, tablet, desktop. */
+@utility page {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 28rem;
+  padding-inline: 1rem;
+  @variant md {
+    max-width: 42rem;
+    padding-inline: 1.5rem;
+  }
+  @variant lg {
+    max-width: 72rem;
+    padding-inline: 2rem;
+  }
+}
+
+/* Directional icons (arrows, chevrons, send, undo, log-out) mirror under RTL. */
+@utility flip-rtl {
+  &:where([dir="rtl"], [dir="rtl"] *) {
+    scale: -1 1;
+  }
+}
+
+/* Items set style={{ "--i": i }}; after 8 the rest appear with the 8th. */
+@utility stagger {
+  animation-delay: calc(min(var(--i, 0), 8) * var(--stagger));
+}
+
 /* mobile-native: no grey flash on tap, no double-tap-zoom delay, no text selection on a long-press of a control. */
 /* In @layer base so utilities (touch-none on the walk handle) still win. */
 @layer base {
@@ -76,5 +142,10 @@ body {
   button {
     -webkit-user-select: none;
     user-select: none;
+  }
+  /* lucide icons: the brand's 1.75 stroke (CSS beats lucide's stroke-width="2" attribute). */
+  svg.lucide {
+    stroke-width: 1.75;
+    flex-shrink: 0;
   }
 }

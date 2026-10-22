@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { SendHorizontal } from "lucide-react";
 
 /** `disabled` (a turn in flight): typing goes on, sending waits; the draft is kept. */
 export function Composer({ onSend, disabled = false }: { onSend: (text: string) => void; disabled?: boolean }) {
@@ -40,9 +41,7 @@ export function Composer({ onSend, disabled = false }: { onSend: (text: string) 
         aria-label="ارسال"
         className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange text-on-orange transition-transform focus-visible:outline-2 focus-visible:outline-focus active:scale-95 disabled:opacity-50"
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
+        <SendHorizontal className="flip-rtl h-5 w-5" />
       </button>
     </form>
   );

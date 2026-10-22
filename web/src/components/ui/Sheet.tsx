@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { X } from "lucide-react";
 
 // ponytail: tap-to-close only, drag arrives with apple-design pass
 export function Sheet({ open, onClose, labelledby, children }: { open: boolean; onClose: () => void; labelledby: string; children: ReactNode }) {
@@ -32,9 +33,7 @@ export function Sheet({ open, onClose, labelledby, children }: { open: boolean; 
           aria-label="بستن"
           className="absolute end-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-white/12 focus-visible:outline-2 focus-visible:outline-focus"
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden>
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
+          <X className="h-5 w-5" />
         </button>
         {children}
       </div>

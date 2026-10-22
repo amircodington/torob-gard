@@ -112,6 +112,16 @@ glow in the top bar and nav bar, translucent white (12%) inside the panel. Emoji
 mockups; production uses outline icons at 1.75px stroke on a 24px grid, `ink` by default,
 `orange` when active.
 
+Production icons are **lucide-react** (decision 12), bundled per icon, never a font, sprite or
+CDN. The 1.75 stroke is set once in `globals.css` (`svg.lucide`), so call sites pass no
+`strokeWidth`. Icon colours: `ink`, `ink-muted`, `orange`, `verified`, `signal`, `on-dark` only.
+An icon is `aria-hidden` and always sits next to a word or inside a control with an
+`aria-label`. Draw icons in their LTR meaning; ones that imply direction or progress
+(`ArrowRight`, `ArrowLeft`, `ChevronRight`, `ChevronLeft`, `SendHorizontal`, `Undo2`, `LogOut`)
+take `className="flip-rtl"` so they mirror under `dir="rtl"` ("next" = `ArrowRight flip-rtl`,
+"back" = `ArrowLeft flip-rtl`). Never mirror clocks, `RotateCcw`, `Footprints`, checkmarks,
+phone, map pin, store, camera, battery or numbers.
+
 ### Data shapes
 
 Two shapes from the reference carry our numbers: **rounded bars with a dot tip** (price per
@@ -127,9 +137,53 @@ image, no logos). No stock photos, no illustrations.
 
 ### Motion
 
-GSAP, `transform` and `opacity` only, `prefers-reduced-motion` respected. Four moments animate:
-the sheet (spring, draggable, interruptible), the active chip sliding between pasazhs (220 ms
-ease-out), bars growing on first paint (stagger 40 ms), and a reply streaming in. Nothing else.
+`transform`/`translate`/`scale` and `opacity` only; every moment has a
+`prefers-reduced-motion: reduce` variant. CSS does entrances, presses and hovers (tokens and
+`animate-page-in` / `animate-rise` / `animate-fade` / `stagger` in `web/src/app/globals.css`);
+GSAP only does what CSS cannot (sheets, Flip, pill slide, pin drop, count-ups, two mascot/success
+timelines). UI durations ≤ 320 ms, the two rare moments ≤ 600 ms; stagger capped at 8 items;
+nothing loops except the map's anchor ping; no animation on a keyboard action. The four P1
+moments (sheet spring/drag, active chip slide 220 ms, bars growing with 40 ms stagger, reply
+streaming) stay and are the first entries below. This widens the earlier "four moments, nothing
+else" rule (decision 12).
+
+| Token | Value | Used for |
+|---|---|---|
+| `--ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | every entrance, press release, chip pill |
+| `--ease-in-out` | `cubic-bezier(0.77, 0, 0.175, 1)` | on-screen moves (Flip re-rank, tier lift) |
+| `--ease-drawer` | `cubic-bezier(0.32, 0.72, 0, 1)` | sheets open/close/snap |
+| `--duration-press` | `120ms` | `:active` scale 0.97 |
+| `--duration-fast` | `180ms` | chip colour, icon swap, badge pop |
+| `--duration-base` | `240ms` | bubble/card/row entrance, page-in |
+| `--duration-sheet` | `320ms` | sheet open; close = 240 ms |
+| `--duration-slow` | `600ms` | hero entrance, trip success (rare only) |
+| `--stagger` | `40ms` (lists) / `60ms` (desk cards) | |
+
+GSAP (`web/src/lib/motion.ts`) gets the same curves as `CustomEase` names `tg.out`, `tg.inOut`, `tg.drawer`, and `DUR = { press: 0.12, fast: 0.18, base: 0.24, sheet: 0.32, slow: 0.6 }`.
+
+| Screen | Moment | Tool | Values | Reduced motion |
+|---|---|---|---|---|
+| all journey pages | page-in | CSS `animate-page-in` on the page head | opacity 0→1 on `main`; `translate 0 8px`→0 on `[data-page-head]` only, 240 ms `--ease-out` | opacity only |
+| all | press | CSS | `active:scale-[0.97]` 120 ms (exists; tokenised) | kept (not motion-sickness relevant) |
+| consult | bubble in | CSS `@starting-style` | opacity 0, `translate 0 8px`, 240 ms; user bubbles from the start side, assistant from the end | opacity only |
+| consult | chips in / select | CSS | stagger 40 ms; selected chip bg/colour 180 ms, siblings → 50% opacity 180 ms | colour only |
+| consult, radar | active chip slides (P1 moment 2) | GSAP Flip | one `[data-pill]` per `ChipGroup`, 220 ms `tg.out` | jump |
+| desk | tier cards in | CSS | stagger 60 ms, `translate 0 12px` + opacity, 240 ms | opacity only |
+| desk | balanced lift (lg) | static | `lg:-translate-y-2` + `ring-2 ring-orange` | same |
+| desk | compare toggle | CSS | `Plus`→`Check` swap scale 0.9→1 + opacity 180 ms; tray `@starting-style` `translate 0 100%`→0, 320 ms `--ease-drawer` | opacity only |
+| landing | hero | GSAP timeline, once | mascot `y 24→0, opacity`, 600 ms `tg.out`, then one wave `rotation ±6°` ×2 in 600 ms; headline/CTA CSS stagger 60 ms | static |
+| landing | live numbers count-up | GSAP | 0→value, 900 ms `tg.out`, starts when in view (IntersectionObserver, once); SSR renders the final number | final number, no tween |
+| landing | pasazh bars grow (P1 moment 3) | CSS | `scale 0 1`→`1 1`, origin inline-start, 400 ms, stagger 40 ms | static |
+| radar | rows in | CSS | stagger 40 ms, first 8 rows, 240 ms | opacity only |
+| radar | map pin drop | GSAP | on first load per product+anchor only: `y -12→0, opacity 0→1`, 320 ms `back.out(1.4)`, stagger 30 ms | none |
+| radar | row ↔ pin link (pointer: fine) | CSS | hovered row's pin `scale 1.12` 180 ms | none |
+| radar, desk | sheet (P1 moment 1) | GSAP | phone: `yPercent 100→0` 320 ms `tg.drawer`, drag-to-dismiss with velocity; lg: side panel `xPercent` from the inline-start edge | opacity 180 ms |
+| Plan B | overlay in | CSS | opacity + `translate 0 24px`, 280 ms `--ease-out` | opacity only |
+| Plan B | re-rank on priority change | GSAP Flip | rows move 320 ms `tg.inOut`, new rows fade in | instant |
+| Plan B, trip, empty states | mascot reaction | GSAP, once per mount | point: hop `y 12→0` + `rotation -4→0` 420 ms `back.out(1.6)`; stuck: `x` shake ±4 px ×2 in 300 ms | none |
+| trip | checklist items in | CSS | stagger 40 ms; status icon `scale 0.8→1` + opacity 180 ms | opacity only |
+| walk | sheet rise/drag (exists) | GSAP | unchanged; snap gains velocity projection | unchanged |
+| walk | success («داشت؟» → بله) | GSAP timeline | `verified` check circle `scale 0.9→1` + opacity 240 ms, 6 orange dots `translate` 28 px out + fade, 600 ms; `navigator.vibrate?.(12)` | check fades in, no dots, no vibrate |
 
 ## Components
 

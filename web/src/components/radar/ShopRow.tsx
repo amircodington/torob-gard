@@ -1,4 +1,5 @@
 import { faGroup, faKm, faNum, faWalk } from "../../lib/fa";
+import { Store as StoreIcon } from "lucide-react";
 import { isOpenNow } from "../../lib/hours";
 import type { OfferRow, Store } from "../../lib/types";
 import { FreshBadge } from "../ui/FreshBadge";
@@ -26,15 +27,6 @@ export function distanceLabel(m: number | null): string {
   return `${m < 1000 ? `${faNum(Math.round(m / 10) * 10)} متر` : faKm(Math.round(km * 10) / 10)} · ${faWalk(km)}`;
 }
 
-function ShopGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 10v9h16v-9M3 6l1.5-3h15L21 6v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z" />
-      <path d="M10 19v-5h4v5" />
-    </svg>
-  );
-}
-
 /** The brand ShopCard as a list row; the whole row is the tap target. */
 export function ShopRow({ row, now, onOpen }: { row: OfferRow; now: Date; onOpen: () => void }) {
   const { offer, store } = row;
@@ -46,7 +38,7 @@ export function ShopRow({ row, now, onOpen }: { row: OfferRow; now: Date; onOpen
       className="flex min-h-11 w-full items-start gap-3 rounded-lg bg-surface p-4 text-start shadow-card focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.99]"
     >
       <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface-tint text-ink">
-        <ShopGlyph />
+        <StoreIcon className="h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 block break-words text-[15px] font-bold leading-6">{store.name}</span>

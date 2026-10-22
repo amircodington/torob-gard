@@ -12,6 +12,7 @@ import { distanceLabel, placeLine } from "../radar/ShopRow";
 import { Btn } from "../ui/Btn";
 import { FreshBadge } from "../ui/FreshBadge";
 import { StockBadge } from "../ui/StockBadge";
+import { X } from "lucide-react";
 
 const isReason = (r: string | null): r is FailReason => r != null && r in FAIL_COPY;
 
@@ -129,9 +130,7 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
             aria-label="بستن پلن B"
             className="grid h-11 w-11 place-items-center rounded-full bg-surface shadow-card focus-visible:outline-2 focus-visible:outline-focus"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" aria-hidden>
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
+            <X className="h-5 w-5" />
           </button>
         </div>
 

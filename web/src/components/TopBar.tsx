@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { toFaDigits } from "../lib/persian";
 import { resetStorage, STAGE_ORDER, stagePath, useSession, type Stage } from "../state/session";
+import { RotateCcw } from "lucide-react";
 
 const LABELS: Record<Stage, string> = {
   consult: "نیازها",
@@ -68,10 +69,7 @@ export function TopBar() {
         }}
         className={`${glass} grid h-11 w-11 place-items-center rounded-full text-ink focus-visible:outline-2 focus-visible:outline-focus`}
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-          <path d="M3 3v5h5" />
-        </svg>
+        <RotateCcw className="h-5 w-5" />
       </button>
       </div>
     </header>
