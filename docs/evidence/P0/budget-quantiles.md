@@ -1,6 +1,6 @@
 # Budget quantiles vs prototype BUDGETS (P0.8)
 
-Source: real data after `price_stats` (outliers 1137 · products with price 218325 · shops with band 3630).
+Source: real data after `price_stats` (outliers 1250 · products with price 218325 · shops with band 3630).
 Quantiles = `category_quantiles()`: `min_price` of products with `offer_count >= 2` (Toman, rounded).
 All six category names exist exactly as given; none is a nearest match.
 
@@ -10,7 +10,7 @@ All six category names exist exactly as given; none is a nearest match.
 |---|---:|---:|---:|---:|---:|---:|
 | گوشی موبایل | 338 | 2188900 | 2800000 | 42100000 | 158125000 | 321510000 |
 | لپ تاپ و نوت بوک | 194 | 133650000 | 181594735 | 240000000 | 380750000 | 528400000 |
-| هدفون، هدست و هندزفری | 358 | 1146300 | 2388500 | 4671650 | 12375000 | 42240000 |
+| هدفون، هدست و هندزفری | 357 | 1145400 | 2388000 | 4710000 | 12500000 | 42320000 |
 | شارژر گوشی | 166 | 627950 | 1611350 | 2439500 | 4410500 | 6872000 |
 | کیف و کاور گوشی | 88 | 222700 | 309150 | 356000 | 400000 | 2300000 |
 | محافظ صفحه نمایش گوشی | 45 | 120000 | 189000 | 199000 | 299000 | 785200 |
@@ -29,7 +29,7 @@ Mobile bands use گوشی موبایل, laptop bands use لپ تاپ و نوت �
 | لپ تاپ و نوت بوک | l1 | 0–25 | 0 | yes |
 | | l2 | 25–40 | 1 | yes |
 | | l3 | 40–60 | 0 | yes |
-| هدفون، هدست و هندزفری | a1 / a2 / a3 | 0–1 / 1–2 / 2+ | 32 / 35 / 292 | |
+| هدفون، هدست و هندزفری | a1 / a2 / a3 | 0–1 / 1–2 / 2+ | 32 / 35 / 291 | |
 | شارژر گوشی | a1 / a2 / a3 | 0–1 / 1–2 / 2+ | 22 / 41 / 104 | |
 | کیف و کاور گوشی | a1 / a2 / a3 | 0–1 / 1–2 / 2+ | 73 / 3 / 12 | a2 |
 | محافظ صفحه نمایش گوشی | a1 / a2 / a3 | 0–1 / 1–2 / 2+ | 44 / 1 / 0 | a2, a3 |

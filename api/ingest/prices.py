@@ -2,9 +2,13 @@ from django.db import connection
 
 # ponytail: SQL over 316k rows beats a Python loop; outlier rule is global (10x / 0.1x of the
 # product's raw median), no per-category logic.
+# ponytail: two offers use the lower price as reference (their mean flags the cheap one);
+# a genuinely 10x-priced second offer is hidden.
 OUTLIERS = """
 UPDATE catalog_offer o SET is_outlier = (o.price_toman > 10 * m.med OR o.price_toman < 0.1 * m.med)
-FROM (SELECT product_id, percentile_cont(0.5) WITHIN GROUP (ORDER BY price_toman) AS med
+FROM (SELECT product_id,
+        CASE WHEN count(*) = 2 THEN min(price_toman)
+             ELSE percentile_cont(0.5) WITHIN GROUP (ORDER BY price_toman) END AS med
       FROM catalog_offer GROUP BY product_id) m
 WHERE m.product_id = o.product_id
 """

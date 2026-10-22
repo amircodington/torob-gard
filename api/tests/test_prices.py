@@ -23,6 +23,7 @@ def test_price_stats_and_quantiles():
     mk(cat, "A", [600_000, 620_000, 200_000_000], shop)
     mk(cat, "B", [900_000], shop)
     mk(cat, "C", [1_000_000, 1_100_000], shop)
+    mk(cat, "D", [600_000, 200_000_000], shop)
     price_stats()
     assert Offer.objects.get(id="A-2").is_outlier
     assert not Offer.objects.filter(product_id="B", is_outlier=True).exists()
@@ -31,6 +32,9 @@ def test_price_stats_and_quantiles():
         600_000, 610_000, 620_000, 2)
     assert (b.min_price, b.median_price, b.max_price, b.offer_count) == (
         900_000, 900_000, 900_000, 1)
+    d = Product.objects.get(id="D")
+    assert Offer.objects.get(id="D-1").is_outlier and not Offer.objects.get(id="D-0").is_outlier
+    assert (d.min_price, d.median_price, d.offer_count) == (600_000, 600_000, 1)
     assert Shop.objects.get(id="s").price_band is not None
     # A and C have offer_count >= 2: p50 = mean(600k, 1M)
     assert category_quantiles("c")["p50"] == 800_000
