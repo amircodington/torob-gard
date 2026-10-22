@@ -12,14 +12,14 @@ import { StoreSheet } from "../../../components/radar/StoreSheet";
 import { Toolbar } from "../../../components/radar/Toolbar";
 import { Btn } from "../../../components/ui/Btn";
 import { EmptyState } from "../../../components/ui/EmptyState";
-import { api } from "../../../lib/api";
+import { api, ApiError } from "../../../lib/api";
 import { faNum } from "../../../lib/fa";
 import { DEFAULT_LANDMARK } from "../../../lib/geo";
 import { applyFilters, sortRows } from "../../../lib/ranking";
 import type { OfferRow, Product } from "../../../lib/types";
 import { useSession } from "../../../state/session";
 
-type Loaded = { key: string; product?: Product; rows?: OfferRow[]; now?: Date; error?: true };
+type Loaded = { key: string; product?: Product; rows?: OfferRow[]; now?: Date; error?: true; missing?: boolean };
 
 function Radar({ id }: { id: string }) {
   const { state, dispatch } = useSession();
@@ -34,7 +34,7 @@ function Radar({ id }: { id: string }) {
     let live = true;
     Promise.all([api.product(id), api.offerRows(id, anchor)])
       .then(([product, rows]) => live && setRes({ key, product, rows, now: new Date() }))
-      .catch(() => live && setRes({ key, error: true }));
+      .catch((e) => live && setRes({ key, error: true, missing: e instanceof ApiError && e.status === 404 }));
     return () => {
       live = false;
     };
@@ -49,6 +49,9 @@ function Radar({ id }: { id: string }) {
       تغییر مدل
     </Btn>
   );
+
+  if (cur?.missing)
+    return <EmptyState pose="stuck" title="این مدل پیدا نشد" body="شاید لینک قدیمی یا اشتباه باشه." actions={changeModel} />;
 
   if (cur?.error)
     return (

@@ -103,6 +103,7 @@ export type Action =
   | { type: "GO"; stage: Stage }
   | { type: "SELECT_PRODUCT"; id: string; advance?: boolean }
   | { type: "TOGGLE_COMPARE"; id: string }
+  | { type: "SET_BUDGET"; budgetId: string }
   | { type: "SET_FILTERS"; patch: Partial<RadarFilters> }
   | { type: "APPLY_PRESET_DISTANCE"; km: number | null }
   | { type: "SET_SORT"; sort: SortKey }
@@ -288,6 +289,9 @@ export function reducer(s: SessionState, a: Action): SessionState {
       return handleChip(s, a.chip);
     case "GO":
       return { ...s, stage: a.stage, maxStage: later(a.stage, s.maxStage) };
+    case "SET_BUDGET":
+      // The desk's «بدون محدودیت بودجه»: changes the band without a new chat turn.
+      return { ...s, req: { ...s.req, budgetId: a.budgetId, customBudget: null } };
     case "SELECT_PRODUCT":
       return {
         ...s,
@@ -389,8 +393,7 @@ export function stagePath(s: SessionState): string | null {
     case "radar":
       return s.selectedProductId ? `/radar/${s.selectedProductId}` : null;
     case "summary":
-      // ponytail: the trip pages own their URL (a shared link must not jump to this session's trip); no auto-nav.
-      return null;
+      return s.tripId ? `/trip/${s.tripId}` : null;
   }
 }
 
@@ -404,7 +407,8 @@ export function loadState(storage: Pick<Storage, "getItem">): SessionState {
     if (raw) {
       const parsed = JSON.parse(raw) as SessionState;
       mid = Math.max(...parsed.chat.map((m) => m.id), 0) + 1; // throws on a wrong shape → fresh start
-      return { ...parsed, summaryJustReady: false };
+      // An older stored shape keeps today's defaults for fields it did not have.
+      return { ...initialState(), ...parsed, summaryJustReady: false };
     }
   } catch {
     /* corrupted session → start fresh */
@@ -436,7 +440,8 @@ export function SessionProvider({ stage, productId, children }: { stage: Stage; 
   useEffect(() => {
     if (!ready) return;
     const path = stagePath(state);
-    if (path && path !== pathname) router.push(path);
+    // The trip pages own their URL (a shared link must not jump to this session's trip); TopBar's step ۴ navigates itself.
+    if (state.stage !== "summary" && path && path !== pathname) router.push(path);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- navigate only when the stage or its id changes
   }, [ready, state.stage, state.selectedProductId]);
 

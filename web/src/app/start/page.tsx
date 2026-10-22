@@ -15,7 +15,15 @@ function Consult() {
     if (state.chat.length > 1) end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [state.chat.length]);
 
-  const lastChipMsgId = state.chat.findLast((m) => m.from === "assistant" && m.chips?.length)?.id;
+  // A reverse loop, not findLast: older Android webviews lack it.
+  let lastChipMsgId: number | undefined;
+  for (let i = state.chat.length - 1; i >= 0; i--) {
+    const m = state.chat[i];
+    if (m.from === "assistant" && m.chips?.length) {
+      lastChipMsgId = m.id;
+      break;
+    }
+  }
 
   return (
     <main className="mx-auto flex min-h-[calc(100dvh-60px)] max-w-md flex-col px-4 pt-2">
@@ -39,10 +47,11 @@ function Consult() {
             )}
           </div>
         ))}
-        <div ref={end} />
+        {/* scroll-margin ≈ the sticky composer's height, so scrolling to the end keeps the last bubble above it */}
+        <div ref={end} className="scroll-mb-36" />
       </div>
 
-      <div className="sticky bottom-0 -mx-4 mt-4 flex flex-col gap-1 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2">
+      <div className="sticky bottom-0 -mx-4 mt-4 flex flex-col gap-1 bg-paper/90 px-4 backdrop-blur-md pb-[max(12px,env(safe-area-inset-bottom))] pt-2">
         {state.req.category && (
           <button
             type="button"

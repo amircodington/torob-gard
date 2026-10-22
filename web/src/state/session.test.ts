@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialState, loadState, reducer, type SessionState } from "./session";
+import { initialState, loadState, reducer, stagePath, type SessionState } from "./session";
 
 const last = (s: SessionState) => s.chat[s.chat.length - 1];
 const chip = (s: SessionState, id: string) => {
@@ -125,5 +125,9 @@ describe("trip reducer", () => {
     expect(reducer(withTrip, { type: "SELECT_PRODUCT", id: "p2" }).tripId).toBeNull();
     expect(reducer(withTrip, { type: "SELECT_PRODUCT", id: "p2", advance: true }).tripId).toBeNull();
     expect(reducer(withTrip, { type: "RESET" }).tripId).toBeNull();
+  });
+  it("stagePath: step ۴ leads to the saved trip, and nowhere before one exists", () => {
+    expect(stagePath({ ...initialState(), stage: "summary", tripId: "t1" })).toBe("/trip/t1");
+    expect(stagePath({ ...initialState(), stage: "summary" })).toBeNull();
   });
 });

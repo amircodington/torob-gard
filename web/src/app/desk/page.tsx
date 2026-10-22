@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { CompareSheet } from "../../components/desk/CompareSheet";
 import { ReqChips } from "../../components/desk/ReqChips";
 import { TierCard } from "../../components/desk/TierCard";
-import { staleCompareIds } from "../../components/desk/compare";
+import { deskEmpty, staleCompareIds } from "../../components/desk/compare";
 import { JourneyShell } from "../../components/JourneyShell";
 import { Mascot } from "../../components/Mascot";
 import { Btn } from "../../components/ui/Btn";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { api } from "../../lib/api";
+import { BUDGETS } from "../../config/journey";
 import { faNum } from "../../lib/fa";
 import type { DeskTier } from "../../lib/types";
 import { reqBudget, reqPriority, useSession } from "../../state/session";
@@ -75,10 +76,29 @@ function Desk() {
       />
     );
 
-  if (ready && (req.category === "other" || current?.tiers?.length === 0))
+  const empty = ready ? deskEmpty(req.category, current?.tiers) : null;
+  const noLimit = req.category && req.category !== "other" ? BUDGETS[req.category].find((b) => b.min === 0 && b.max == null) : undefined;
+  if (empty === "budget")
     return (
       <EmptyState
-        pose={req.category === "other" ? "idle" : "stuck"}
+        pose="stuck"
+        title="تو این بودجه مدلی با دست‌کم دو فروشنده پیدا نکردم"
+        body="نیازهات حفظ شدن؛ بودجه رو باز کن یا نیازها رو عوض کن."
+        actions={
+          <>
+            {noLimit && budget?.id !== noLimit.id && (
+              <Btn onClick={() => dispatch({ type: "SET_BUDGET", budgetId: noLimit.id })}>بدون محدودیت بودجه</Btn>
+            )}
+            {editBtn}
+          </>
+        }
+      />
+    );
+
+  if (empty === "other")
+    return (
+      <EmptyState
+        pose="idle"
         title="برای این دسته هنوز میز تصمیم نداریم"
         body="داده‌ی ترب‌گرد فعلاً روی موبایل، لپ‌تاپ و لوازم جانبی گوشیه. نیازهات حفظ شدن؛ با یکی از این دسته‌ها بدون از دست دادن جلسه ادامه بده."
         actions={
