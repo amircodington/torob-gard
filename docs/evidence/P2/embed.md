@@ -10,6 +10,14 @@
 
 - 16:30–16:34 UTC first run, sequential: 6,016 products in 3.5 min (~28/s, ≈ 2 h projected). Stopped.
 - 16:34 UTC resumed with 8 parallel calls: skipped the 6,016 done (resumability check), then ~72 products/s.
-- Status at commit time (16:37 UTC): ~16k / 218k products, run still going; projected finish ≈ 17:25 UTC.
-- Final count, time, tokens and cost: _pending — the command prints `Ns · T tokens · $C` at the end._
-  Expected cost ≈ $0.3 at $0.02 / 1M tokens.
+- The resumed run stopped silently at 214,912 products (container gone, no traceback; likely killed from
+  outside while other work used Docker). Its token total was never printed.
+- 17:42–17:47 UTC third run: skipped 214,912, embedded the last 3,413 products and all 6,476 shops
+  in 276 s, 2,905,130 tokens, $0.058 (measured).
+
+## Result
+
+- **218,325 product and 6,476 shop embeddings** (all in scope), `model = openai/text-embedding-3-small`.
+- Wall time ≈ 73 min over three resumable runs (3.5 + ~65 + 4.6 min).
+- Tokens / cost: only the last run is measured (above). Estimate for all: last run was ~0.71 tokens per
+  character; products are 49.95 M characters, shops 3.31 M, so ≈ 38 M tokens ≈ **$0.76** at $0.02 / 1M.
