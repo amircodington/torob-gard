@@ -17,7 +17,7 @@ function ProductImage({ src, alt }: { src: string | null; alt: string }) {
   const [broken, setBroken] = useState(false);
   if (!src || broken)
     return (
-      <Mascot pose="idle" className="h-24 w-24 shrink-0 rounded-full object-cover object-top" />
+      <Mascot pose="idle" className="size-24" />
     );
   return (
     // ponytail: plain <img>; Torob images are allowed from outside and next/image would proxy them.

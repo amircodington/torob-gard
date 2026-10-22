@@ -110,7 +110,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
   return (
     <>
       <div className="mt-4 flex items-start gap-3">
-        <Mascot pose="point" className="h-24 w-20 shrink-0 object-contain" alt="ترب‌گرد مسیر را نشان می‌دهد" />
+        <Mascot pose="point" react="hop" className="size-24" alt="ترب‌گرد مسیر را نشان می‌دهد" />
         <div className="min-w-0 pt-2">
           <span className="rounded-pill bg-panel px-3 py-1 text-[12px] font-bold text-on-dark">آماده‌ی رفتن</span>
           <h1 className="mt-2 text-[22px] leading-8">

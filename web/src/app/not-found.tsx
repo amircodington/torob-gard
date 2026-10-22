@@ -4,9 +4,7 @@ import { Mascot } from "../components/Mascot";
 export default function NotFound() {
   return (
     <main className="mx-auto flex max-w-md flex-col items-center px-4 pt-16 pb-12 text-center">
-      <div className="size-44 overflow-hidden rounded-full bg-surface-tint">
-        <Mascot pose="stuck" className="size-full object-cover object-[50%_45%] mix-blend-multiply" />
-      </div>
+      <Mascot pose="stuck" react="shake" className="size-44" />
       <h1 className="mt-8 text-[28px] leading-10 font-light">
         این صفحه <span className="font-extrabold">پیدا نشد</span>
       </h1>

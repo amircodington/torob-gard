@@ -6,10 +6,7 @@ const BTN = "inline-flex min-h-11 items-center justify-center rounded-pill px-6 
 export function Hero() {
   return (
     <section className="flex flex-col items-center pt-16 text-center">
-      <div className="size-44 overflow-hidden rounded-full bg-surface-tint">
-        {/* multiply melts the WebP's grey backdrop into the tint circle */}
-        <Mascot pose="wave" className="size-full object-cover object-[50%_45%] mix-blend-multiply" />
-      </div>
+      <Mascot pose="wave" className="size-44" />
       <h1 className="mt-8 text-[34px] leading-[48px] font-light">
         بیا با هم <span className="font-extrabold">خریدِ خوب</span> رو پیدا کنیم!
       </h1>

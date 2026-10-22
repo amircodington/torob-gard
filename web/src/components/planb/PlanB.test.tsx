@@ -18,6 +18,8 @@ vi.mock("../../state/session", async (orig) => ({
   useSession: () => ({ state, dispatch }),
 }));
 
+// jsdom has no matchMedia; the mascot's gsap.matchMedia needs one (reduced motion → no hop).
+window.matchMedia = ((q: string) => ({ matches: q.includes("reduce"), media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
 afterEach(cleanup);
 
 const row = (id: string, price: number, distanceM: number): OfferRow => ({

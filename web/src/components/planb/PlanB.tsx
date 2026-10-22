@@ -135,7 +135,7 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
         </div>
 
         <div className="flex items-start gap-3">
-          <Mascot pose="point" className="h-32 w-24 shrink-0 object-contain" alt="ترب‌گرد با قطب‌نما، مسیر تازه‌ای را نشان می‌دهد" />
+          <Mascot pose="point" react="hop" className="size-28" alt="ترب‌گرد با قطب‌نما، مسیر تازه‌ای را نشان می‌دهد" />
           <div className="min-w-0 pt-2">
             <span className="rounded-pill bg-panel px-3 py-1 text-[12px] font-bold text-on-dark">پلن B</span>
             <h2 className="mt-2 text-[20px] leading-8">

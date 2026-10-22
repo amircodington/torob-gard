@@ -122,9 +122,9 @@ body {
   }
 }
 
-/* Items set style={{ "--i": i }}; after 8 the rest appear with the 8th. */
+/* Items set style={{ "--i": i }}; 8 items stagger (i 0..7), the rest appear with the 8th. */
 @utility stagger {
-  animation-delay: calc(min(var(--i, 0), 8) * var(--stagger));
+  animation-delay: calc(min(var(--i, 0), 7) * var(--stagger));
 }
 
 /* mobile-native: no grey flash on tap, no double-tap-zoom delay, no text selection on a long-press of a control. */

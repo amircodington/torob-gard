@@ -9,7 +9,7 @@ test("landing: CTAs, live numbers, pasazh strip, no horizontal scroll", async ({
   await expect(page.getByTestId("pasazh-strip").getByRole("listitem")).toHaveCount(12);
 
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
-  expect(width).toBeLessThanOrEqual(390);
+  expect(width).toBeLessThanOrEqual(page.viewportSize()!.width);
 });
 
 test("404 shows the stuck mascot and a way home", async ({ page }) => {

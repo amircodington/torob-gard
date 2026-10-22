@@ -31,10 +31,19 @@ test("honesty: every radar row shows price age and stock; hedges are visible", a
   for (const row of await rows.all()) {
     await expect(row.getByText(/به‌روزرسانی/)).toBeVisible();
     await expect(row.getByText(/موجودی (نامشخص|تأییدشده)/)).toBeVisible();
-    for (const hedge of [/احتمالاً/, /ثبت نشده/]) {
-      const h = row.getByText(hedge);
-      if (await h.count()) await expect(h.first()).toBeVisible();
-    }
   }
+  // This product has guessed parses (parse_confidence < 0.8) and a shop with a null unit: both hedges must show.
+  for (const hedge of [/احتمالاً/, /ثبت نشده/]) await expect(rows.getByText(hedge).first()).toBeVisible();
+  await credit(page);
+});
+
+test("honesty: trip checklist credit", async ({ page, request }) => {
+  const offers: { shop: { id: string } }[] = await (await request.get(`/api/products/${PRODUCT}/offers`)).json();
+  const res = await request.post("/api/trips", {
+    data: { product_id: PRODUCT, chosen_shop_id: offers[0].shop.id, req: { category: "mobile" }, failures: [], anchor: { lat: 35.6907, lng: 51.413 } },
+  });
+  expect(res.ok()).toBe(true);
+  await page.goto(`/trip/${(await res.json()).id}`);
+  await expect(page.getByRole("heading", { name: "چک‌لیست قبل از حرکت" })).toBeVisible();
   await credit(page);
 });

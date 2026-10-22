@@ -133,7 +133,7 @@ function Desk() {
           </p>
         </div>
         {/* ponytail: the mascot WebPs carry an opaque grey ground, so they sit cropped in a circle until transparent exports land. */}
-        <Mascot pose="idle" className="mt-4 h-20 w-20 shrink-0 rounded-full object-cover object-top" />
+        <Mascot pose="idle" className="mt-4 size-20" />
       </div>
       <div className="mt-3">
         <ReqChips req={req} onEdit={edit} />

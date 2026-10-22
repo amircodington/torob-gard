@@ -18,7 +18,18 @@ async function metres(row: Locator): Promise<number> {
 
 test.use({ permissions: [] }); // geolocation denied
 
+/** The last Saturday 12:00 Tehran before today: shops declare Saturday hours, so «الان باز» keeps rows at any real hour. */
+function lastSaturdayNoon(): Date {
+  const d = new Date();
+  d.setUTCHours(8, 30, 0, 0); // 12:00 Tehran (+03:30, no DST since 2022), so the UTC weekday is Tehran's
+  do d.setUTCDate(d.getUTCDate() - 1);
+  while (d.getUTCDay() !== 6);
+  return d;
+}
+
 test("radar: anchor fallback, sort, open-now filter, missing unit, a failure opens Plan B", async ({ page, request }) => {
+  const now = lastSaturdayNoon();
+  await page.clock.setFixedTime(now);
   await page.goto(`/radar/${PRODUCT}`);
   const rows = page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem");
   await expect(rows.first()).toBeVisible();
@@ -38,7 +49,7 @@ test("radar: anchor fallback, sort, open-now filter, missing unit, a failure ope
   expect(ds).toEqual([...ds].sort((a, b) => a - b));
 
   // «الان باز» hides a shop that is closed today (Tehran weekday from the API's own hours).
-  const day = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tehran", weekday: "short" }).format(new Date()).toLowerCase();
+  const day = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Tehran", weekday: "short" }).format(now).toLowerCase();
   const api = await (await request.get(`/api/products/${PRODUCT}/offers`)).json();
   const closed = api.find((r: { shop: { weekly_hours: Record<string, { status: string }> } }) => r.shop.weekly_hours[day]?.status === "closed");
   const before = await rows.count();
