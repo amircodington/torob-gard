@@ -8,13 +8,15 @@ from ninja import Router, Schema
 from ninja.errors import HttpError
 
 from catalog.models import Product, Shop, ShopReport
+from catalog.rows import shop_out
+from catalog.schemas import ShopOut
 
 from .models import Trip
 
 router = Router()
 
 
-# ponytail: Task 3 adds the shared ProductOut/ShopOut in catalog/schemas.py; switch to them then
+# ponytail: trip keeps its flat image_url product shape (client contract)
 class TripProductOut(Schema):
     id: str
     title: str
@@ -26,23 +28,6 @@ class TripProductOut(Schema):
     offer_count: int = 0
 
 
-class TripShopOut(Schema):
-    id: str
-    name: str
-    venue_name: str | None = None
-    venue_slug: str | None = None
-    floor: str | None = None
-    unit: str | None = None
-    location_hint: str | None = None
-    parse_confidence: float | None = None
-    address: str | None = None
-    location_label: str | None = None
-    lat: float | None = None
-    lng: float | None = None
-    weekly_hours: dict | list | None = None
-    contact: dict | str | None = None
-
-
 class TripOut(Schema):
     id: UUID
     created_at: datetime
@@ -52,7 +37,7 @@ class TripOut(Schema):
     failures: list
     anchor: dict
     product: TripProductOut
-    shop: TripShopOut | None
+    shop: ShopOut | None
 
 
 class TripIn(Schema):
@@ -82,18 +67,7 @@ def _out(t: Trip) -> dict:
         "min_price": p.min_price, "median_price": p.median_price,
         "max_price": p.max_price, "offer_count": p.offer_count,
     }
-    shop = None
-    if s:
-        keys = ("name floor unit location_hint parse_confidence "
-                "location_label weekly_hours").split()
-        shop = {
-            "id": s.id, **{k: getattr(s, k) for k in keys},
-            "venue_name": s.venue.name if s.venue else None,
-            "venue_slug": s.venue.slug if s.venue else None,
-            "address": s.address_raw,
-            "contact": next((c["display_number"] for c in s.contacts), None),
-            "lat": s.geom.y if s.geom else None, "lng": s.geom.x if s.geom else None,
-        }
+    shop = shop_out(s) if s else None
     return {
         "id": t.id, "created_at": t.created_at, "product_id": t.product_id,
         "chosen_shop_id": t.chosen_shop_id, "req": t.req, "failures": t.failures,

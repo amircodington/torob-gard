@@ -37,7 +37,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 
 - [x] P1.1 `/api/stats`, `/api/venues` — Mohammad
 - [x] P1.2 Decision desk `pick_tiers` + `POST /api/desk` — Mohammad
-- [ ] P1.3 Product + offer rows (distance, stock from reports, installments) — Mohammad
+- [x] P1.3 Product + offer rows (distance, stock from reports, installments) — Mohammad
 - [x] P1.4 Reports + trips — Mohammad
 - [ ] P1.5 Web domain layer: api client, ranking, hours, geo — Mohammad
 - [ ] P1.6 Consult `/start` on the ported reducer — Mohammad

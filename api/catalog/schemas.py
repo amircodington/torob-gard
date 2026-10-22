@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from ninja import Schema
 
@@ -49,3 +50,42 @@ class TierOut(Schema):
 
 class DeskOut(Schema):
     tiers: list[TierOut]
+
+
+class ProductOut(Schema):
+    id: str
+    title: str
+    brand: str | None
+    image_urls: list[str]
+    specs: list[dict]
+    min_price: int | None
+    median_price: int | None
+    max_price: int | None
+    offer_count: int
+
+
+class ShopOut(Schema):
+    id: str
+    name: str
+    venue_name: str | None
+    venue_slug: str | None
+    floor: str | None
+    unit: str | None
+    location_hint: str | None
+    parse_confidence: float
+    address: str
+    location_label: str
+    lat: float | None
+    lng: float | None
+    distance_m: int | None
+    weekly_hours: dict
+    installment: bool | None
+    contact: str | None
+
+
+class OfferRowOut(Schema):
+    offer_id: str
+    price: int
+    last_price_changed_at: datetime
+    stock: Literal["confirmed", "unknown"]
+    shop: ShopOut

@@ -1,10 +1,12 @@
 from django.db.models import Max
+from django.shortcuts import get_object_or_404
 from ninja import Router
 
 from . import desk_config
 from .desk import explain_tiers, pick_tiers
 from .models import Offer, Product, Shop, Venue
-from .schemas import DeskIn, DeskOut, StatsOut, VenueOut
+from .rows import offer_rows, product_out
+from .schemas import DeskIn, DeskOut, OfferRowOut, ProductOut, StatsOut, VenueOut
 
 router = Router(tags=["catalog"])
 
@@ -59,3 +61,14 @@ def desk(request, body: DeskIn):
         }
         for t in tiers
     ]}
+
+
+@router.get("/products/{product_id}", response=ProductOut)
+def product(request, product_id: str):
+    return product_out(get_object_or_404(Product, id=product_id))
+
+
+@router.get("/products/{product_id}/offers", response=list[OfferRowOut])
+def product_offers(request, product_id: str, lat: float | None = None, lng: float | None = None):
+    get_object_or_404(Product, id=product_id)
+    return offer_rows(product_id, lat, lng)
