@@ -76,3 +76,13 @@ def test_empty_and_confidence():
 def test_spelling_variants(raw, floor, unit):
     p = parse_address(raw)
     assert (p.floor, p.unit) == (floor, unit)
+
+
+@pytest.mark.parametrize("raw,hint", [
+    ("خیابان جمهوری، روبه‌روی پاساژ امجد، پلاک ۳", "روبه‌روی پاساژ امجد"),
+    ("خیابان جمهوری، روبه روی پاساژ امجد، پلاک ۳", "روبه روی پاساژ امجد"),
+    ("خیابان جمهوری، بین پاساژ X و Y، پلاک ۴", "بین پاساژ X و Y"),
+])
+def test_nearby_venue_is_a_hint(raw, hint):
+    p = parse_address(raw)
+    assert (p.venue_name, p.hint) == (None, hint)
