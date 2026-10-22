@@ -42,7 +42,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P1.5 Web domain layer: api client, ranking, hours, geo — Mohammad
 - [x] P1.6 Consult `/start` on the ported reducer — Mohammad
 - [ ] P1.7 Decision desk `/desk` + compare — Mohammad
-- [ ] P1.8 District map — Mohammad
+- [x] P1.8 District map — Mohammad
 - [ ] P1.9 Store radar + store sheet + anchor picker — Mohammad
 - [ ] P1.10 Plan B overlay — Mohammad
 - [ ] P1.11 Trip checklist `/trip/[id]` + walk mode — Mohammad
