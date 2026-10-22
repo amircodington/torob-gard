@@ -15,5 +15,6 @@ export function toFaDigits(text: string): string {
 
 export function normalize(text: string | null | undefined): string {
   if (!text) return "";
-  return toAsciiDigits(text).replace(/[يكةى]/g, (c) => LETTERS[c]).replace(WS, " ").trim();
+  // not .trim(): it strips U+FEFF, Python .strip() does not; after the collapse the edges hold at most one space.
+  return toAsciiDigits(text).replace(/[يكةى]/g, (c) => LETTERS[c]).replace(WS, " ").replace(/^ | $/g, "");
 }
