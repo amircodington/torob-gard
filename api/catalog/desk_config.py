@@ -50,7 +50,14 @@ BEST_BULLET = {
 }
 
 T_CHEAPEST = "ارزون‌ترین گزینه‌ی تو بودجه‌ات"
-T_BALANCED = "بهترین {label} تو این بودجه"
+# Balanced tier, only when it really wins its priority among the three.
+BALANCED_BULLET = {
+    "camera": "بهترین دوربین تو این بودجه",
+    "battery": "بیشترین باتری تو این بودجه",
+    "weight": "سبک‌ترین تو این بودجه",
+    "power": "بیشترین رم تو این بودجه",
+    "both": "بهترین دوربین و باتری تو این بودجه",
+}
 T_FEATURE = "بیشترین امکانات بین این سه"
 T_OFFERS = "{n} فروشنده تو بازار دارنش"
 T_OVER_MAX = "{x} از سقف بودجه‌ات بالاتره"

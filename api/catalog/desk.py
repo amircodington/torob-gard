@@ -16,10 +16,16 @@ def spec_number(specs: list[dict], keys: list[str]) -> float | None:
     # ponytail: units not converted (۱ ترابایت < ۵۱۲ گیگ); add a unit table if storage ranks wrong.
     by_key = {normalize(s.get("key")): s.get("value") or "" for s in reversed(specs)}
     for k in keys:
-        m = _NUM.search(to_ascii_digits(str(by_key.get(normalize(k), ""))))
+        m = _NUM.search(to_ascii_digits(str(by_key.get(normalize(k), ""))).replace("٫", "."))
         if m:
             return float(m.group())
     return None
+
+
+def _kg(specs: list[dict]) -> float | None:
+    kg = spec_number(specs, C.PRIORITY_SPECS["weight"])
+    v = next((str(s.get("value")) for s in specs if normalize(s.get("key")) == "وزن"), "")
+    return kg / 1000 if kg is not None and "گرم" in v and "کیلو" not in v else kg
 
 
 @dataclass
@@ -50,7 +56,7 @@ def _scores(category: str, priority: str | None, cands: list[Product]) -> list[d
         elif category == "mobile" and priority == "both":
             s["priority"] = ((norm["camera"][i] or 0) + (norm["battery"][i] or 0)) / 2
         elif category == "laptop" and priority == "weight":
-            kg = spec_number(p.specs, C.PRIORITY_SPECS["weight"])
+            kg = _kg(p.specs)
             s["priority"] = _MISSING if kg is None else -kg
         elif category == "laptop" and priority == "power":
             s["priority"] = raw["ram"][i] or 0.0
@@ -117,8 +123,11 @@ def pick_tiers(
 
 
 def explain_tiers(tiers: list[Tier], priority: str | None) -> dict[str, dict]:
-    label = C.PRIORITY_LABEL.get(priority or "", "")
     pscores = [t.scores.get("priority") for t in tiers]
+    # a priority that does not apply to the category (phone + weight) gets no copy at all
+    applies = any(s is not None for s in pscores)
+    label = C.PRIORITY_LABEL.get(priority or "", "") if applies else ""
+    keys = C.PRIORITY_SPECS.get(priority or "") if applies else None
     top = max((s for s in pscores if s is not None), default=None)
     cheapest = min((t.price for t in tiers), default=0)
     out = {}
@@ -127,12 +136,14 @@ def explain_tiers(tiers: list[Tier], priority: str | None) -> dict[str, dict]:
         fits = top is not None and ps == top and ps != _MISSING
         if t.tier == "budget":
             bullets.append(C.T_CHEAPEST)
-        elif t.tier == "balanced" and label:
-            bullets.append(C.T_BALANCED.format(label=label))
+        elif t.tier == "balanced" and fits and priority in C.BALANCED_BULLET:
+            bullets.append(C.BALANCED_BULLET[priority])
         elif t.tier == "feature":
             bullets.append(C.T_FEATURE)
-        keys = C.PRIORITY_SPECS.get(priority or "")
-        n = spec_number(t.product.specs, keys) if keys else None
+        if priority == "weight":
+            n = _kg(t.product.specs)
+        else:
+            n = spec_number(t.product.specs, keys) if keys else None
         if fits and len(tiers) > 1 and (n is not None or not keys):
             bullets.append(C.BEST_BULLET[priority].format(n=C.fa_num(n) if n is not None else ""))
         bullets.append(C.T_OFFERS.format(n=C.fa_num(t.offer_count)))

@@ -48,6 +48,7 @@ def test_spec_number():
     bat = [{"key": "ظرفیت باتری", "value": "۵۰۰۰ میلی‌آمپر ساعت"}]
     assert spec_number(bat, ["ظرفیت باتری"]) == 5000.0
     assert spec_number([{"key": "وزن", "value": "1.35 کیلوگرم"}], ["وزن"]) == 1.35
+    assert spec_number([{"key": "وزن", "value": "۱٫۳۵ کیلوگرم"}], ["وزن"]) == 1.35
     assert spec_number([], ["ظرفیت باتری"]) is None
 
 
@@ -78,3 +79,44 @@ def test_missing_spec_becomes_tradeoff(phones):
     ex = explain_tiers(pick_tiers("mobile", 0, None, "battery"), "battery")
     assert any("ثبت نشده" in s for e in ex.values() for s in e["tradeoffs"])
 
+
+
+@pytest.fixture
+def laptops(db):
+    cat = Category.objects.create(name="لپ تاپ و نوت بوک", name_norm="لپ تاپ و نوت بوک")
+    for pid, price, w in [("heavy", 20, "۲ کیلوگرم"), ("kg", 30, "1.23 کیلوگرم"),
+                          ("grams", 35, "۶۰۰ گرم")]:
+        Product.objects.create(
+            id=pid, persian_title=pid, title_norm=pid, category=cat, min_price=price * M,
+            offer_count=2, specs=[{"key": "وزن", "section": "", "value": w}],
+        )
+
+
+def test_weight_in_grams(laptops):
+    t = pick_tiers("laptop", 0, None, "weight")
+    assert [x.product.id for x in t][:2] == ["heavy", "grams"]
+
+
+def test_balanced_copy_is_honest(phones):
+    # band 19–25M: the budget pick (p3, 200MP) has the best camera, so balanced must not claim it
+    ex = explain_tiers(pick_tiers("mobile", 19 * M, 25 * M, "camera"), "camera")
+    assert not any("بهترین دوربین" in b for b in ex["balanced"]["bullets"])
+    # weight does not apply to phones: no missing-spec noise, no weight claims
+    ex = explain_tiers(pick_tiers("mobile", 15 * M, 25 * M, "weight"), "weight")
+    assert not any("وزن" in s for e in ex.values() for s in e["bullets"] + e["tradeoffs"])
+
+
+def test_desk_endpoint(client, phones):
+    other = client.post("/api/desk", {"category": "other"}, content_type="application/json")
+    assert other.status_code == 200 and other.json() == {"tiers": []}
+    r = client.post(
+        "/api/desk",
+        {"category": "mobile", "budget_min": 15 * M, "budget_max": 25 * M, "priority": "camera"},
+        content_type="application/json",
+    )
+    assert r.status_code == 200
+    tiers = r.json()["tiers"]
+    assert len(tiers) == 3
+    keys = {"tier", "product_id", "title", "price", "offer_count", "specs_top3", "newest_price_at",
+            "bullets", "tradeoffs", "fit_note", "fits_priority"}
+    assert all(keys <= set(t) for t in tiers)
