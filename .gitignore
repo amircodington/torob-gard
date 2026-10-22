@@ -11,3 +11,5 @@ __pycache__/
 .ruff_cache/
 *.pyc
 .DS_Store
+web/test-results/
+web/playwright-report/
