@@ -12,6 +12,7 @@ from redis.exceptions import RedisError
 
 from .context import TurnContext
 from .orchestrator import BlockEvent, Done, Status, Token, run_turn
+from .tools.price import price_check
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -69,3 +70,14 @@ async def chat(body: ChatIn):
 
     return StreamingResponse(events(), media_type="text/event-stream",
                              headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+class PriceCheckIn(BaseModel):
+    product_id: str = Field(min_length=1, max_length=64)
+    quoted_price: int = Field(gt=0, lt=10**12)
+
+
+@router.post("/agent/price_check")
+async def price_check_route(body: PriceCheckIn):
+    """The store sheet's «این قیمت منصفانه‌ست؟»: the tool alone, no LLM."""
+    return await price_check(body.product_id, body.quoted_price, None)

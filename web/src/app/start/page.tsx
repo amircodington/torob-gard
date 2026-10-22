@@ -1,19 +1,36 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bubble } from "../../components/chat/Bubble";
 import { Chips } from "../../components/chat/Chips";
 import { Composer } from "../../components/chat/Composer";
+import { ShopCards } from "../../components/chat/ShopCards";
 import { JourneyShell } from "../../components/JourneyShell";
-import { useSession } from "../../state/session";
+import { consult } from "../../state/agentBridge";
+import { useSession, type Chip } from "../../state/session";
 
 function Consult() {
   const { state, dispatch } = useSession();
   const end = useRef<HTMLDivElement>(null);
+  // The agent's turn in flight: the user's text and the latest status line (not in the session until done).
+  const [pending, setPending] = useState<{ text: string; status: string } | null>(null);
 
   useEffect(() => {
-    if (state.chat.length > 1) end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [state.chat.length]);
+    if (state.chat.length > 1 || pending) end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [state.chat.length, pending]);
+
+  const send = async (raw: string) => {
+    const text = raw.trim();
+    if (!text || pending) return;
+    if (state.agentOffline) return dispatch({ type: "CHAT_TEXT", text });
+    setPending({ text, status: "" });
+    const body = { session_id: state.agentSessionId ?? undefined, text, context: { req: state.req, anchor: null, stage: "consult" } };
+    const actions = await consult(body, (status) => setPending({ text, status }));
+    actions.forEach(dispatch);
+    setPending(null);
+  };
+
+  const pick = (chip: Chip) => (chip.id.startsWith("agent:") ? send(chip.label) : dispatch({ type: "CHAT_CHIP", chip }));
 
   // A reverse loop, not findLast: older Android webviews lack it.
   let lastChipMsgId: number | undefined;
@@ -32,21 +49,35 @@ function Consult() {
         <span className="font-extrabold">خرید</span>
       </h1>
       <p className="text-[15px] leading-6 text-ink-muted">چند سوال کوتاه، بعد سه گزینه با دلیل.</p>
+      {state.agentOffline && (
+        <p role="status" className="mt-3 rounded-md bg-surface-tint px-4 py-2 text-[13px] font-semibold leading-5 text-ink">
+          دستیار هوشمند موقتاً در دسترس نیست
+        </p>
+      )}
 
       <div className="mt-5 flex flex-1 flex-col gap-3" aria-live="polite">
         {state.chat.map((m, i) => (
           <div key={m.id} className="flex flex-col gap-2">
-            <Bubble from={m.from}>{m.text}</Bubble>
+            {m.text && <Bubble from={m.from}>{m.text}</Bubble>}
+            {m.shopCards && <ShopCards {...m.shopCards} />}
             {m.chips && (
               <Chips
                 chips={m.chips}
                 selectedLabel={state.chat[i + 1]?.from === "user" ? state.chat[i + 1].text : undefined}
-                disabled={m.id !== lastChipMsgId}
-                onPick={(chip) => dispatch({ type: "CHAT_CHIP", chip })}
+                disabled={m.id !== lastChipMsgId || !!pending}
+                onPick={pick}
               />
             )}
           </div>
         ))}
+        {pending && (
+          <>
+            <Bubble from="user">{pending.text}</Bubble>
+            <Bubble from="assistant">
+              <span className="text-ink-muted">{pending.status || "…"}</span>
+            </Bubble>
+          </>
+        )}
         {/* scroll-margin ≈ the sticky composer's height, so scrolling to the end keeps the last bubble above it */}
         <div ref={end} className="scroll-mb-36" />
       </div>
@@ -61,7 +92,7 @@ function Consult() {
             بدون سوال بیشتر، نمایش گزینه‌ها ←
           </button>
         )}
-        <Composer onSend={(text) => dispatch({ type: "CHAT_TEXT", text })} />
+        <Composer onSend={send} />
       </div>
     </main>
   );

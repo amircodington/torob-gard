@@ -32,7 +32,7 @@ async def test_price_check_high(conn):
     r = await price_check("t_p610", 900_000, "t-venue-b", db=conn)
     assert (r["min"], r["median"], r["max"]) == (600_000, 610_000, 620_000)
     assert r["verdict"] == "high" and r["pct_vs_median"] == 48
-    assert r["offer_ids"] == ["t_q1", "t_q2", "t_q3"]
+    assert r["offer_ids"] == ["t_q1", "t_q2", "t_q3"] and r["newest_price_at"] is not None
     assert [s["id"] for s in r["cheaper_nearby"]] == ["t_shop_b1", "t_shop_a1", "t_shop_far"]
 
 

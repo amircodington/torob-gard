@@ -79,6 +79,15 @@ const mapTrip = (t: Raw): Trip => ({
 
 /* -------------------------------- inputs -------------------------------- */
 
+export interface PriceCheck {
+  min: number | null;
+  median: number | null;
+  max: number | null;
+  verdict: "below" | "fair" | "high" | "unknown";
+  pctVsMedian: number | null;
+  newestPriceAt: string | null;
+}
+
 export interface DeskInput { category: string; budgetMin: number; budgetMax: number | null; priority: string | null }
 export interface ReportInput { shopId: string; productId?: string; kind: "no_answer" | "no_item" | "closed" | "had_item" | "open" }
 export interface TripInput {
@@ -111,6 +120,19 @@ export const api = {
     const raw = await request<RawOfferRow[]>(`/products/${encodeURIComponent(productId)}/offers${q}`);
     const now = new Date();
     return raw.map((r) => mapOfferRow(r, now, productId));
+  },
+  /** The agent's shop_cards: offer ids → radar rows (≤ 3, order kept). */
+  offersById: async (ids: string[]): Promise<OfferRow[]> => {
+    const raw = await request<(RawOfferRow & { product_id: string })[]>(`/offers?ids=${ids.map(encodeURIComponent).join(",")}`);
+    const now = new Date();
+    return raw.map((r) => mapOfferRow(r, now, r.product_id));
+  },
+  /** The agent's price_check tool, no LLM (agent/torobgard_agent/api.py). */
+  priceCheck: async (productId: string, quotedPrice: number): Promise<PriceCheck> => {
+    const res = await fetch("/agent/price_check", { cache: "no-store", headers: { "Content-Type": "application/json" }, ...send("POST", { product_id: productId, quoted_price: quotedPrice }) });
+    if (!res.ok) throw new ApiError(res.status, await res.text());
+    const r: Raw = await res.json();
+    return { min: r.min, median: r.median, max: r.max, verdict: r.verdict, pctVsMedian: r.pct_vs_median, newestPriceAt: r.newest_price_at };
   },
   report: (i: ReportInput) =>
     request<{ id: string }>("/reports", send("POST", { shop_id: i.shopId, product_id: i.productId ?? null, kind: i.kind })),

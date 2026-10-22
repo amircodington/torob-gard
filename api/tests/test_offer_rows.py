@@ -73,3 +73,9 @@ def test_product_and_404(client, world):
 def test_installment_of():
     assert installment_of([]) is None and installment_of(None) is None
     assert installment_of(["snapp"]) is True
+
+
+def test_offers_by_id_keep_order_and_skip_outliers(client, world):
+    r = client.get("/api/offers", {"ids": "os2,os3,os1,nope"}).json()  # os3: outlier; 3 at most
+    assert [(x["offer_id"], x["product_id"], x["shop"]["id"], x["stock"]) for x in r] == [
+        ("os2", "p1", "s2", "unknown"), ("os1", "p1", "s1", "unknown")]

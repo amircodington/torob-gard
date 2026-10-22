@@ -89,3 +89,7 @@ class OfferRowOut(Schema):
     last_price_changed_at: datetime
     stock: Literal["confirmed", "unknown"]
     shop: ShopOut
+
+
+class OfferByIdOut(OfferRowOut):
+    product_id: str

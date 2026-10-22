@@ -14,6 +14,7 @@ import { FreshBadge } from "../ui/FreshBadge";
 import { Sheet } from "../ui/Sheet";
 import { StockBadge } from "../ui/StockBadge";
 import type { RadarAnchor } from "./AnchorPicker";
+import { PriceCheck } from "./PriceCheck";
 import { distanceLabel, placeLine } from "./ShopRow";
 
 const FAILS: { label: string; kind: ReportInput["kind"]; reason: FailReason }[] = [
@@ -128,6 +129,7 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
             )}
           </Fact>
         </div>
+        <PriceCheck key={store.id} productId={offer.productId} />
 
         <p className="mt-3 text-[12px] leading-5 text-on-dark/60">قبل از رفتن زنگ بزن؛ قیمت و موجودی رو خود فروشگاه تأیید می‌کنه.</p>
         <Btn className="mt-3 w-full" disabled={busy} onClick={go}>

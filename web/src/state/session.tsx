@@ -30,6 +30,7 @@ export interface Chip {
 
 export interface Msg extends ChatMsg {
   chips?: Chip[];
+  shopCards?: { offerIds: string[]; why: Record<string, string> }; // the agent's shop_cards block
 }
 
 /** budgetId "custom" means the band was typed («۱۵ تا ۲۵») and lives in customBudget. */
@@ -54,6 +55,8 @@ export interface SessionState {
   previousPlan: { storeId: string } | null;
   summaryJustReady: boolean;
   tripId: string | null; // the saved trip (/trip/[id]); Plan B patches it
+  agentSessionId: string | null;
+  agentOffline: boolean; // the agent failed once: the rule reducer answers for the rest of the session
 }
 
 export const STAGE_ORDER: Stage[] = ["consult", "products", "radar", "summary"];
@@ -93,6 +96,8 @@ export const initialState = (): SessionState => ({
   previousPlan: null,
   summaryJustReady: false,
   tripId: null,
+  agentSessionId: null,
+  agentOffline: false,
 });
 
 /* ----------------------------- actions ----------------------------- */
@@ -119,7 +124,14 @@ export type Action =
   | { type: "TRIP_CREATED"; id: string; failures?: FailureRecord[] }
   | { type: "RESET" }
   | { type: "HYDRATE"; state: SessionState; stage?: Stage; productId?: string }
-  | { type: "SEED"; seedId: string };
+  | { type: "SEED"; seedId: string }
+  // The agent's turn (state/agentBridge.ts), applied at once when the stream is done.
+  | { type: "CHAT_USER"; text: string }
+  | { type: "AGENT_TOKEN"; text: string }
+  | { type: "AGENT_MSG"; msg: Omit<Msg, "id"> }
+  | { type: "SET_REQ"; req: Partial<JourneyReq> }
+  | { type: "AGENT_DONE"; sessionId: string | null }
+  | { type: "AGENT_OFFLINE" };
 
 /* --------------------------- chat helpers --------------------------- */
 
@@ -373,6 +385,26 @@ export function reducer(s: SessionState, a: Action): SessionState {
       if (!a.productId || a.productId === s1.selectedProductId) return s1;
       return { ...reducer(s1, { type: "SELECT_PRODUCT", id: a.productId, advance: true }), stage, maxStage: s1.maxStage };
     }
+    case "CHAT_USER":
+      return { ...s, chat: push(s.chat, { from: "user", text: a.text }) };
+    case "AGENT_TOKEN": {
+      const last = s.chat[s.chat.length - 1];
+      if (last?.from !== "assistant") return { ...s, chat: push(s.chat, { from: "assistant", text: a.text }) };
+      return { ...s, chat: [...s.chat.slice(0, -1), { ...last, text: last.text + a.text }] };
+    }
+    case "AGENT_MSG": {
+      // An ask whose question the say already holds hands its chips to that message.
+      const last = s.chat[s.chat.length - 1];
+      if (a.msg.chips && a.msg.text && last?.from === "assistant" && !last.chips && last.text.includes(a.msg.text))
+        return { ...s, chat: [...s.chat.slice(0, -1), { ...last, chips: a.msg.chips }] };
+      return { ...s, chat: push(s.chat, a.msg) };
+    }
+    case "SET_REQ":
+      return { ...s, req: { ...s.req, ...a.req } };
+    case "AGENT_DONE":
+      return { ...s, agentSessionId: a.sessionId ?? s.agentSessionId };
+    case "AGENT_OFFLINE":
+      return { ...s, agentOffline: true };
     case "SEED": {
       const steps = SEEDS[a.seedId];
       return steps ? steps.reduce(reducer, initialState()) : s;

@@ -1,3 +1,4 @@
+from datetime import datetime
 from statistics import median
 from typing import Literal, TypedDict
 
@@ -18,6 +19,7 @@ class PriceCheck(TypedDict):
     verdict: Literal["below", "fair", "high", "unknown"]
     pct_vs_median: int | None
     cheaper_nearby: list[ShopHit]
+    newest_price_at: datetime | None  # the honesty rule: every price shows its age
 
 
 async def price_check(
@@ -26,13 +28,14 @@ async def price_check(
     """Is the quoted price fair? Compares with the non-outlier offers; lists cheaper shops."""
     async with _connect(db) as conn:
         rows = (await conn.execute(text(
-            "SELECT id, price_toman FROM catalog_offer WHERE product_id = :p AND NOT is_outlier"
+            "SELECT id, price_toman, last_price_changed_at FROM catalog_offer"
+            " WHERE product_id = :p AND NOT is_outlier"
             " ORDER BY price_toman, id"), {"p": product_id})).all()
         prices = [r[1] for r in rows]
         out: PriceCheck = {
             "product_id": product_id, "min": None, "median": None, "max": None,
             "offer_ids": [r[0] for r in rows], "verdict": "unknown", "pct_vs_median": None,
-            "cheaper_nearby": [],
+            "cheaper_nearby": [], "newest_price_at": max((r[2] for r in rows), default=None),
         }
         if not prices:
             return out

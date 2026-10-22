@@ -208,3 +208,18 @@ def test_chat_sse(monkeypatch):
     assert [e[0] for e in events] == ["event: status", "event: token", "event: block", "event: done"]
     assert json.loads(events[2][1][6:])["type"] == "ask"
     assert json.loads(events[3][1][6:])["session_id"] == str(sid)
+
+
+def test_price_check_route(monkeypatch):
+    seen = {}
+
+    async def fake(product_id, quoted_price, venue_slug):
+        seen.update(p=product_id, q=quoted_price, v=venue_slug)
+        return {"product_id": product_id, "min": 1, "median": 2, "max": 3, "verdict": "high"}
+    monkeypatch.setattr(api, "price_check", fake)
+    c = TestClient(app)
+    r = c.post("/agent/price_check", json={"product_id": "product_1", "quoted_price": 900})
+    assert r.status_code == 200 and r.json()["verdict"] == "high"
+    assert seen == {"p": "product_1", "q": 900, "v": None}
+    bad = c.post("/agent/price_check", json={"product_id": "product_1", "quoted_price": 0})
+    assert bad.status_code == 422
