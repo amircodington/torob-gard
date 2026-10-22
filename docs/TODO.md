@@ -25,7 +25,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P0.5 Load the CSVs — Mohammad
 - [x] P0.6 Address parser — Mohammad · [ ] score against T-02 when the gold set lands
 - [x] P0.7 Venues from addresses — Mohammad
-- [ ] P0.8 Price stats, outliers, budget band check — Mohammad
+- [x] P0.8 Price stats, outliers, budget band check — Mohammad
 - [ ] P0.9 Web shell: tokens, fonts, mascot WebP, Persian helpers — Mohammad
 - [ ] T-01 BoxAPI capability check (tool calling? streaming? embeddings) — student
 - [ ] T-02 Address gold set (300 rows) — student
