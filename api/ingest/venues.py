@@ -57,5 +57,6 @@ def build_venues() -> tuple[int, int]:
     Shop.objects.bulk_update(stale, ["venue"], batch_size=2000)
     grouped = [s.id for key, members in groups.items() if key for s, _ in members]
     Shop.objects.exclude(id__in=grouped).exclude(venue=None).update(venue=None)
+    # ponytail: venues are derived-only in P0; once students add floors/photos, merge not delete
     Venue.objects.exclude(name_norm__in=[k for k in groups if k]).delete()
     return len(groups), linked
