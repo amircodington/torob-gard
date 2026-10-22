@@ -1,16 +1,21 @@
 import pytest
 from django.contrib.gis.geos import Point
 
-from catalog.models import Category, Product, Shop, ShopReport
+from catalog.models import Category, Product, Shop, ShopReport, Venue
 
 
 @pytest.fixture
 def pair(db):
+    v = Venue.objects.create(name="پاساژ", name_norm="pasazh", kind="pasazh", slug="pasazh-1")
     shop = Shop.objects.create(
-        id="s1", name="shop", name_norm="shop", address_raw="a", geom=Point(51.4, 35.7, srid=4326)
+        id="s1", name="shop", name_norm="shop", address_raw="addr", venue=v,
+        contacts=[{"channel": "phone", "display_number": "۰۲۱۱۲۳۴۵۶۷۸"}],
+        geom=Point(51.4, 35.7, srid=4326),
     )
     cat = Category.objects.create(name="c", name_norm="c")
-    p = Product.objects.create(id="p1", persian_title="گوشی", title_norm="p", category=cat)
+    p = Product.objects.create(id="p1", persian_title="گوشی", title_norm="p", category=cat,
+        brand_name="سامسونگ", image_urls=["http://i/1.jpg"],
+    )
     return p, shop
 
 
@@ -26,6 +31,10 @@ def test_create_get_patch(client, pair):
     assert j["chosen_shop_id"] == "s1"
     assert j["product"]["title"] == "گوشی"
     assert j["shop"]["id"] == "s1"
+    assert (j["product"]["brand"], j["product"]["image_url"]) == ("سامسونگ", "http://i/1.jpg")
+    sh = j["shop"]
+    assert (sh["venue_name"], sh["venue_slug"], sh["address"]) == ("پاساژ", "pasazh-1", "addr")
+    assert sh["contact"] == "۰۲۱۱۲۳۴۵۶۷۸"
     for f in ("a", "b"):
         r = client.patch(f"/api/trips/{tid}", {"failures": [f]}, content_type="application/json")
     assert r.json()["failures"] == ["a", "b"]

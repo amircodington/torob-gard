@@ -74,24 +74,26 @@ class ReportIn(Schema):
     kind: Literal["no_answer", "no_item", "closed", "had_item", "open"]
 
 
-def _opt(obj, name):
-    return getattr(obj, name, None)
-
-
 def _out(t: Trip) -> dict:
     p, s = t.product, t.chosen_shop
     prod = {
-        "id": p.id, "title": p.persian_title, "brand": _opt(p, "brand"),
-        "image_url": _opt(p, "image_url"), "min_price": _opt(p, "min_price"),
-        "median_price": _opt(p, "median_price"), "max_price": _opt(p, "max_price"),
-        "offer_count": _opt(p, "offer_count") or 0,
+        "id": p.id, "title": p.persian_title, "brand": p.brand_name,
+        "image_url": p.image_urls[0] if p.image_urls else None,
+        "min_price": p.min_price, "median_price": p.median_price,
+        "max_price": p.max_price, "offer_count": p.offer_count,
     }
     shop = None
     if s:
-        keys = ("name venue_name venue_slug floor unit location_hint parse_confidence "
-                "address location_label weekly_hours contact").split()
-        shop = {"id": s.id, **{k: _opt(s, k) for k in keys}}
-        shop["lat"], shop["lng"] = (s.geom.y, s.geom.x) if s.geom else (None, None)
+        keys = ("name floor unit location_hint parse_confidence "
+                "location_label weekly_hours").split()
+        shop = {
+            "id": s.id, **{k: getattr(s, k) for k in keys},
+            "venue_name": s.venue.name if s.venue else None,
+            "venue_slug": s.venue.slug if s.venue else None,
+            "address": s.address_raw,
+            "contact": next((c["display_number"] for c in s.contacts), None),
+            "lat": s.geom.y if s.geom else None, "lng": s.geom.x if s.geom else None,
+        }
     return {
         "id": t.id, "created_at": t.created_at, "product_id": t.product_id,
         "chosen_shop_id": t.chosen_shop_id, "req": t.req, "failures": t.failures,
@@ -104,7 +106,8 @@ def _get(trip_id: str) -> Trip:
         UUID(trip_id)
     except ValueError:
         raise HttpError(404, "not found") from None
-    return get_object_or_404(Trip.objects.select_related("product", "chosen_shop"), id=trip_id)
+    qs = Trip.objects.select_related("product", "chosen_shop__venue")
+    return get_object_or_404(qs, id=trip_id)
 
 
 @router.post("/reports")
