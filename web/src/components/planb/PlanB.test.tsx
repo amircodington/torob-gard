@@ -55,4 +55,12 @@ describe("PlanB", () => {
     expect(items.map((li) => within(li).getByRole("heading").textContent)).toEqual(["فروشگاه c", "فروشگاه d", "فروشگاه b"]);
     expect(screen.getByRole("button", { name: /قیمت مهم‌تره/ }).getAttribute("aria-pressed")).toBe("true");
   });
+
+  it("every alternative shows its price age (PLAN §2 rule 1) and the footer credit", () => {
+    withState({ ...failA, planB: { open: true, reason: "stock", priority: "price" } });
+    render(<PlanB rows={rows} />);
+    for (const li of within(screen.getByRole("list", { name: "گزینه‌های جایگزین" })).getAllByRole("listitem"))
+      expect(li.textContent).toContain("به‌روزرسانی");
+    expect(screen.getByText("محصول رسمی ترب نیست", { exact: false })).toBeTruthy();
+  });
 });

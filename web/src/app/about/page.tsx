@@ -26,6 +26,7 @@ export default function About() {
         <p className="mt-1 text-ink-muted">
           دیتاست استارکوچ (نسخه‌ی ۱۶): {faGroup(6476)} فروشگاه · {faGroup(225903)} محصول · {faGroup(315665)} پیشنهاد قیمت. کنار هر قیمت تاریخ ثبتش هست.
         </p>
+        <p className="mt-2 text-ink-muted">سفری که با «برو همین‌جا» می‌سازی روی سرور ذخیره می‌شه و هر کسی لینکش رو داشته باشه می‌تونه ببینه و تغییرش بده.</p>
       </section>
       <section className={CARD}>
         <h2 className="font-extrabold">تماس</h2>

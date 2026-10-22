@@ -165,6 +165,7 @@ function Desk() {
         onClose={() => setCompareOpen(false)}
         tiers={picked}
         hasPriority={!!prio}
+        now={current?.now ?? 0}
         onPick={(id) => {
           setCompareOpen(false);
           pick(id);

@@ -37,7 +37,7 @@ function StatCard({ tone, icon, children }: { tone: string; icon: ReactNode; chi
   );
 }
 
-export function WalkSheet({ trip, rows }: { trip: Trip; rows: OfferRow[] }) {
+export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows: OfferRow[]; rowsFailed?: boolean }) {
   const { dispatch } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -187,7 +187,7 @@ export function WalkSheet({ trip, rows }: { trip: Trip; rows: OfferRow[] }) {
                   <p className="text-[12px] text-on-dark/80">تومان · قیمت ثبت‌شده در ترب</p>
                 </>
               ) : (
-                <p className="text-[13px]">قیمتی از این فروشگاه پیدا نشد</p>
+                <p className="text-[13px]">{rowsFailed ? "قیمت الان در دسترس نیست" : "قیمتی از این فروشگاه پیدا نشد"}</p>
               )}
             </StatCard>
             <StatCard tone="bg-panel-plum" icon={<><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>}>
@@ -258,6 +258,7 @@ export function WalkSheet({ trip, rows }: { trip: Trip; rows: OfferRow[] }) {
               خرید خوب! 🎉
             </p>
           )}
+          <p className="text-[12px] leading-5 text-on-dark/70">ترب‌گرد — پروژه‌ی چالش ترب/استارکوچ؛ محصول رسمی ترب نیست.</p>
         </div>
       </section>
 

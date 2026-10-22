@@ -1,6 +1,6 @@
 "use client";
 
-import { faNum, faPrice } from "../../lib/fa";
+import { faFreshness, faNum, faPrice, isStale } from "../../lib/fa";
 import type { DeskTier } from "../../lib/types";
 import { Btn } from "../ui/Btn";
 import { Sheet } from "../ui/Sheet";
@@ -15,12 +15,15 @@ export function CompareSheet({
   onClose,
   tiers,
   hasPriority,
+  now,
   onPick,
 }: {
   open: boolean;
   onClose: () => void;
   tiers: DeskTier[];
   hasPriority: boolean;
+  /** When the tiers were fetched; ages are counted from it (render stays pure). */
+  now: number;
   onPick: (id: string) => void;
 }) {
   const specLabels = [...new Set(tiers.flatMap((t) => t.specsTop3.map((s) => s.label)))];
@@ -52,6 +55,17 @@ export function CompareSheet({
               {tiers.map((t) => (
                 <td key={t.productId} className={`${td} tabular font-bold`}>{faPrice(t.price)}</td>
               ))}
+            </tr>
+            <tr>
+              <td className={th}>به‌روزرسانی</td>
+              {tiers.map((t) => {
+                const min = t.newestPriceAt ? Math.max(0, Math.round((now - Date.parse(t.newestPriceAt)) / 60_000)) : null;
+                return (
+                  <td key={t.productId} className={td}>
+                    {min == null ? "ثبت نشده" : `${faFreshness(min)}${isStale(min) ? " · ممکن است تغییر کرده باشد" : ""}`}
+                  </td>
+                );
+              })}
             </tr>
             {specLabels.map((label) => (
               <tr key={label}>

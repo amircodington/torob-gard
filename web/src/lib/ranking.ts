@@ -44,11 +44,11 @@ export const FAIL_COPY: Record<FailReason, { title: string; body: string }> = {
   },
   stock: {
     title: "موجودی تأیید نشد",
-    body: "ثبت موجودی این پیشنهاد در ترب قدیمیه و فروشگاه هم تأیید نکرد؛ احتمال داره فروخته شده باشه.",
+    body: "گفتی که این فروشگاه جنس رو نداشت؛ ترب‌گرد موجودی رو از روی داده نمی‌دونه.",
   },
   closed: {
     title: "فروشگاه بسته است",
-    body: "ساعت کاری ثبت‌شده نشون می‌ده الان فروشگاه بسته باشه.",
+    body: "گفتی که بسته بود؛ ساعت کاری ثبت‌شده همیشه دقیق نیست.",
   },
 };
 
@@ -61,7 +61,7 @@ export const PRIORITY_META: Record<RecoveryPriority, { label: string; sub: strin
   distance: {
     label: "نزدیکی مهم‌تره",
     sub: "کوتاه‌ترین مسیر تا فروشگاه",
-    why: "فروشگاه‌ها بر اساس «فاصله از موقعیت فعلی‌ات» دوباره مرتب شدن؛ گاهی نزدیک‌ترین گزینه گرون‌تره یا موجودیش تأیید نشده.",
+    why: "فروشگاه‌ها بر اساس «فاصله از نقطه‌ای که انتخاب کردی» دوباره مرتب شدن؛ گاهی نزدیک‌ترین گزینه گرون‌تره یا موجودیش تأیید نشده.",
   },
   trust: {
     label: "اطمینان بیشتر مهمه",
@@ -114,7 +114,7 @@ export function planBRank(
       else if (diff < 0) tradeoffs.push(`${faPrice(-diff)} گرون‌تر از گزینه‌ی قبلی`);
     }
 
-    if (row.offer.stock === "confirmed") reasons.push("موجودی در ترب تأیید شده");
+    if (row.offer.stock === "confirmed") reasons.push("یه خریدار تو ۴۸ ساعت گذشته تأیید کرده که داشت");
     else tradeoffs.push("وضعیت موجودی نامشخصه");
 
     if (!isStale(row.offer.updatedMinAgo)) reasons.push("قیمت، به‌روزرسانی تازه‌ای داره");

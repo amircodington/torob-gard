@@ -43,7 +43,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
   );
 }
 
-export function Checklist({ trip, rows }: { trip: Trip; rows: OfferRow[] }) {
+export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows: OfferRow[]; rowsFailed?: boolean }) {
   const { dispatch } = useSession();
   const [copied, setCopied] = useState<"done" | "select" | null>(null);
   const fallback = useRef<HTMLTextAreaElement>(null);
@@ -76,12 +76,12 @@ export function Checklist({ trip, rows }: { trip: Trip; rows: OfferRow[] }) {
         ? { ok: true, label: "ساعت کاری", detail: `الان باز است · ${hours}` }
         : { ok: false, label: "ساعت کاری", detail: `الان بسته است · ${hours}` },
     !offer
-      ? { ok: null, label: "تازگی قیمت", detail: "قیمتی از این فروشگاه برای این مدل پیدا نشد" }
+      ? { ok: null, label: "تازگی قیمت", detail: rowsFailed ? "قیمت الان در دسترس نیست" : "قیمتی از این فروشگاه برای این مدل پیدا نشد" }
       : isStale(offer.updatedMinAgo)
         ? { ok: false, label: "تازگی قیمت", detail: `آخرین ثبت ${faFreshness(offer.updatedMinAgo)} — ممکن است تغییر کرده باشد` }
         : { ok: true, label: "تازگی قیمت", detail: `به‌روزرسانی ${faFreshness(offer.updatedMinAgo)}` },
     offer?.stock === "confirmed"
-      ? { ok: true, label: "موجودی", detail: "فروشگاه تأیید کرده — باز هم قطعی نیست" }
+      ? { ok: true, label: "موجودی", detail: "یه خریدار تو ۴۸ ساعت گذشته تأیید کرده که داشت — باز هم قطعی نیست" }
       : { ok: null, label: "موجودی", detail: "نامشخص — قبل از رفتن زنگ بزن" },
     shop.unit != null
       ? { ok: true, label: "واحد", detail: `${maybe}واحد ${faNum(shop.unit)}${shop.floor != null ? ` · طبقه ${Number.isInteger(Number(shop.floor)) ? floorName(Number(shop.floor)) : faNum(shop.floor)}` : ""}` }
@@ -141,7 +141,7 @@ export function Checklist({ trip, rows }: { trip: Trip; rows: OfferRow[] }) {
               </div>
             </>
           ) : (
-            <p className="mt-3 text-[13px] text-ink-muted">قیمتی از این فروشگاه برای این مدل پیدا نشد.</p>
+            <p className="mt-3 text-[13px] text-ink-muted">{rowsFailed ? "قیمت الان در دسترس نیست." : "قیمتی از این فروشگاه برای این مدل پیدا نشد."}</p>
           )}
         </Card>
 

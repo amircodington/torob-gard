@@ -10,6 +10,7 @@ import { reqBudget, reqPriority, useSession } from "../../state/session";
 import { Mascot } from "../Mascot";
 import { distanceLabel, placeLine } from "../radar/ShopRow";
 import { Btn } from "../ui/Btn";
+import { FreshBadge } from "../ui/FreshBadge";
 import { StockBadge } from "../ui/StockBadge";
 
 const isReason = (r: string | null): r is FailReason => r != null && r in FAIL_COPY;
@@ -211,7 +212,10 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
                           </div>
                         </div>
                         <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                          <p className="tabular whitespace-nowrap text-[17px] font-extrabold">{faPriceFull(offer.priceToman)}</p>
+                          <div>
+                            <p className="tabular whitespace-nowrap text-[17px] font-extrabold">{faPriceFull(offer.priceToman)}</p>
+                            <FreshBadge updatedMinAgo={offer.updatedMinAgo} />
+                          </div>
                           <StockBadge stock={offer.stock} />
                         </div>
                         <Points title="چرا این رتبه؟" items={r.reasons} />
@@ -237,6 +241,7 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
             نیازها، مدل و فیلترهات دست‌نخورده می‌مونه؛ فروشگاه ردشده در تاریخچه علامت می‌مونه.
           </p>
         </div>
+        <p className="mt-6 text-center text-[11px] font-semibold leading-5 text-ink-muted">ترب‌گرد — پروژه‌ی چالش ترب/استارکوچ؛ محصول رسمی ترب نیست.</p>
       </div>
     </div>
   );

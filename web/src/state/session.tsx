@@ -147,7 +147,7 @@ const catLabel = (c: Category): string =>
 function budgetAsk(cat: Category): Omit<Msg, "id"> {
   return {
     from: "assistant",
-    text: `عالیه، ${catLabel(cat)} می‌خوای!\nحدود بودجه‌ات چقدره؟ (مثلاً «۱۵ تا ۲۵»؛ اگه مطمئن نیستی، رد ش کن)`,
+    text: `عالیه، ${catLabel(cat)} می‌خوای!\nحدود بودجه‌ات چقدره؟ (مثلاً «۱۵ تا ۲۵»؛ اگه مطمئن نیستی، ردش کن)`,
     chips: [
       ...BUDGETS[cat].map((b) => ({ id: `budget:${b.id}`, label: b.label })),
       ...(BUDGETS[cat].some((b) => b.label === "مهم نیست") ? [] : [{ id: "skip:budget", label: "فعلاً مهم نیست" }]),
