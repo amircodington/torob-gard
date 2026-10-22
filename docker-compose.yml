@@ -49,5 +49,6 @@ services:
     volumes:
       - ./agent:/app
       - ./shared:/shared:ro
+      - ./docs/evidence:/evidence:ro  # eval cases (make eval)
 volumes:
   pgdata:

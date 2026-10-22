@@ -1,5 +1,5 @@
 # ponytail: api runs only in Docker (host has no GDAL); web runs on the host with pnpm. No CI yet, pre-push runs check.
-.PHONY: dev down check e2e test-api test-agent agent-testdb ingest psql hooks
+.PHONY: dev down check e2e eval test-api test-agent agent-testdb ingest psql hooks
 
 .env:
 	cp .env.example .env
@@ -27,6 +27,11 @@ check: .env web/node_modules
 # Not part of check: needs the dev server on :3100 and the compose API.
 e2e: web/node_modules
 	pnpm -C web e2e
+
+# Real BoxAPI calls against the dev DB: costs money, runs every case once. Exit 1 while the gate is open.
+eval: .env
+	docker compose run --rm api python manage.py migrate -v0
+	docker compose run --rm -e GIT_SHA=$$(git rev-parse --short HEAD) agent python -m torobgard_agent.evals
 
 test-api: .env
 	docker compose run --rm api pytest $(ARGS)
