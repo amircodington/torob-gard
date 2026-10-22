@@ -34,9 +34,18 @@ function Desk() {
   useEffect(() => {
     if (!askable) return;
     let live = true;
+    const input = { category: req.category!, budgetMin: budget?.min ?? 0, budgetMax: budget?.max ?? null, priority: prio?.id ?? null };
     api
-      .desk({ category: req.category!, budgetMin: budget?.min ?? 0, budgetMax: budget?.max ?? null, priority: prio?.id ?? null })
-      .then((tiers) => live && setRes({ key, tiers, now: Date.now() }))
+      .desk(input)
+      .then((tiers) => {
+        if (!live) return;
+        setRes({ key, tiers, now: Date.now() });
+        // Templates paint first; the agent's grounded rewrite swaps the text in place (same shape, same line counts).
+        api.explain(tiers, input).then(
+          (ex) => live && setRes((r) => (r?.key === key && r.tiers ? { ...r, tiers: r.tiers.map((t) => ({ ...t, ...ex[t.productId] })) } : r)),
+          () => {}, // timeout or agent down: the templates stay
+        );
+      })
       .catch(() => live && setRes({ key, error: true }));
     return () => {
       live = false;

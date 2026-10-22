@@ -114,6 +114,19 @@ export const api = {
     (await request<Raw>("/desk", send("POST", {
       category: i.category, budget_min: i.budgetMin, budget_max: i.budgetMax, priority: i.priority,
     }))).tiers.map(mapTier),
+  /** The agent's rewrite of the template text, by product id; a tier it could not ground is absent. */
+  explain: async (tiers: DeskTier[], i: DeskInput): Promise<Record<string, Pick<DeskTier, "bullets" | "tradeoffs" | "fitNote">>> => {
+    const res = await fetch("/agent/explain", {
+      cache: "no-store", headers: { "Content-Type": "application/json" }, signal: AbortSignal.timeout(8000),
+      ...send("POST", {
+        tiers: tiers.map((t) => ({ tier: t.tier, product_id: t.productId, title: t.title, specs_top3: t.specsTop3, price: t.price, offer_count: t.offerCount, bullets: t.bullets, tradeoffs: t.tradeoffs, fit_note: t.fitNote })),
+        req: { category: i.category, budget_min: i.budgetMin, budget_max: i.budgetMax, priority: i.priority },
+      }),
+    });
+    if (!res.ok) throw new ApiError(res.status, await res.text());
+    const r: Record<string, Raw> = await res.json();
+    return Object.fromEntries(Object.entries(r).map(([id, e]) => [id, { bullets: e.bullets, tradeoffs: e.tradeoffs, fitNote: e.fit_note }]));
+  },
   product: async (id: string): Promise<Product> => mapProduct(await request<Raw>(`/products/${encodeURIComponent(id)}`)),
   offerRows: async (productId: string, anchor?: Anchor): Promise<OfferRow[]> => {
     const q = anchor ? `?lat=${anchor.lat}&lng=${anchor.lng}` : "";

@@ -60,7 +60,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P2.4 Output contract + Grounder — Mohammad
 - [x] P2.5 Orchestrator + `/agent/chat` SSE — Mohammad
 - [x] P2.6 Consult on the agent with fallback; in-shop price check — Mohammad
-- [ ] P2.7 Agent-written desk explanations — Mohammad
+- [x] P2.7 Agent-written desk explanations — Mohammad
 - [ ] P2.8 Evals (`make eval`) — Mohammad
 - [ ] P2.9 Student admin + quality page — Mohammad
 - [ ] T-06 Embedding bake-off — student

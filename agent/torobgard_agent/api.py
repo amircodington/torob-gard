@@ -11,6 +11,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 from .context import TurnContext
+from .explain import ExplainIn, explain
 from .orchestrator import BlockEvent, Done, Status, Token, run_turn
 from .tools.price import price_check
 
@@ -81,3 +82,9 @@ class PriceCheckIn(BaseModel):
 async def price_check_route(body: PriceCheckIn):
     """The store sheet's «این قیمت منصفانه‌ست؟»: the tool alone, no LLM."""
     return await price_check(body.product_id, body.quoted_price, None)
+
+
+@router.post("/agent/explain")
+async def explain_route(body: ExplainIn):
+    """Desk copy by FAST_MODEL; a tier missing from the answer keeps its P1 template."""
+    return await explain(body)
