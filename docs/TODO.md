@@ -23,7 +23,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P0.3 Persian normalisation, shared case file — Mohammad
 - [x] P0.4 Catalog models — Mohammad
 - [x] P0.5 Load the CSVs — Mohammad
-- [ ] P0.6 Address parser (+ score against T-02) — Mohammad
+- [x] P0.6 Address parser — Mohammad · [ ] score against T-02 when the gold set lands
 - [ ] P0.7 Venues from addresses — Mohammad
 - [ ] P0.8 Price stats, outliers, budget band check — Mohammad
 - [ ] P0.9 Web shell: tokens, fonts, mascot WebP, Persian helpers — Mohammad
