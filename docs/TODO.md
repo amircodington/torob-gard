@@ -54,9 +54,9 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 
 ## P2 Agent — gate: evals ≥ 85%, 0 grounding failures on known-item
 
-- [ ] P2.1 Agent service + LLMClient (tools or JSON-action) — Mohammad
+- [x] P2.1 Agent service + LLMClient (tools or JSON-action) — Mohammad
 - [x] P2.2 Hybrid search + embeddings — Mohammad
-- [ ] P2.3 price_check, locate_shop, plan_trip, remember — Mohammad
+- [x] P2.3 price_check, locate_shop, plan_trip, remember — Mohammad
 - [ ] P2.4 Output contract + Grounder — Mohammad
 - [ ] P2.5 Orchestrator + `/agent/chat` SSE — Mohammad
 - [ ] P2.6 Consult on the agent with fallback; in-shop price check — Mohammad

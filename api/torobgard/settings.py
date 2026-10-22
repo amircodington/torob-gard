@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "catalog",
     "ingest",
     "trips",
+    "conversation",
 ]
 
 MIDDLEWARE = [
