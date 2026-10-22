@@ -11,11 +11,13 @@ _ID = re.compile(r"\b(?:shop|product|offer)_[A-Za-z0-9_]+")
 # are not checked. Upgrade if the model starts quoting prices without a unit.
 _PRICE = re.compile(r"(\d+(?:\.\d+)?)\s*(هزار\s*تومان|هزار\s*تومن|میلیون(?:\s*تومان|\s*تومن)?|تومان|تومن)")
 _SCALE = {"هزار": 1_000, "میلیون": 1_000_000}
+# honesty rule 2: no tool knows stock, so «موجوده / موجود است» is never grounded («موجوده یا نه؟» is fine)
+_STOCK = re.compile(r"(?<!نا)(?<!\u200c)موجود(?:ه|\s*(?:است|هست))(?!\s*یا)")
 
 
 @dataclass
 class Violation:
-    kind: str  # "id" | "price"
+    kind: str  # "id" | "price" | "stock" | "format"
     value: str
     message: str
 
@@ -56,10 +58,16 @@ def _block_prices(answer: Answer) -> list[int]:
             if v is not None]
 
 
-def _prices(say: str) -> list[int]:
+def prices(say: str) -> list[int]:
     t = to_ascii_digits(say).replace("٫", ".")
     t = re.sub(r"(?<=\d)[,٬ ](?=\d{3}(?!\d))", "", t)  # thousands separators
     return [round(float(n) * _SCALE.get(u.split()[0], 1)) for n, u in _PRICE.findall(t)]
+
+
+def cited_ids(answer: Answer) -> list[str]:
+    """Every record id the answer names, in blocks or in its text (the message's receipts)."""
+    ids = [i for t in _texts(answer) for i in _ID.findall(t)]
+    return list(dict.fromkeys([*filter(None, _block_ids(answer)), *ids]))
 
 
 def ground(answer: Answer, results: list[ToolResult]) -> list[Violation]:
@@ -67,11 +75,13 @@ def ground(answer: Answer, results: list[ToolResult]) -> list[Violation]:
     values = set().union(*(_numbers(r.data) for r in results)) if results else set()
     out: list[Violation] = []
     texts = _texts(answer)
-    ids = [i for t in texts for i in _ID.findall(t)]
-    for i in dict.fromkeys([*filter(None, _block_ids(answer)), *ids]):
+    for i in cited_ids(answer):
         if i not in known:
             out.append(Violation("id", i, f"id {i} was not returned by any tool"))
-    for p in dict.fromkeys([*_block_prices(answer), *(p for t in texts for p in _prices(t))]):
+    for t in texts:
+        for m in _STOCK.findall(t):
+            out.append(Violation("stock", m, "stock is unknown; say «موجودی رو قبل از رفتن بپرس» instead"))
+    for p in dict.fromkeys([*_block_prices(answer), *(p for t in texts for p in prices(t))]):
         if p not in values:
             out.append(Violation("price", str(p), f"price {p} toman appears in no tool result"))
     return out

@@ -46,3 +46,9 @@ def test_why_and_ask_text_scanned():
 def test_route_stop_ids():
     stop = {"shop_id": "shop_zz", "venue_slug": None, "floor": None, "unit": None, "seq": 1}
     assert [i.value for i in ground(Answer(say="x", blocks=[RouteBlock(stops=[stop])]), R)] == ["shop_zz"]
+
+
+def test_stock_claims_are_ungrounded():
+    assert [v.kind for v in ground(Answer(say="آره موجوده"), R)] == ["stock"]
+    assert len(ground(Answer(say="موجود است"), R)) == 1
+    assert ground(Answer(say="ناموجوده؛ موجودی رو بپرس؛ نمی‌دونم موجوده یا نه"), R) == []

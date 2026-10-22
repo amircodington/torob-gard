@@ -21,6 +21,7 @@ class ChatResult:
     tool_calls: list[ToolCall] = field(default_factory=list)
     tokens_in: int = 0
     tokens_out: int = 0
+    cost: float = 0.0  # USD, when BoxAPI reports usage.cost
 
 
 @dataclass
@@ -86,7 +87,8 @@ class LLMClient:
             for c in msg.tool_calls or []
         ] or ([] if self.supports_tools or not tools else _parse_action(msg.content))
         u = r.usage
-        return ChatResult(msg.content, calls, u.prompt_tokens if u else 0, u.completion_tokens if u else 0)
+        return ChatResult(msg.content, calls, u.prompt_tokens if u else 0, u.completion_tokens if u else 0,
+                          float(getattr(u, "cost", 0) or 0))
 
     async def _stream(self, kw: dict) -> AsyncIterator[Delta]:
         s = await self.client.chat.completions.create(

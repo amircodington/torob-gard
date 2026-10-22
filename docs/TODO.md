@@ -58,7 +58,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P2.2 Hybrid search + embeddings — Mohammad
 - [x] P2.3 price_check, locate_shop, plan_trip, remember — Mohammad
 - [x] P2.4 Output contract + Grounder — Mohammad
-- [ ] P2.5 Orchestrator + `/agent/chat` SSE — Mohammad
+- [x] P2.5 Orchestrator + `/agent/chat` SSE — Mohammad
 - [ ] P2.6 Consult on the agent with fallback; in-shop price check — Mohammad
 - [ ] P2.7 Agent-written desk explanations — Mohammad
 - [ ] P2.8 Evals (`make eval`) — Mohammad

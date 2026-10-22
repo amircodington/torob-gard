@@ -8,6 +8,7 @@ dependencies = [
     "openai<3",  # openai 3 moved to httpx2, which respx cannot mock
     "sqlalchemy[asyncio]",
     "asyncpg",
+    "redis>=8.1.0",
 ]
 
 [dependency-groups]
