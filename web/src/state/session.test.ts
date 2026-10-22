@@ -105,3 +105,25 @@ describe("loadState", () => {
     expect(loadState({ getItem: () => JSON.stringify(s) })).toEqual(s);
   });
 });
+
+describe("trip reducer", () => {
+  const mine = [{ storeId: "s1", reason: "closed" as const, at: 1 }];
+  const theirs = [{ storeId: "s9", reason: "stock" as const, at: 2 }];
+
+  it("TRIP_CREATED sets the trip id and adopts a shared trip's failures", () => {
+    const s = reducer({ ...initialState(), failures: mine }, { type: "TRIP_CREATED", id: "t2", failures: theirs });
+    expect(s.tripId).toBe("t2");
+    expect(s.failures).toEqual(theirs);
+  });
+  it("TRIP_CREATED for the same trip keeps the session's own failures", () => {
+    const s = reducer({ ...initialState(), tripId: "t1", failures: mine }, { type: "TRIP_CREATED", id: "t1", failures: theirs });
+    expect(s.tripId).toBe("t1");
+    expect(s.failures).toEqual(mine);
+  });
+  it("SELECT_PRODUCT and RESET clear the trip id", () => {
+    const withTrip = { ...initialState(), tripId: "t1" };
+    expect(reducer(withTrip, { type: "SELECT_PRODUCT", id: "p2" }).tripId).toBeNull();
+    expect(reducer(withTrip, { type: "SELECT_PRODUCT", id: "p2", advance: true }).tripId).toBeNull();
+    expect(reducer(withTrip, { type: "RESET" }).tripId).toBeNull();
+  });
+});

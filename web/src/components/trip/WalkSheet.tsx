@@ -174,7 +174,7 @@ export function WalkSheet({ trip, rows }: { trip: Trip; rows: OfferRow[] }) {
                 واحد {faNum(shop.unit)}
               </p>
             ) : (
-              <p className="text-[15px] leading-6">شماره‌ی واحد ثبت نشده{shop.mall ? " — از اطلاعات پاساژ بپرس" : ""}</p>
+              <p className="text-[15px] leading-6">شماره‌ی واحد ثبت نشده — {shop.mall ? "از اطلاعات پاساژ بپرس" : "قبل از رفتن زنگ بزن"}</p>
             )}
           </div>
           {shop.locationHint && <p className="-mt-2 break-words text-[13px] leading-5 text-on-dark/75">{faNum(shop.locationHint)}</p>}

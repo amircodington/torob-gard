@@ -43,6 +43,16 @@ describe("WalkSheet", () => {
     expect(unit).not.toMatch(/[0-9۰-۹]/);
   });
 
+  it("unit null, no pasazh → «قبل از رفتن زنگ بزن»", () => {
+    render(<WalkSheet trip={trip({ unit: null, mall: null })} rows={[]} />);
+    expect(screen.getByTestId("unit").textContent).toBe("شماره‌ی واحد ثبت نشده — قبل از رفتن زنگ بزن");
+  });
+
+  it("unit null in a pasazh → «از اطلاعات پاساژ بپرس»", () => {
+    render(<WalkSheet trip={trip({ unit: null })} rows={[]} />);
+    expect(screen.getByTestId("unit").textContent).toBe("شماره‌ی واحد ثبت نشده — از اطلاعات پاساژ بپرس");
+  });
+
   it("parseConfidence 0.6 → «احتمالاً»", () => {
     render(<WalkSheet trip={trip({ parseConfidence: 0.6 })} rows={[]} />);
     expect(screen.getByTestId("unit").textContent).toContain("احتمالاً");
