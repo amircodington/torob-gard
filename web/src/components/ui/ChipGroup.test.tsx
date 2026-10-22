@@ -74,11 +74,18 @@ describe("useSlidingPill memo", () => {
     );
   }
   it("a remounted group slides on from the last box instead of appearing", () => {
+    // jsdom has no layout: an element's on-screen box is its inline left (the group's is 0), as at rest.
+    const rect = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+      return { left: parseFloat(this.style.left) || 0, top: 0, width: 0, height: 0 } as DOMRect;
+    });
     render(<Steps on="قیمت" />);
     expect(Flip.from).not.toHaveBeenCalled(); // first ever placement: no tween from nowhere
     cleanup();
+    vi.mocked(Flip.getState).mockImplementationOnce((el) => ({ hidden: (el as HTMLElement).hidden, left: (el as HTMLElement).style.left }) as never);
     const { container } = render(<Steps on="فاصله" />);
+    expect(vi.mocked(Flip.getState).mock.results.at(-1)!.value).toEqual({ hidden: false, left: "10px" }); // measured visible, at the old step
     expect(pillOf(container)[0].style.left).toBe("120px");
     expect(Flip.from).toHaveBeenCalledTimes(1);
+    rect.mockRestore();
   });
 });

@@ -15,11 +15,18 @@ const lastBox = new Map<string, Box>();
 function place(g: HTMLElement, p: HTMLElement, sel: string, animate: boolean, memo?: string) {
   const on = g.querySelector<HTMLElement>(sel);
   const prev = memo ? lastBox.get(memo) : undefined;
-  if (!p.style.left && prev && animate) Object.assign(p.style, prev);
+  // Show the pill at the remembered box first: Flip.getState on a display:none pill records 0×0 and it would grow from a corner.
+  if (!p.style.left && prev && animate) {
+    Object.assign(p.style, prev);
+    p.hidden = false;
+  }
   const was = p.style.left ? box(p.style) : ""; // empty until the first placement: no tween from nowhere
   const state = animate && was && on ? Flip.getState(p) : null;
   p.hidden = !on;
-  if (!on) return;
+  if (!on) {
+    if (memo) lastBox.delete(memo); // nothing selected: forget, so the Map holds at most one box per live memo key
+    return;
+  }
   Object.assign(p.style, { left: `${on.offsetLeft}px`, top: `${on.offsetTop}px`, width: `${on.offsetWidth}px`, height: `${on.offsetHeight}px` });
   if (memo) lastBox.set(memo, { left: p.style.left, top: p.style.top, width: p.style.width, height: p.style.height });
   if (state && !reduced() && box(p.style) !== was) Flip.from(state, { duration: 0.22, ease: "tg.out" });
@@ -45,6 +52,17 @@ export function useSlidingPill<T extends HTMLElement>(sel: string, memo?: string
     ro.observe(g);
     return () => ro.disconnect();
   }, [sel, memo]);
+
+  // Unmounting mid-slide (the page changes while the pill moves): remember where it is on screen, so the next page continues from there.
+  useLayoutEffect(() => {
+    const g = group.current!;
+    const p = pill.current!;
+    return () => {
+      if (!memo || p.hidden) return;
+      const [r, o] = [p.getBoundingClientRect(), g.getBoundingClientRect()];
+      lastBox.set(memo, { left: `${r.left - o.left}px`, top: `${r.top - o.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+    };
+  }, [memo]);
 
   return { group, pill };
 }
