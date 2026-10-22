@@ -29,4 +29,4 @@ Persian, phone-first companion for in-person shopping in downtown Tehran's elect
 
 ## Commands (after P0.1)
 
-`make dev` · `make down` · `make check` · `make test-api` · `make ingest` · `make eval` (P2) · `make push-test` (P3)
+`make dev` · `make down` · `make check` · `make test-api` · `make hooks` · `make psql` · `make ingest` · `make eval` (P2) · `make push-test` (P3)

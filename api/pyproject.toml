@@ -1,0 +1,26 @@
+[project]
+name = "torobgard-api"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "django>=5.2,<5.3",
+    "django-ninja",
+    "django-unfold",
+    "psycopg[binary]",
+    "redis",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-django", "ruff"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "torobgard.settings"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
