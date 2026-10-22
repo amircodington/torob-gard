@@ -20,7 +20,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 
 - [x] P0.1 Repo, Compose (PostGIS + pgvector), Makefile, git init — Mohammad
 - [x] P0.2 Django API skeleton + health — Mohammad
-- [ ] P0.3 Persian normalisation, shared case file — Mohammad
+- [x] P0.3 Persian normalisation, shared case file — Mohammad
 - [ ] P0.4 Catalog models — Mohammad
 - [ ] P0.5 Load the CSVs — Mohammad
 - [ ] P0.6 Address parser (+ score against T-02) — Mohammad
