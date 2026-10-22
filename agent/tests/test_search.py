@@ -1,4 +1,5 @@
 import os
+import random
 
 import pytest
 from sqlalchemy import text
@@ -132,7 +133,14 @@ async def test_shops_empty_product_list_is_empty(conn):
 
 
 async def test_vector_pool_reaches_50_under_a_filter(conn):
-    for n in range(60):  # 60 near-identical priced products; HNSW alone (ef_search 40) stops short
+    # 60 products around the query; the 30 over budget sit closest, so plain HNSW (ef_search 40)
+    # fills its candidates with rows the filter then drops. Seeded noise: one-hot vectors made a
+    # degenerate graph with flaky recall.
+    def bulk_vec(n: int) -> list[float]:
+        rnd, scale = random.Random(n), (0.02 if n % 2 == 0 else 0.1)
+        return [a + scale * (rnd.random() - 0.5) for a in onehot(0)]
+
+    for n in range(60):
         await conn.execute(text(
             "INSERT INTO catalog_product (id, persian_title, title_norm, category_id, image_urls, specs,"
             " specs_text, min_price, median_price, max_price, offer_count) SELECT :i, 'x', 'x', id, '{}',"
@@ -140,9 +148,16 @@ async def test_vector_pool_reaches_50_under_a_filter(conn):
             {"i": f"t_bulk_{n:02}", "p": 100 if n % 2 else 10_000_000})
         await conn.execute(
             text("INSERT INTO catalog_productembedding VALUES (:p, :m, CAST(:v AS vector), 'h')"),
-            {"p": f"t_bulk_{n:02}", "m": config.EMBED_MODEL, "v": str(onehot(3 + n))},
+            {"p": f"t_bulk_{n:02}", "m": config.EMBED_MODEL, "v": str(bulk_vec(n))},
         )
+    # Rebuild the index inside this (rolled-back) transaction: rows rolled back by earlier runs stay
+    # in an incrementally built HNSW graph and erode recall run after run.
+    await conn.execute(text("SET CONSTRAINTS ALL IMMEDIATE"))  # Django FKs are deferred
+    await conn.execute(text("DROP INDEX product_emb_hnsw"))
+    await conn.execute(text(
+        "CREATE INDEX product_emb_hnsw ON catalog_productembedding USING hnsw (embedding vector_cosine_ops)"))
     for off in ("enable_seqscan", "enable_sort"):  # tiny table: make the planner use HNSW
         await conn.execute(text(f"SET LOCAL {off} = off"))
     hits = await search_products("ناموجود", budget_max=1000, limit=100, db=conn, embed=near_target)
-    assert len(hits) == 30 and all(h["min_price"] <= 1000 for h in hits)
+    # HNSW is approximate, so allow a little slack; without the ef_search/iterative_scan fix: ~10
+    assert len(hits) >= 25 and all(h["min_price"] <= 1000 for h in hits)
