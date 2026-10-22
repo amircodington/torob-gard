@@ -4,6 +4,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.db.models import Q
 from django.db.models.functions import Now
+from django.utils import timezone
 
 
 class Verification(models.Model):
@@ -20,6 +21,12 @@ class Verification(models.Model):
     hours_ok = models.BooleanField(null=True, blank=True)
     corrections = models.JSONField(default=dict, blank=True)
     photo_ids = ArrayField(models.UUIDField(), default=list, blank=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.shop_id:  # a check stamps the shop; checked_by stays null until app_user (P3.4)
+            self.shop.__class__.objects.filter(pk=self.shop_id).update(
+                verified_at=timezone.now(), verified_by=self.checked_by)
 
     class Meta:
         constraints = [models.CheckConstraint(

@@ -1,0 +1,15 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<div class="grid gap-6 md:grid-cols-2">
+{% for c in charts %}
+  <section class="border rounded-lg p-4">
+    <h2 class="font-semibold mb-2">{{ c.title }}</h2>
+    {% if c.svg %}{{ c.svg|safe }}
+    <details class="mt-2"><summary>جدول</summary>
+      <table>{% for l, v in c.rows %}<tr><td>{{ l }}</td><td>{{ v|floatformat:2 }}</td></tr>{% endfor %}</table>
+    </details>
+    {% else %}<p class="text-sm">هنوز داده‌ای نیست.</p>{% endif %}
+  </section>
+{% endfor %}
+</div>
+{% endblock %}

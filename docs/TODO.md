@@ -63,7 +63,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P2.7 Agent-written desk explanations — Mohammad
 - [x] P2.8 Evals (`make eval`) — Mohammad
   - [ ] gate: ≥ 85% pass, 0 known-item grounding failures (run 1: 42%, 1 known-item failure — [eval-run-1](evidence/P2/eval-run-1.md))
-- [ ] P2.9 Student admin + quality page — Mohammad
+- [x] P2.9 Student admin + quality page — Mohammad
 - [ ] T-06 Embedding bake-off — student
 - [ ] T-09 Price sanity — student
 - [ ] T-10 Shop verification round 1 (100 shops) — students
