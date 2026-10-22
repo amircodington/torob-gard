@@ -238,3 +238,11 @@ def test_price_check_route(monkeypatch):
     assert seen == {"p": "product_1", "q": 900, "v": None}
     bad = c.post("/agent/price_check", json={"product_id": "product_1", "quoted_price": 0})
     assert bad.status_code == 422
+
+
+async def test_persisted_assistant_message_carries_the_turns_cost(conn):
+    llm = FakeLLM(ChatResult(json.dumps({"say": "سلام"}), tokens_in=1, tokens_out=1, cost=0.0123))
+    events = await turn(conn, llm)
+    cost = (await conn.execute(text("SELECT cost FROM conversation_message WHERE id = :i"),
+                               {"i": events[-1].message_id})).scalar()
+    assert float(cost) == pytest.approx(0.0123)

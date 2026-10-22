@@ -259,13 +259,14 @@ async def _turn(
         content = {**answer.model_dump(), "violations": [asdict(v) for v in violations]}
         rows = [
             {"i": uuid4(), "q": seq + 1, "r": "user", "c": {"text": text_in, "context": context.model_dump()},
-             "rc": [], "ti": None, "to": None, "l": None},
+             "rc": [], "ti": None, "to": None, "l": None, "co": None},
             {"i": message_id, "q": seq + 2, "r": "assistant", "c": content, "rc": receipts,
-             "ti": turn.tokens_in, "to": turn.tokens_out, "l": latency},
+             "ti": turn.tokens_in, "to": turn.tokens_out, "l": latency, "co": turn.cost},
         ]
         await conn.execute(text(
             "INSERT INTO conversation_message (id, session_id, seq, role, content, receipt_ids, tokens_in,"
-            " tokens_out, latency_ms) VALUES (:i, :s, :q, :r, CAST(:c AS jsonb), :rc, :ti, :to, :l)"),
+            " tokens_out, latency_ms, cost) VALUES (:i, :s, :q, :r, CAST(:c AS jsonb), :rc, :ti,"
+            " :to, :l, :co)"),
             [{**r, "s": sid, "c": json.dumps(r["c"], ensure_ascii=False)} for r in rows])
         if turn.calls:
             await conn.execute(text(

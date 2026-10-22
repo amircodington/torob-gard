@@ -7,7 +7,7 @@ from sqlalchemy import text
 from torobgard_agent import config
 from torobgard_agent.db import make_engine
 from torobgard_agent.persian import normalize
-from torobgard_agent.tools.search import search_products, search_shops
+from torobgard_agent.tools.search import resolve_category, search_products, search_shops
 
 T = "t_cable_mashhad"
 NEAR = {"lat": 35.6950, "lng": 51.4100}
@@ -161,3 +161,52 @@ async def test_vector_pool_reaches_50_under_a_filter(conn):
     hits = await search_products("ناموجود", budget_max=1000, limit=100, db=conn, embed=near_target)
     # HNSW is approximate, so allow a little slack; without the ef_search/iterative_scan fix: ~10
     assert len(hits) >= 25 and all(h["min_price"] <= 1000 for h in hits)
+
+
+ACCESSORY = ["هدفون، هدست و هندزفری", "شارژر گوشی", "کیف و کاور گوشی", "محافظ صفحه نمایش گوشی"]
+
+
+# the values the model sent in eval run 1
+@pytest.mark.parametrize("category, names", [
+    ("accessory", ACCESSORY), ("لوازم جانبی", ACCESSORY), ("لپ‌تاپ", ["لپ تاپ و نوت بوک"]),
+    ("Mobile", ["گوشی موبایل"]),
+])
+async def test_desk_words_mean_their_catalog_categories(conn, category, names):
+    assert await resolve_category(category, db=conn) == names
+
+
+async def test_category_matches_catalog_names_loosely(conn):
+    assert await resolve_category("كابل‌تست", db=conn) == ["کابل تست"]  # Arabic kaf, ZWNJ for space
+    await conn.execute(text("INSERT INTO catalog_category (name, name_norm, product_count, shop_count)"
+                            " VALUES ('باتری کابل تست', 'باتری کابل تست', 0, 0)"))
+    assert await resolve_category("کابل تست", db=conn) == ["کابل تست"]  # the exact name wins
+    assert await resolve_category("کابل", db=conn) == ["باتری کابل تست", "کابل تست"]  # part of the name
+    assert (await resolve_category("کابل تستی", db=conn))[0] == "کابل تست"  # near spelling (trigram)
+    assert await resolve_category("هواشناسی", db=conn) is None
+    assert await resolve_category(" - ", db=conn) is None  # nothing left to match: no filter, not all
+    await conn.execute(text("INSERT INTO catalog_category (name, name_norm, product_count, shop_count)"
+                            " VALUES ('Apple Watch', 'Apple Watch', 0, 0)"))
+    assert await resolve_category("apple watch", db=conn) == ["Apple Watch"]  # Latin case ignored
+    hits = await search_products("کابل ۱۶×۵ مشهد", category="کابل", db=conn, embed=near_target)
+    assert hits[0]["id"] == T
+
+
+async def test_category_boosts_but_never_hides_a_match(conn):
+    # run 3: «لوازم جانبی موبایل» resolved to a real but wrong category and hid the exact model match
+    await conn.execute(text("INSERT INTO catalog_category (name, name_norm, product_count, shop_count)"
+                            " VALUES ('سایر لوازم جانبی تست', 'سایر لوازم جانبی تست', 0, 0)"))
+    await conn.execute(text(
+        "INSERT INTO catalog_product (id, persian_title, title_norm, category_id, image_urls, specs,"
+        " specs_text, min_price, median_price, max_price, offer_count) SELECT 't_other', 'کابل دیگر',"
+        " 'کابل دیگر', id, '{}', '[]', '', 100, 100, 100, 1 FROM catalog_category"
+        " WHERE name = 'سایر لوازم جانبی تست'"))
+    await conn.execute(
+        text("INSERT INTO catalog_productembedding VALUES ('t_other', :m, CAST(:v AS vector), 'h')"),
+        {"m": config.EMBED_MODEL, "v": str(onehot(9))})
+    ids = [h["id"] for h in await search_products("کابل ۱۶×۵ مشهد", category="سایر لوازم جانبی", limit=2,
+                                                  db=conn, embed=near_target)]
+    assert T in ids and "t_other" in ids  # the match stays in even at limit 2; the category item is added
+    plain = [h["id"] for h in await search_products("کابل", db=conn, embed=near_target)]
+    boosted = [h["id"] for h in await search_products("کابل", category="سایر لوازم جانبی", db=conn,
+                                                      embed=near_target)]
+    assert boosted.index("t_other") < plain.index("t_other")

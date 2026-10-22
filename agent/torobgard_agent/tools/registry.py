@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from ..llm import ToolCall
@@ -31,7 +31,7 @@ class SearchShopsArgs(BaseModel):
 
 class PriceCheckArgs(BaseModel):
     product_id: str
-    quoted_price: int | None = None
+    quoted_price: int | None = Field(None, gt=0, description="toman the shopper was quoted; > 0")
     venue_slug: str | None = None
 
 
@@ -84,6 +84,7 @@ class ToolResult:
     name: str
     data: Any
     ids: set[str] = field(default_factory=set)
+    args: dict = field(default_factory=dict)  # the validated call args (the grounder reads quoted_price)
 
 
 def _ids(data: Any) -> set[str]:
@@ -128,4 +129,4 @@ async def run_tool(
         data = await fn(args, db, user_id)
     except (ValidationError, ValueError) as e:
         return ToolResult(call.name, {"error": str(e)})
-    return ToolResult(call.name, data, _ids(data))
+    return ToolResult(call.name, data, _ids(data), args)

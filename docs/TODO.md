@@ -60,9 +60,11 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P2.4 Output contract + Grounder — Mohammad
 - [x] P2.5 Orchestrator + `/agent/chat` SSE — Mohammad
 - [x] P2.6 Consult on the agent with fallback; in-shop price check — Mohammad
-- [ ] P2.7 Agent-written desk explanations — Mohammad
-- [ ] P2.8 Evals (`make eval`) — Mohammad
-- [ ] P2.9 Student admin + quality page — Mohammad
+- [x] P2.7 Agent-written desk explanations — Mohammad
+- [x] P2.8 Evals (`make eval`) — Mohammad
+  - [ ] gate: ≥ 85% pass, 0 known-item grounding failures (run 1: 42%, 1 known-item failure — [eval-run-1](evidence/P2/eval-run-1.md); run 2: 75%, 0 — [eval-run-2](evidence/P2/eval-run-2.md); run 3: 50%, 0 — [eval-run-3](evidence/P2/eval-run-3.md); run 4 × 3 at temperature 0: mean 75%, known-item failures 0/1/1 — [eval-run-4](evidence/P2/eval-run-4.md))
+    - left (tuning stopped, R12): quoted-price guard refuses the quote when `say` names any cheaper shop (make it per clause — needs a ruling); consult needs (category + budget + priority) still search or re-ask instead of sending a desk
+- [x] P2.9 Student admin + quality page — Mohammad
 - [ ] T-06 Embedding bake-off — student
 - [ ] T-09 Price sanity — student
 - [ ] T-10 Shop verification round 1 (100 shops) — students

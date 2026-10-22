@@ -24,9 +24,12 @@ class PriceCheck(TypedDict):
 
 async def price_check(
     product_id: str, quoted_price: int | None, venue_slug: str | None, *, db: AsyncConnection | None = None,
-) -> PriceCheck:
+) -> PriceCheck | dict:
     """Is the quoted price fair? Compares with the non-outlier offers; lists cheaper shops."""
     async with _connect(db) as conn:
+        known = text("SELECT 1 FROM catalog_product WHERE id = :p")
+        if not (await conn.execute(known, {"p": product_id})).first():
+            return {"error": f"unknown product_id {product_id!r}: call search_products first and use its id"}
         rows = (await conn.execute(text(
             "SELECT id, price_toman, last_price_changed_at FROM catalog_offer"
             " WHERE product_id = :p AND NOT is_outlier"

@@ -5,6 +5,8 @@ const PRODUCT = "product_a112c972266b57d0f7eddeab";
 const sse = (...events: [string, unknown][]) => events.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join("");
 const done = ["done", { message_id: "m", receipt_ids: [], session_id: "11111111-1111-1111-1111-111111111111" }] as [string, unknown];
 
+test.beforeEach(({ page }) => page.route("**/agent/explain", (r) => r.abort())); // never BoxAPI
+
 async function agent(page: Page, turns: string[]) {
   const bodies: Record<string, unknown>[] = [];
   await page.route("**/agent/chat", (r: Route) => {
