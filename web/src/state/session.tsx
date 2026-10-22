@@ -53,6 +53,7 @@ export interface SessionState {
   planB: { open: boolean; reason: FailReason | null; priority: RecoveryPriority | null };
   previousPlan: { storeId: string } | null;
   summaryJustReady: boolean;
+  tripId: string | null; // the saved trip (/trip/[id]); Plan B patches it
 }
 
 export const STAGE_ORDER: Stage[] = ["consult", "products", "radar", "summary"];
@@ -91,6 +92,7 @@ export const initialState = (): SessionState => ({
   planB: { open: false, reason: null, priority: null },
   previousPlan: null,
   summaryJustReady: false,
+  tripId: null,
 });
 
 /* ----------------------------- actions ----------------------------- */
@@ -113,6 +115,7 @@ export type Action =
   | { type: "PLANB_RETURN" }
   | { type: "PLANB_CLOSE" }
   | { type: "CLEAR_SUMMARY_FLAG" }
+  | { type: "TRIP_CREATED"; id: string; failures?: FailureRecord[] }
   | { type: "RESET" }
   | { type: "HYDRATE"; state: SessionState; stage?: Stage; productId?: string }
   | { type: "SEED"; seedId: string };
@@ -294,6 +297,7 @@ export function reducer(s: SessionState, a: Action): SessionState {
         selectedStoreId: null,
         planB: { open: false, reason: null, priority: null },
         previousPlan: null,
+        tripId: null,
         stage: a.advance ? "radar" : s.stage,
         maxStage: a.advance ? later("radar", s.maxStage) : s.maxStage,
       };
@@ -352,6 +356,9 @@ export function reducer(s: SessionState, a: Action): SessionState {
       return { ...s, planB: { open: false, reason: null, priority: null } };
     case "CLEAR_SUMMARY_FLAG":
       return { ...s, summaryJustReady: false };
+    case "TRIP_CREATED":
+      // A shared trip link brings its own failures; the session's own list wins once it has one.
+      return { ...s, tripId: a.id, failures: s.tripId === a.id ? s.failures : (a.failures ?? s.failures) };
     case "RESET":
       return initialState();
     case "HYDRATE": {
@@ -382,7 +389,7 @@ export function stagePath(s: SessionState): string | null {
     case "radar":
       return s.selectedProductId ? `/radar/${s.selectedProductId}` : null;
     case "summary":
-      // ponytail: /trip/[id] needs the trip id from POST /api/trips; the summary task adds it to state.
+      // ponytail: the trip pages own their URL (a shared link must not jump to this session's trip); no auto-nav.
       return null;
   }
 }

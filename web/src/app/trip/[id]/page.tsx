@@ -1,0 +1,16 @@
+import { JourneyShell } from "../../../components/JourneyShell";
+import { Checklist } from "../../../components/trip/Checklist";
+import { loadTrip } from "../../../components/trip/load";
+
+export const metadata = { title: "چک‌لیست قبل از حرکت" };
+
+export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
+  const { trip, rows } = await loadTrip((await params).id);
+  return (
+    <JourneyShell stage="summary" productId={trip.productId}>
+      <main className="mx-auto max-w-md px-4 pb-16 pt-2 md:max-w-3xl">
+        <Checklist trip={trip} rows={rows} />
+      </main>
+    </JourneyShell>
+  );
+}

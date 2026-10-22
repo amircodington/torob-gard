@@ -1,0 +1,231 @@
+"use client";
+
+import Link from "next/link";
+import { useRef, useState } from "react";
+import { faFreshness, faNum, faPriceFull, isStale } from "../../lib/fa";
+import { LANDMARKS } from "../../lib/geo";
+import { isOpenNow, todayHoursLabel } from "../../lib/hours";
+import { toAsciiDigits } from "../../lib/persian";
+import type { OfferRow, Trip } from "../../lib/types";
+import { resetStorage, useSession } from "../../state/session";
+import { Mascot } from "../Mascot";
+import { distanceLabel, placeLine } from "../radar/ShopRow";
+import { Btn } from "../ui/Btn";
+import { EmptyState } from "../ui/EmptyState";
+import { FreshBadge } from "../ui/FreshBadge";
+import { StockBadge } from "../ui/StockBadge";
+import { RecoveryStory } from "./RecoveryStory";
+import { floorName } from "./WalkSheet";
+
+type Item = { ok: boolean | null; label: string; detail: string };
+
+const MARK = {
+  ok: { glyph: "✓", cls: "bg-verified text-on-dark" },
+  warn: { glyph: "!", cls: "bg-signal text-on-dark" },
+  unknown: { glyph: "?", cls: "bg-surface-tint text-ink-muted" },
+};
+
+export const neshanUrl = (lat: number, lng: number) => `https://neshan.org/maps/@${lat},${lng},18z`;
+
+/** `trip.anchor` is {lat,lng} for a landmark, {} for the phone's own position. */
+function anchorLabel(a: Trip["anchor"]): string {
+  // ponytail: landmark id not stored; the coordinates are matched back to LANDMARKS.
+  const hit = Object.values(LANDMARKS).find((l) => l.lat === a.lat && l.lng === a.lng);
+  return hit ? `از ${hit.name}` : "از موقعیت تو";
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-lg bg-surface p-5 shadow-card">
+      <p className="text-[12px] font-bold text-ink-muted">{title}</p>
+      {children}
+    </section>
+  );
+}
+
+export function Checklist({ trip, rows }: { trip: Trip; rows: OfferRow[] }) {
+  const { dispatch } = useSession();
+  const [copied, setCopied] = useState<"done" | "select" | null>(null);
+  const fallback = useRef<HTMLTextAreaElement>(null);
+  const { product, shop } = trip;
+
+  if (!shop)
+    return (
+      <EmptyState
+        pose="idle"
+        title="هنوز فروشگاه مقصد انتخاب نشده"
+        body="از رادار یه فروشگاه انتخاب کن تا چک‌لیست ساخته بشه."
+        actions={<Link href={`/radar/${trip.productId}`} className="inline-flex min-h-11 items-center rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange">رفتن به رادار</Link>}
+      />
+    );
+
+  const now = new Date();
+  const offer = rows.find((r) => r.store.id === shop.id)?.offer;
+  const distanceM = rows.find((r) => r.store.id === shop.id)?.store.distanceM ?? null;
+  const open = isOpenNow(shop.weeklyHours, now);
+  const hours = todayHoursLabel(shop.weeklyHours, now);
+  const maybe = shop.parseConfidence < 0.8 ? "احتمالاً " : "";
+  const address = shop.address || null;
+  const copyText = `${shop.name} — ${address ?? placeLine(shop)}`;
+  const names = Object.fromEntries(rows.map((r) => [r.store.id, r.store.name]));
+
+  const items: Item[] = [
+    open === null
+      ? { ok: null, label: "ساعت کاری", detail: `${hours} — قبل از رفتن زنگ بزن` }
+      : open
+        ? { ok: true, label: "ساعت کاری", detail: `الان باز است · ${hours}` }
+        : { ok: false, label: "ساعت کاری", detail: `الان بسته است · ${hours}` },
+    !offer
+      ? { ok: null, label: "تازگی قیمت", detail: "قیمتی از این فروشگاه برای این مدل پیدا نشد" }
+      : isStale(offer.updatedMinAgo)
+        ? { ok: false, label: "تازگی قیمت", detail: `آخرین ثبت ${faFreshness(offer.updatedMinAgo)} — ممکن است تغییر کرده باشد` }
+        : { ok: true, label: "تازگی قیمت", detail: `به‌روزرسانی ${faFreshness(offer.updatedMinAgo)}` },
+    offer?.stock === "confirmed"
+      ? { ok: true, label: "موجودی", detail: "فروشگاه تأیید کرده — باز هم قطعی نیست" }
+      : { ok: null, label: "موجودی", detail: "نامشخص — قبل از رفتن زنگ بزن" },
+    shop.unit != null
+      ? { ok: true, label: "واحد", detail: `${maybe}واحد ${faNum(shop.unit)}${shop.floor != null ? ` · طبقه ${Number.isInteger(Number(shop.floor)) ? floorName(Number(shop.floor)) : faNum(shop.floor)}` : ""}` }
+      : { ok: false, label: "واحد", detail: "شماره‌ی واحد ثبت نشده — از اطلاعات پاساژ بپرس" },
+    shop.installment === true
+      ? { ok: true, label: "اقساط", detail: "فروش اقساطی دارد" }
+      : shop.installment === false
+        ? { ok: false, label: "اقساط", detail: "فروش اقساطی ندارد" }
+        : { ok: null, label: "اقساط", detail: "اطلاعات اقساط ثبت نشده" },
+  ];
+
+  const copy = () => {
+    const done = () => {
+      setCopied("done");
+      setTimeout(() => setCopied(null), 1800);
+    };
+    // ponytail: webviews without the Clipboard API get the text selected for a long-press copy.
+    const select = () => {
+      setCopied("select");
+      setTimeout(() => fallback.current?.select());
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(copyText).then(done, select);
+    else select();
+  };
+
+  return (
+    <>
+      <div className="mt-4 flex items-start gap-3">
+        <Mascot pose="point" className="h-24 w-20 shrink-0 object-contain" alt="ترب‌گرد مسیر را نشان می‌دهد" />
+        <div className="min-w-0 pt-2">
+          <span className="rounded-pill bg-panel px-3 py-1 text-[12px] font-bold text-on-dark">آماده‌ی رفتن</span>
+          <h1 className="mt-2 text-[22px] leading-8">
+            <span className="font-light">چک‌لیست </span>
+            <span className="font-extrabold">قبل از حرکت</span>
+          </h1>
+          <p className="mt-1 text-[13px] leading-5 text-ink-muted">هنوز چیزی قطعی نیست؛ این برنامه‌ی رفتن توست، با ابهام‌هایش.</p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <Card title="مدل انتخابی">
+          <div className="mt-2 flex items-start gap-3">
+            {product.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- Torob CDN image, no optimizer
+              <img src={product.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-sm bg-surface-tint object-contain" />
+            ) : (
+              <span aria-hidden className="h-16 w-16 shrink-0 rounded-sm bg-surface-tint" />
+            )}
+            <p data-testid="product-title" className="line-clamp-3 min-w-0 break-words text-[15px] font-bold leading-6">{product.title}</p>
+          </div>
+          {offer ? (
+            <>
+              <p className="tabular mt-3 text-[22px] font-bold leading-8">{faPriceFull(offer.priceToman)}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-2">
+                <FreshBadge updatedMinAgo={offer.updatedMinAgo} />
+                <StockBadge stock={offer.stock} />
+              </div>
+            </>
+          ) : (
+            <p className="mt-3 text-[13px] text-ink-muted">قیمتی از این فروشگاه برای این مدل پیدا نشد.</p>
+          )}
+        </Card>
+
+        <Card title="فروشگاه مقصد">
+          <p data-testid="shop-name" className="mt-1 break-words text-[17px] font-extrabold leading-7">{shop.name}</p>
+          <p className="mt-0.5 break-words text-[13px] leading-5 text-ink-muted">{placeLine(shop)}</p>
+          <p className="text-[13px] leading-5 text-ink-muted">{distanceLabel(distanceM)} {anchorLabel(trip.anchor)}</p>
+          <p className="mt-2 text-[13px] leading-5">{hours}</p>
+          <p className="text-[13px] leading-5">
+            {shop.contact ? (
+              <a href={`tel:${toAsciiDigits(shop.contact)}`} className="tabular inline-flex min-h-11 items-center font-bold underline underline-offset-4">
+                {shop.contact}
+              </a>
+            ) : (
+              <span className="text-ink-muted">شماره ثبت نشده</span>
+            )}
+          </p>
+        </Card>
+      </div>
+
+      <section className="mt-3 rounded-lg bg-surface p-5 shadow-card">
+        <p className="text-[12px] font-bold text-ink-muted">آدرس</p>
+        <p className={`mt-1 break-words text-[15px] leading-6 ${address ? "" : "text-ink-muted"}`}>{address ?? "آدرس ثبت نشده"}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {shop.lat != null && shop.lng != null ? (
+            <a
+              href={neshanUrl(shop.lat, shop.lng)}
+              target="_blank"
+              rel="noopener"
+              className="inline-flex min-h-11 items-center rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange shadow-card focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97]"
+            >
+              باز کردن مسیر در نقشه
+            </a>
+          ) : (
+            <p className="self-center text-[13px] text-ink-muted">مختصات فروشگاه ثبت نشده</p>
+          )}
+          <Btn variant="ghost" onClick={copy}>
+            {copied === "done" ? "کپی شد" : "کپی آدرس"}
+          </Btn>
+        </div>
+        {copied === "select" && (
+          <>
+            <textarea ref={fallback} readOnly value={copyText} rows={2} aria-label="متن آدرس" className="mt-3 w-full rounded-sm bg-surface-tint p-3 text-[15px]" />
+            <p className="text-[12px] text-ink-muted">متن انتخاب شد؛ نگه دار و کپی کن.</p>
+          </>
+        )}
+      </section>
+
+      <section className="mt-3 rounded-lg bg-surface p-5 shadow-card">
+        <h2 className="text-[15px] font-extrabold">چک‌لیست واقع‌بینانه</h2>
+        <ul aria-label="چک‌لیست" className="mt-2 divide-y divide-line">
+          {items.map((c) => {
+            const m = MARK[c.ok === true ? "ok" : c.ok === false ? "warn" : "unknown"];
+            return (
+              <li key={c.label} className="flex items-start gap-3 py-3">
+                <span aria-hidden className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-[13px] font-extrabold ${m.cls}`}>{m.glyph}</span>
+                <div className="min-w-0">
+                  <p className="text-[15px] font-bold leading-6">{c.label}</p>
+                  <p className="break-words text-[13px] leading-5 text-ink-muted">{c.detail}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <RecoveryStory failures={trip.failures} names={names} finalName={shop.name} />
+
+      <Link
+        href={`/trip/${trip.id}/walk`}
+        className="mt-5 flex min-h-11 w-full items-center justify-center rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange shadow-card focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97]"
+      >
+        شروع مسیر
+      </Link>
+      <Btn
+        variant="ghost"
+        className="mt-3 w-full"
+        onClick={() => {
+          resetStorage();
+          dispatch({ type: "RESET" }); // the provider routes the consult stage to /start
+        }}
+      >
+        شروع دوباره
+      </Btn>
+    </>
+  );
+}

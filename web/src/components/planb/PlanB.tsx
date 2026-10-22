@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef } from "react";
+import { api } from "../../lib/api";
 import { faNum, faPriceFull } from "../../lib/fa";
 import { diagnoseNoAlternative, FAIL_COPY, planBRank, PRIORITY_META } from "../../lib/ranking";
 import type { FailReason, OfferRow, RecoveryPriority } from "../../lib/types";
@@ -53,7 +54,8 @@ function Points({ title, items, empty }: { title: string; items: string[]; empty
   );
 }
 
-export function PlanB({ rows }: { rows: OfferRow[] | undefined }) {
+/** `onAccepted` replaces the default «drop ?planb» once a pick is saved (walk mode goes back to its checklist). */
+export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAccepted?: () => void }) {
   const { state, dispatch } = useSession();
   const { open, reason, leave } = usePlanBParam();
   const close = useRef<HTMLButtonElement>(null);
@@ -69,6 +71,13 @@ export function PlanB({ rows }: { rows: OfferRow[] | undefined }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- failedKey stands for failedIds
     [rows, failedKey, planB.priority, budget],
   );
+
+  const accept = async (storeId: string) => {
+    dispatch({ type: "PLANB_ACCEPT", storeId });
+    // The saved trip follows the pick; the session goes on even when the patch fails.
+    if (state.tripId) await api.patchTrip(state.tripId, { chosenShopId: storeId, failures }).catch(() => {});
+    (onAccepted ?? leave)();
+  };
 
   const shut = () => {
     dispatch({ type: "PLANB_CLOSE" });
@@ -208,8 +217,7 @@ export function PlanB({ rows }: { rows: OfferRow[] | undefined }) {
                         <Points title="چرا این رتبه؟" items={r.reasons} />
                         <Points title="مصالحه (صادقانه)" items={r.tradeoffs} empty="مصالحه‌ی مهمی نسبت به گزینه‌ی قبلی نداره." />
                         <Points title="نیازهای دست‌نخورده" items={r.kept} />
-                        {/* ponytail: no trip id in state until Task 11 — api.patchTrip wired then */}
-                        <Btn className="mt-4 w-full" onClick={() => { dispatch({ type: "PLANB_ACCEPT", storeId: store.id }); leave(); }}>
+                        <Btn className="mt-4 w-full" onClick={() => accept(store.id)}>
                           انتخاب این فروشگاه
                         </Btn>
                       </li>

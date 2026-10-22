@@ -77,6 +77,7 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
         anchor: anchor.landmark ? { lat: anchor.lat, lng: anchor.lng } : {},
       });
       dispatch({ type: "CHOOSE_STORE", id: store.id });
+      dispatch({ type: "TRIP_CREATED", id: trip.id });
       router.push(`/trip/${trip.id}`);
     } catch {
       setBusy(false);
