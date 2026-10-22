@@ -114,7 +114,7 @@ export type Action =
   | { type: "PLANB_CLOSE" }
   | { type: "CLEAR_SUMMARY_FLAG" }
   | { type: "RESET" }
-  | { type: "HYDRATE"; state: SessionState; stage?: Stage }
+  | { type: "HYDRATE"; state: SessionState; stage?: Stage; productId?: string }
   | { type: "SEED"; seedId: string };
 
 /* --------------------------- chat helpers --------------------------- */
@@ -357,7 +357,10 @@ export function reducer(s: SessionState, a: Action): SessionState {
     case "HYDRATE": {
       // The page's stage wins over the stored one (browser Back); the furthest stage is kept.
       const stage = a.stage ?? a.state.stage;
-      return { ...a.state, stage, maxStage: later(stage, a.state.maxStage) };
+      const s1 = { ...a.state, stage, maxStage: later(stage, a.state.maxStage) };
+      // The URL's product wins too; a different product starts with SELECT_PRODUCT's clean slate.
+      if (!a.productId || a.productId === s1.selectedProductId) return s1;
+      return { ...reducer(s1, { type: "SELECT_PRODUCT", id: a.productId, advance: true }), stage, maxStage: s1.maxStage };
     }
     case "SEED": {
       const steps = SEEDS[a.seedId];
@@ -414,7 +417,7 @@ export function resetStorage() {
 
 const Ctx = createContext<{ state: SessionState; dispatch: React.Dispatch<Action> } | null>(null);
 
-export function SessionProvider({ stage, children }: { stage: Stage; children: ReactNode }) {
+export function SessionProvider({ stage, productId, children }: { stage: Stage; productId?: string; children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   // Server and first client render share initialState(); storage is read after mount (no hydration mismatch).
@@ -448,7 +451,7 @@ export function SessionProvider({ stage, children }: { stage: Stage; children: R
         } catch {
           /* storage blocked */
         }
-        dispatch({ type: "HYDRATE", state: stored, stage });
+        dispatch({ type: "HYDRATE", state: stored, stage, productId });
       }
       setReady(true);
       return;
@@ -458,7 +461,7 @@ export function SessionProvider({ stage, children }: { stage: Stage; children: R
     } catch {
       /* storage full/blocked — session continues in memory */
     }
-  }, [state, stage]);
+  }, [state, stage, productId]);
 
   const value = useMemo(() => ({ state, dispatch }), [state]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

@@ -2,7 +2,7 @@
 
 import gsap from "gsap";
 import { usePathname, useRouter } from "next/navigation";
-import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { api, type ReportInput } from "../../lib/api";
 import { faPriceFull } from "../../lib/fa";
 import { todayHoursLabel } from "../../lib/hours";
@@ -53,12 +53,13 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
     return () => mm.revert();
   }, [id]);
 
-  const close = () => {
+  // Stable: ui/Sheet refocuses «بستن» whenever onClose changes identity.
+  const close = useCallback(() => {
     const panel = body.current?.parentElement;
     const done = () => dispatch({ type: "OPEN_STORE", id: null });
     if (!panel || window.matchMedia(REDUCED).matches) return done();
     gsap.to(panel, { yPercent: 100, duration: 0.24, ease: "power3.in", onComplete: done });
-  };
+  }, [dispatch]);
 
   if (!row) return null;
   const { offer, store } = row;

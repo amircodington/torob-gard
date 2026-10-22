@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { JourneyShell } from "../../../components/JourneyShell";
 import { DistrictMap } from "../../../components/map/DistrictMap";
 import { AnchorPicker, landmarkAnchor, type RadarAnchor } from "../../../components/radar/AnchorPicker";
@@ -27,13 +27,7 @@ function Radar({ id }: { id: string }) {
   const [attempt, setAttempt] = useState(0);
   const [res, setRes] = useState<Loaded | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const ready = state.stage === "radar"; // the provider has read storage
-
-  // ponytail: URL wins — the session follows the product in the address bar.
-  useEffect(() => {
-    if (ready && state.selectedProductId !== id) dispatch({ type: "SELECT_PRODUCT", id });
-  }, [ready, state.selectedProductId, id, dispatch]);
-
+  const closeFilters = useCallback(() => setFiltersOpen(false), []); // stable: ui/Sheet refocuses on a new onClose
   const key = JSON.stringify([id, anchor.lat, anchor.lng, attempt]);
   useEffect(() => {
     let live = true;
@@ -147,7 +141,7 @@ function Radar({ id }: { id: string }) {
         </>
       )}
 
-      <FilterPanel open={filtersOpen} onClose={() => setFiltersOpen(false)} prices={all?.map((r) => r.offer.priceToman) ?? []} shown={rows.length} />
+      <FilterPanel open={filtersOpen} onClose={closeFilters} prices={all?.map((r) => r.offer.priceToman) ?? []} shown={rows.length} />
       <StoreSheet row={open} anchor={anchor} now={cur?.now ?? new Date()} />
     </>
   );
@@ -156,7 +150,7 @@ function Radar({ id }: { id: string }) {
 export default function RadarPage() {
   const { productId } = useParams<{ productId: string }>();
   return (
-    <JourneyShell stage="radar">
+    <JourneyShell stage="radar" productId={productId}>
       <main className="mx-auto max-w-md px-4 pb-32 pt-2 md:max-w-5xl">
         <Radar id={productId} />
       </main>

@@ -36,6 +36,14 @@ describe("ShopRow", () => {
     expect(screen.getByText(/پاساژ علاءالدین · طبقه ۲ · واحد ۱۴/)).toBeTruthy();
   });
 
+  it("a stale price says it may have changed, without a «(قدیمی)» marker", () => {
+    const r = row();
+    r.offer.updatedMinAgo = 115 * 24 * 60;
+    show(r);
+    expect(screen.getByText("به‌روزرسانی ۱۱۵ روز پیش · ممکن است تغییر کرده باشد")).toBeTruthy();
+    expect(screen.queryByText(/قدیمی/)).toBeNull();
+  });
+
   it("break-ui: a 60-char name and a 1.25-billion price wrap instead of overflowing", () => {
     const name = "فروشگاه بزرگ و مرکزی لوازم جانبی موبایل و تبلت شمیران‌نو".padEnd(60, "ـ");
     expect(name.length).toBe(60);

@@ -42,6 +42,7 @@ test("radar: anchor fallback, sort, open-now filter, missing unit, a failure ope
   await page.getByRole("button", { name: /فیلترها/ }).click();
   const filters = page.getByRole("dialog");
   await filters.getByRole("button", { name: "الان باز", exact: true }).click();
+  await expect(filters.getByRole("button", { name: "الان باز", exact: true })).toBeFocused(); // a chip tap keeps focus
   await filters.getByRole("button", { name: /دیدن/ }).click();
   await expect(page.getByRole("button", { name: /فیلترها.*۱/ })).toBeVisible();
   if (closed) await expect(rows.filter({ hasText: closed.shop.name })).toHaveCount(0);

@@ -37,6 +37,20 @@ describe("consult reducer", () => {
     expect(s.chat).toEqual(stored.chat);
   });
 
+  it("HYDRATE with the page product: the URL owns the product and a new product starts clean", () => {
+    const stored: SessionState = {
+      ...initialState(), stage: "radar", maxStage: "radar", selectedProductId: "X", selectedStoreId: "s1",
+      chosenStoreId: "s1", failures: [{ storeId: "s1", reason: "stock", at: 1 }],
+    };
+    const s = reducer(initialState(), { type: "HYDRATE", state: stored, stage: "radar", productId: "Y" });
+    expect(s.selectedProductId).toBe("Y");
+    expect(s.failures).toEqual([]);
+    expect(s.chosenStoreId).toBeNull();
+    expect(s.selectedStoreId).toBeNull();
+    const same = reducer(initialState(), { type: "HYDRATE", state: stored, stage: "radar", productId: "X" });
+    expect(same.failures).toHaveLength(1); // same product: the trip's history stays
+  });
+
   it("budget chip moves to the priority question", () => {
     const s0 = askedBudget();
     const s = reducer(s0, { type: "CHAT_CHIP", chip: chip(s0, "budget:m2") });

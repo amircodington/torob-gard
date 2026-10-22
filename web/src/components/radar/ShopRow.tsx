@@ -1,6 +1,7 @@
-import { faGroup, faKm, faNum, faWalk, freshnessLabel, isStale } from "../../lib/fa";
+import { faGroup, faKm, faNum, faWalk } from "../../lib/fa";
 import { isOpenNow } from "../../lib/hours";
 import type { OfferRow, Store } from "../../lib/types";
+import { FreshBadge } from "../ui/FreshBadge";
 import { StockBadge } from "../ui/StockBadge";
 
 const floorName = (f: string) => (f === "0" ? "همکف" : faNum(f.replace(/^-/, "منفی ")));
@@ -61,8 +62,8 @@ export function ShopRow({ row, now, onOpen }: { row: OfferRow; now: Date; onOpen
           {open === false && <span className="font-semibold text-signal">بسته</span>}
           <StockBadge stock={offer.stock} />
         </span>
-        <span className={`mt-1 block text-[11px] font-semibold leading-4 ${isStale(offer.updatedMinAgo) ? "text-signal" : "text-ink-muted"}`}>
-          {freshnessLabel(offer.updatedMinAgo)}
+        <span className="mt-1 block">
+          <FreshBadge updatedMinAgo={offer.updatedMinAgo} />
         </span>
       </span>
       <span className="tabular shrink-0 whitespace-nowrap text-[17px] font-extrabold leading-6">{faGroup(Math.round(offer.priceToman / 1000))}</span>
