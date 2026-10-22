@@ -1,9 +1,10 @@
 import json
+import logging
 import re
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 
-from openai import AsyncOpenAI
+from openai import APIStatusError, AsyncOpenAI
 
 from . import config
 
@@ -64,12 +65,50 @@ def _parse_action(content: str | None) -> list[ToolCall]:
         return []
 
 
+log = logging.getLogger(__name__)
+_QUOTA = re.compile(r"credit|quota|balance|insufficient|billing", re.I)
+_switched = False  # process-wide: once the first key is spent, every client uses the second
+
+
+def is_quota_error(e: Exception) -> bool:
+    """BoxAPI says the key is out of credit: 402, or 401/403/429 whose error mentions credit/quota."""
+    if not isinstance(e, APIStatusError):
+        return False
+    return e.status_code == 402 or (
+        e.status_code in (401, 403, 429) and bool(_QUOTA.search(f"{e.message} {e.body}"))
+    )
+
+
 class LLMClient:
     def __init__(self, client: AsyncOpenAI | None = None, supports_tools: bool | None = None,
-                 temperature: float | None = None):
-        self.client = client or AsyncOpenAI(base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY)
+                 temperature: float | None = None, second_client: AsyncOpenAI | None = None):
+        self.primary = client or AsyncOpenAI(base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY)
+        self.second = second_client or (
+            AsyncOpenAI(base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY_SECOND)
+            if config.BOXAPI_KEY_SECOND else None
+        )
         self.supports_tools = config.BOXAPI_TOOLS if supports_tools is None else supports_tools
         self.temperature = temperature  # None: the model's default (live chat); evals pin it
+
+    @property
+    def client(self) -> AsyncOpenAI:
+        return self.second if _switched and self.second else self.primary
+
+    async def _create(self, method: str, **kw):
+        """Call client.<method>.create; on a quota error switch to the second key and retry once."""
+        global _switched
+        obj = lambda c: c.chat.completions if method == "chat" else c.embeddings  # noqa: E731
+        try:
+            return await obj(self.client).create(**kw)
+        except APIStatusError as e:
+            if not self.second or _switched or not is_quota_error(e):
+                raise
+            _switched = True
+            log.warning("BoxAPI key out of credit (HTTP %s); using the second key", e.status_code)
+            return await obj(self.second).create(**kw)
+
+    async def embed(self, model: str, input: list[str], dimensions: int):
+        return await self._create("embed", model=model, input=input, dimensions=dimensions)
 
     async def chat(
         self, messages: list[dict], tools: list[dict] | None, model: str, stream: bool = False
@@ -84,7 +123,7 @@ class LLMClient:
             kw["messages"] = [{"role": "system", "content": _describe_tools(tools)}, *messages]
         if stream:
             return self._stream(kw)
-        r = await self.client.chat.completions.create(**kw)
+        r = await self._create("chat", **kw)
         msg = r.choices[0].message
         calls = [
             ToolCall(c.id, c.function.name, json.loads(c.function.arguments or "{}"))
@@ -95,9 +134,7 @@ class LLMClient:
                           float(getattr(u, "cost", 0) or 0))
 
     async def _stream(self, kw: dict) -> AsyncIterator[Delta]:
-        s = await self.client.chat.completions.create(
-            **kw, stream=True, stream_options={"include_usage": True}
-        )
+        s = await self._create("chat", **kw, stream=True, stream_options={"include_usage": True})
         async for ch in s:
             if ch.usage:
                 yield Delta(tokens_in=ch.usage.prompt_tokens, tokens_out=ch.usage.completion_tokens)

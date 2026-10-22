@@ -1,6 +1,7 @@
 import os
 
 BOXAPI_KEY = os.environ.get("BOXAPI_KEY", "")
+BOXAPI_KEY_SECOND = os.environ.get("BOXAPI_KEY_SECOND", "")  # used once the first key is out of credit
 BOXAPI_BASE_URL = os.environ.get("BOXAPI_BASE_URL", "https://ai.boxapi.ir/ai/v1")
 AGENT_MODEL = os.environ.get("AGENT_MODEL", "openai/gpt-5.4-mini")
 FAST_MODEL = os.environ.get("FAST_MODEL", "openai/gpt-5-mini")

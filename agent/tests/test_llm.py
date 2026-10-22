@@ -1,10 +1,12 @@
 import json
 
 import httpx
+import pytest
 import respx
 from fastapi.testclient import TestClient
-from openai import AsyncOpenAI
+from openai import APIStatusError, AsyncOpenAI
 
+from torobgard_agent import llm
 from torobgard_agent.llm import LLMClient
 from torobgard_agent.main import app
 
@@ -88,3 +90,46 @@ async def test_temperature_only_when_set():
     await t0.chat([{"role": "user", "content": "hi"}], None, "m")
     bodies = [json.loads(c.request.content) for c in route.calls]
     assert "temperature" not in bodies[0] and bodies[1]["temperature"] == 0
+
+
+def two_keys() -> LLMClient:
+    llm._switched = False
+    def mk(k):
+        return AsyncOpenAI(base_url=BASE, api_key=k, max_retries=0)
+
+    return LLMClient(mk("k1"), supports_tools=True, second_client=mk("k2"))
+
+
+def by_key(request: httpx.Request) -> httpx.Response:
+    if request.headers["authorization"] == "Bearer k1":
+        return httpx.Response(402, json={"error": {"message": "Insufficient credit"}})
+    return httpx.Response(200, json=completion({"content": "ok"}))
+
+
+@respx.mock
+async def test_quota_error_switches_to_second_key_for_good():
+    route = respx.post(f"{BASE}/chat/completions").mock(side_effect=by_key)
+    c = two_keys()
+    assert (await c.chat([{"role": "user", "content": "hi"}], None, "m")).content == "ok"
+    assert (await c.chat([{"role": "user", "content": "hi"}], None, "m")).content == "ok"
+    auth = [x.request.headers["authorization"] for x in route.calls]
+    assert auth == ["Bearer k1", "Bearer k2", "Bearer k2"]
+    llm._switched = False
+
+
+@respx.mock
+async def test_plain_rate_limit_does_not_switch():
+    respx.post(f"{BASE}/chat/completions").respond(429, json={"error": {"message": "Too many requests"}})
+    c = two_keys()
+    with pytest.raises(APIStatusError):
+        await c.chat([{"role": "user", "content": "hi"}], None, "m")
+    assert llm._switched is False
+
+
+@respx.mock
+async def test_quota_error_without_second_key_surfaces(monkeypatch):
+    monkeypatch.setattr(llm.config, "BOXAPI_KEY_SECOND", "")
+    respx.post(f"{BASE}/chat/completions").respond(402, json={"error": {"message": "no credit"}})
+    llm._switched = False
+    with pytest.raises(APIStatusError):
+        await client(True).chat([{"role": "user", "content": "hi"}], None, "m")

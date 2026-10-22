@@ -1,11 +1,14 @@
 import hashlib
+import logging
 import os
+import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 from django.core.management.base import BaseCommand
 from django.db import connection
-from openai import OpenAI
+from openai import APIStatusError, OpenAI
 
 from catalog.models import ProductEmbedding, ShopEmbedding
 from torobgard.persian import normalize
@@ -31,10 +34,25 @@ FROM catalog_shop s ORDER BY s.id
 """
 
 
-def make_client() -> OpenAI:
+log = logging.getLogger(__name__)
+_QUOTA = re.compile(r"credit|quota|balance|insufficient|billing", re.I)
+
+
+def is_quota_error(e: Exception) -> bool:
+    """Same rule as agent/torobgard_agent/llm.py (separate image); keep in sync."""
+    if not isinstance(e, APIStatusError):
+        return False
+    text = f"{e.message} {e.body}"
+    return e.status_code == 402 or (e.status_code in (401, 403, 429) and bool(_QUOTA.search(text)))
+
+
+def make_client(key_var: str = "BOXAPI_KEY") -> OpenAI | None:
+    key = os.environ.get(key_var, "")
+    if not key and key_var != "BOXAPI_KEY":
+        return None
     return OpenAI(
         base_url=os.environ.get("BOXAPI_BASE_URL", "https://ai.boxapi.ir/ai/v1"),
-        api_key=os.environ.get("BOXAPI_KEY", ""), max_retries=5,
+        api_key=key, max_retries=5,
     )
 
 
@@ -44,7 +62,10 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         model = os.environ.get("EMBED_MODEL", "openai/text-embedding-3-small")
         dims = int(os.environ.get("EMBED_DIMS", "1024"))
-        client = make_client()
+        clients = [make_client()]
+        if second := make_client("BOXAPI_KEY_SECOND"):
+            clients.append(second)
+        active, lock = [0], threading.Lock()  # key index in use, shared by the workers
         t, tokens = time.time(), 0
         jobs = [(ProductEmbedding, "product", PRODUCTS), (ShopEmbedding, "shop", SHOPS)]
         for table, fk, sql in jobs:
@@ -61,7 +82,19 @@ class Command(BaseCommand):
 
             def call(chunk):
                 texts = [c[1] for c in chunk]
-                return client.embeddings.create(model=model, input=texts, dimensions=dims)
+                i = active[0]
+                try:
+                    return clients[i].embeddings.create(model=model, input=texts, dimensions=dims)
+                except APIStatusError as e:
+                    if i + 1 >= len(clients) or not is_quota_error(e):
+                        raise
+                    with lock:
+                        if active[0] == i:
+                            active[0] = i + 1
+                            log.warning("BoxAPI key out of credit (HTTP %s); using the second key",
+                                        e.status_code)
+                    nxt = clients[i + 1]
+                    return nxt.embeddings.create(model=model, input=texts, dimensions=dims)
 
             # waves of WORKERS parallel calls; each wave is written before the next starts
             with ThreadPoolExecutor(WORKERS) as pool:
