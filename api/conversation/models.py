@@ -51,6 +51,7 @@ class Message(models.Model):
     tokens_in = models.IntegerField(null=True)
     tokens_out = models.IntegerField(null=True)
     latency_ms = models.IntegerField(null=True)
+    cost = models.DecimalField(max_digits=10, decimal_places=5, null=True)  # USD, assistant rows
     created_at = models.DateTimeField(db_default=Now())
 
     class Meta:

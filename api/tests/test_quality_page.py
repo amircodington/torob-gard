@@ -21,13 +21,24 @@ def test_staff_sees_the_empty_state(staff):
     assert r.status_code == 200 and "هنوز داده‌ای نیست" in r.content.decode()
 
 
-def test_staff_sees_charts_with_data(staff):
+def test_staff_sees_live_numbers_not_eval_sessions(staff):
     from conversation.models import Message, Session
-    s = Session.objects.create(model="m")
-    for seq, v, ms in [(1, [1], 900), (2, [], 300)]:
-        Message.objects.create(session=s, seq=seq, role="assistant",
-                               content={"violations": v}, latency_ms=ms)
-    assert "<svg" in staff.get("/admin/quality/").content.decode()
+    live, live2 = Session.objects.create(model="m"), Session.objects.create(model="m")
+    ev = Session.objects.create(model="m", context={"eval": True})
+    fell_back = {"violations": [1], "say": "نتونستم تأیید کنم…"}
+    rows = [(live, 1, fell_back, 900, "0.0200"),
+            # next: the retry fixed it, so not a failure
+            (live2, 1, {"violations": [1], "say": "ok"}, 300, "0.0100"),
+            (ev, 1, {"violations": [], "say": "x"}, 77777, "9.0000")]
+    for s_, seq, content, ms, cost in rows:
+        Message.objects.create(session=s_, seq=seq, role="assistant", content=content,
+                               latency_ms=ms, cost=cost)
+    html = staff.get("/admin/quality/").content.decode()
+    assert ": 0.0300<" in html  # daily live cost
+    assert ": 870<" in html  # p95 of 300 and 900
+    assert ": 50.0<" in html  # 1 of 2 live turns ended in the fallback
+    assert "77777" not in html and "9.0000" not in html  # eval sessions stay out
+    assert ": 0.0150<" in html  # mean cost per session
 
 
 @pytest.mark.django_db

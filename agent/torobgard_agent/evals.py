@@ -109,6 +109,8 @@ async def run_case(case: dict, llm: Metered, db: AsyncConnection | None = None) 
     async with _tx(db) as conn:
         rows = (await conn.execute(text("SELECT content FROM conversation_message WHERE id = ANY(:i)"),
                                    {"i": ids})).scalars().all()
+        await conn.execute(text("UPDATE conversation_session SET context = context || '{\"eval\": true}'"
+                                " WHERE id = :s"), {"s": sid})  # keeps eval turns out of the live charts
         offers = dict((await conn.execute(text(
             "SELECT id, price_toman FROM catalog_offer WHERE id = ANY(:i)"), {"i": receipts})).all())
     return Outcome(says, blocks, list(dict.fromkeys(receipts)), [v for c in rows for v in c["violations"]],
