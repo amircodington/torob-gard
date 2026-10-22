@@ -1,0 +1,26 @@
+services:
+  db:
+    build: ./deploy/db
+    environment:
+      POSTGRES_USER: torobgard
+      POSTGRES_PASSWORD: torobgard
+      POSTGRES_DB: torobgard
+    ports: ["${DB_PORT:-5432}:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+  api:  # Dockerfile arrives in Task 2
+    build: ./api
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://torobgard:torobgard@db:5432/torobgard
+      REDIS_URL: redis://redis:6379/0
+      DATASET_DIR: /data
+    ports: ["8000:8000"]
+    depends_on: [db, redis]
+    volumes:
+      - ./api:/app
+      - ./docs/starcoach-dataset-v16-cap300-csv:/data:ro
+volumes:
+  pgdata:

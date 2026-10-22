@@ -1,0 +1,13 @@
+docs/starcoach-dataset-*/*.csv
+node_modules
+.env
+.venv
+graphify-out/
+.next/
+docs/torob-gard-ux-prototype/node_modules
+.superpowers/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+*.pyc
+.DS_Store

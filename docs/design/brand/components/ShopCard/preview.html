@@ -1,0 +1,25 @@
+<!-- @dsCard group="Answers" height=360 subtitle="Active, verified, unverified and warning rows" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800&display=swap">
+<style>
+  body{margin:0;background:var(--paper);padding:20px;font-family:var(--font-sans);direction:rtl;color:var(--ink);background-image:radial-gradient(400px 220px at 50% 0,var(--blush),transparent 70%)}
+  .list{display:grid;gap:12px;max-width:380px}
+  .shop{background:var(--surface);border-radius:var(--radius-lg);padding:16px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;box-shadow:var(--shadow-card)}
+  .ico{width:52px;height:52px;border-radius:var(--radius-pill);background:var(--orange-tint);display:grid;place-items:center;font-size:22px}
+  b.n{font-size:17px;display:block;font-weight:700}
+  .pl{font-size:14px;color:var(--ink-muted)}
+  .pl em{font-style:normal;color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
+  .pr{font-weight:800;font-size:17px;font-variant-numeric:tabular-nums;text-align:left}
+  .pr small{display:block;font-size:11px;font-weight:600;color:var(--verified)}
+  .pr small.w{color:var(--signal)}
+  .pr small.u{color:var(--ink-muted)}
+  .shop.on{background:var(--orange);color:var(--on-orange)}
+  .shop.on .pl,.shop.on .pl em,.shop.on .pr small{color:var(--on-orange)}
+  .shop.on .ico{background:rgba(255,255,255,.25)}
+  .shop:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+</style>
+<div class="list">
+  <article class="shop on" tabindex="0"><div class="ico">⚡</div><div><b class="n">فرورا رویس</b><span class="pl">علاءالدین ۲ · <em>ط ۶ · واحد ۶۲۲</em></span></div><div class="pr">۵۹۰<small>۴۰٪ زیر میانه</small></div></article>
+  <article class="shop" tabindex="0"><div class="ico">📱</div><div><b class="n">موبایل تخت جمشید</b><span class="pl">خانه موبایل · <em>ط ۴ · پلاک ۴۱۲</em></span></div><div class="pr">۶۰۵<small>تأییدشده · ۲۰ مهر</small></div></article>
+  <article class="shop" tabindex="0"><div class="ico">💡</div><div><b class="n">پخش کابل بهار</b><span class="pl">علاءالدین ۲ · <em>ط ۴ · واحد ۴۰۳</em></span></div><div class="pr">۶۱۰<small class="u">تأییدنشده</small></div></article>
+  <article class="shop" tabindex="0"><div class="ico">🏬</div><div><b class="n">نیکورا نیکان</b><span class="pl">ساختمان صمصام · <em>طبقه نامشخص</em></span></div><div class="pr">۶۴۰<small class="w">گزارش بسته‌بودن</small></div></article>
+</div>

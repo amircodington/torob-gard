@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Vazirmatn", "IRANSans", Tahoma, ui-sans-serif, system-ui, sans-serif;
+
+  --color-cream: #f7f6f3;        /* page background           */
+  --color-mascot: #f5f4f0;       /* matches mascot artwork bg */
+  --color-ink: #1c1a17;          /* primary text              */
+  --color-sub: #6f6a62;          /* secondary text            */
+  --color-faint: #a39d93;        /* tertiary text             */
+  --color-line: #e8e5de;         /* hairline borders          */
+  --color-brand: #d92d2b;        /* Torob red accent          */
+  --color-brand-deep: #ad211f;   /* pressed / deep red        */
+  --color-brand-tint: #fceeed;   /* red wash                  */
+  --color-brand-tint2: #f8e0de;  /* stronger red wash         */
+  --color-leaf: #8f2d33;         /* mascot leaf dark red      */
+  --color-mint: #1f7a4d;         /* confirmed green           */
+  --color-mint-tint: #e5f3ec;
+  --color-ambery: #96640d;       /* warning text              */
+  --color-amber-tint: #fbf1dd;
+  --color-cloud: #eef3f7;        /* cool info tint            */
+  --color-sky-ink: #2f5d7c;
+
+  --shadow-card: 0 1px 2px rgb(28 26 23 / 0.04), 0 8px 24px -12px rgb(28 26 23 / 0.10);
+  --shadow-pop: 0 4px 14px rgb(28 26 23 / 0.08), 0 18px 48px -18px rgb(28 26 23 / 0.22);
+}
+
+html {
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-brand-tint2);
+}
+
+/* ---- motion (respects reduced-motion) ---- */
+@keyframes tg-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
+}
+@keyframes tg-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes tg-sheet {
+  from { transform: translateY(105%); }
+  to { transform: translateY(0); }
+}
+@keyframes tg-scrim {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes tg-pop {
+  from { opacity: 0; transform: scale(0.55) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes tg-ping {
+  0% { transform: scale(0.7); opacity: 0.7; }
+  80%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+.anim-float { animation: tg-float 4.5s ease-in-out infinite; }
+.anim-rise { animation: tg-rise 0.45s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
+.anim-sheet { animation: tg-sheet 0.4s cubic-bezier(0.3, 0.9, 0.25, 1) both; }
+.anim-scrim { animation: tg-scrim 0.25s ease both; }
+.anim-pop { animation: tg-pop 0.4s cubic-bezier(0.2, 1.1, 0.3, 1.15) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---- small helpers ---- */
+.nice-scroll { scrollbar-width: thin; scrollbar-color: #d5d1c8 transparent; }
+.nice-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+.nice-scroll::-webkit-scrollbar-thumb { background: #d5d1c8; border-radius: 99px; }
+
+.focusable:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.tnum { font-variant-numeric: tabular-nums; }

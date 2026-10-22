@@ -1,0 +1,25 @@
+<!-- @dsCard group="Answers" height=340 subtitle="The black route sheet over the map" -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700&display=swap">
+<style>
+  body{margin:0;background:var(--blush-soft);padding:40px 20px 0;font-family:var(--font-sans);direction:rtl}
+  .sheet{max-width:380px;margin:0 auto;background:var(--panel);color:var(--on-dark);border-radius:var(--radius-sheet) var(--radius-sheet) 0 0;padding:14px 20px 28px;display:grid;gap:16px;box-shadow:var(--shadow-sheet)}
+  .sheet::before{content:"";width:48px;height:5px;border-radius:999px;background:rgba(255,255,255,.3);margin:0 auto}
+  .seg{display:flex;gap:8px}
+  .seg button{flex:1;font:inherit;font-weight:600;font-size:14px;padding:14px 8px;border-radius:var(--radius-pill);background:var(--panel-2);color:inherit;border:0;min-height:44px;cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--orange)}
+  .seg button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stat b{display:block;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .stat span{font-size:13px;opacity:.75}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .dc{border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:12px;min-height:84px}
+  .dc .ico{width:48px;height:48px;border-radius:999px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:22px}
+  .dc b{display:block;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .dc span{font-size:12px;opacity:.8}
+  .brown{background:var(--panel-brown)} .plum{background:var(--panel-plum)}
+</style>
+<section class="sheet">
+  <div class="seg" role="group" aria-label="طبقه"><button type="button" aria-pressed="true">طبقه ۶</button><button type="button" aria-pressed="false">طبقه ۴</button><button type="button" aria-pressed="false">طبقه ۲</button></div>
+  <div class="stats"><div class="stat"><b>واحد ۶۲۲</b><span>فرورا رویس · کنار پله‌برقی</span></div><div class="stat"><b>۰۰:۰۴:۲۰</b><span>تا توقف بعدی</span></div></div>
+  <div class="cards"><div class="dc brown"><div class="ico">💰</div><div><b>۶۱۰</b><span>هزار تومان</span></div></div><div class="dc plum"><div class="ico">✅</div><div><b>۲۰ مهر</b><span>تأیید تیم</span></div></div></div>
+</section>
