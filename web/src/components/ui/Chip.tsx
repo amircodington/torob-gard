@@ -11,10 +11,17 @@ export const InChipGroup = createContext(false);
 export function Chip({ label, selected, onClick, icon: Icon }: { label: string; selected?: boolean; onClick?: () => void; icon?: LucideIcon }) {
   const inGroup = useContext(InChipGroup);
   // Text on orange is 15px bold or larger (brand contrast rule); the resting pill stays 13px.
-  const look = selected
-    ? `${inGroup ? "bg-transparent" : "bg-orange"} text-[15px] text-on-orange`
-    : "bg-surface text-[13px] text-ink shadow-card";
-  const cls = `inline-flex items-center gap-1.5 rounded-pill px-3 text-start font-bold leading-5 transition-[background-color,color] duration-(--duration-fast) ease-out ${look}`;
+  // In a group the track is the white shape and the pill the orange one; the selected chip keeps its own orange
+  // until the group is ready (SSR / before hydration the pill is not placed yet). Text colour rides the pill's 220 ms.
+  const look = inGroup
+    ? selected
+      ? "bg-orange group-data-ready/chips:bg-transparent text-[15px] text-on-orange"
+      : "bg-transparent text-[13px] text-ink"
+    : selected
+      ? "bg-orange text-[15px] text-on-orange"
+      : "bg-surface text-[13px] text-ink shadow-card";
+  const timing = inGroup ? "duration-220 ease-out" : "duration-(--duration-fast) ease-out";
+  const cls = `inline-flex items-center gap-1.5 rounded-pill px-3 text-start font-bold leading-5 transition-[background-color,color] ${timing} ${look}`;
   const icon = Icon && <Icon aria-hidden className={`size-4 shrink-0 ${isDirectional(Icon) ? "flip-rtl" : ""}`} />;
   if (!onClick)
     return (
