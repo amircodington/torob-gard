@@ -36,6 +36,7 @@ class Tier:
     offer_count: int
     scores: dict[str, float | None] = field(default_factory=dict)
     over_max: int = 0  # toman above budget_max; feature tier only
+    skipped: int = 0  # cheaper in-band models without the priority's spec; budget tier only
 
 
 def _normaliser(values: list[float | None]):
@@ -121,6 +122,9 @@ def pick_tiers(
     # (explain_tiers then adds «…: این مشخصه ثبت نشده»).
     with_spec = [r for r in band if not r.scores["missing"]]
     take("budget", with_spec or band, lambda r: (r.price, -r.offer_count))
+    if picked and with_spec:
+        first = picked[0]
+        first.skipped = sum(1 for r in band if r.scores["missing"] and r.price < first.price)
     has_priority = any(r.scores["priority"] is not None for r in band)
     ranked = "priority" if has_priority else "spec"
     take("balanced", band, lambda r: (-r.scores[ranked], abs(r.price - target), -r.offer_count))
@@ -144,7 +148,9 @@ def explain_tiers(tiers: list[Tier], priority: str | None) -> dict[str, dict]:
         bullets, tradeoffs = [], []
         fits = top is not None and ps == top and ps != _MISSING
         if t.tier == "budget":
-            bullets.append(C.T_CHEAPEST)
+            # T_CHEAPEST only when it truly is the cheapest in the band
+            cheapest_copy = C.T_CHEAPEST_WITH_SPEC.format(label=label)
+            bullets.append(cheapest_copy if t.skipped else C.T_CHEAPEST)
         elif t.tier == "balanced" and fits and priority in C.BALANCED_BULLET:
             bullets.append(C.BALANCED_BULLET[priority])
         elif t.tier == "feature":
@@ -160,12 +166,16 @@ def explain_tiers(tiers: list[Tier], priority: str | None) -> dict[str, dict]:
             tradeoffs.append(C.T_MISSING.format(label=label))
         elif ps is not None and not fits:
             tradeoffs.append(C.T_BEHIND.format(label=label))
+        if t.skipped:
+            tradeoffs.append(C.T_SKIPPED.format(n=C.fa_num(t.skipped)))
         if t.tier != "budget" and t.price > cheapest:
             tradeoffs.append(C.T_PRICIER.format(x=C.fa_price(t.price - cheapest)))
         if t.over_max:
             tradeoffs.append(C.T_OVER_MAX.format(x=C.fa_price(t.over_max)))
         if t.tier == "balanced":
             fit_note = C.FIT["balanced"].format(label=label) if label else C.FIT_NO_PRIORITY
+        elif t.skipped:
+            fit_note = C.FIT_BUDGET_WITH_SPEC.format(label=label)
         else:
             fit_note = C.FIT[t.tier]
         out[t.tier] = {

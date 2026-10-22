@@ -77,7 +77,14 @@ def test_fewer_than_three(phones):
 
 def test_budget_tier_prefers_a_phone_with_the_priority_spec(phones):
     # band 19–25M: p3 (19M) is cheapest but has no battery spec; p4 (22M) has one
-    assert pick_tiers("mobile", 19 * M, 25 * M, "battery")[0].product.id == "p4"
+    t = pick_tiers("mobile", 19 * M, 25 * M, "battery")
+    assert t[0].product.id == "p4"
+    # p4 is not the cheapest in the band, so the card must not say so
+    budget = explain_tiers(t, "battery")["budget"]
+    assert "ارزون‌ترین گزینه‌ی تو بودجه‌ات" not in budget["bullets"]
+    assert any("ارزون‌ترین مدلی که" in b and "ثبت‌شده داره" in b for b in budget["bullets"])
+    assert any("مدل ارزون‌تر هست که این مشخصه رو ثبت نکرده" in s for s in budget["tradeoffs"])
+    assert "از همه مهم‌تره" not in budget["fit_note"]
     # band 19–20M: only p3, so it stays, and its missing spec is a trade-off
     t = pick_tiers("mobile", 19 * M, 20 * M, "battery")
     assert t[0].product.id == "p3"

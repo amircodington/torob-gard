@@ -50,6 +50,10 @@ BEST_BULLET = {
 }
 
 T_CHEAPEST = "ارزون‌ترین گزینه‌ی تو بودجه‌ات"
+# Budget tier when cheaper models in the band lack the priority's spec (they were skipped).
+T_CHEAPEST_WITH_SPEC = "ارزون‌ترین مدلی که {label} ثبت‌شده داره"
+T_SKIPPED = "{n} مدل ارزون‌تر هست که این مشخصه رو ثبت نکرده"
+FIT_BUDGET_WITH_SPEC = "اگه قیمت مهمه ولی {label} ثبت‌شده هم می‌خوای، این رو ببین."
 # Balanced tier, only when it really wins its priority among the three.
 BALANCED_BULLET = {
     "camera": "بهترین دوربین تو این بودجه",
