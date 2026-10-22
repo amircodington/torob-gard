@@ -6,11 +6,11 @@ from datetime import datetime
 from functools import cache
 from typing import TypedDict
 
-from openai import AsyncOpenAI
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from .. import config, db
+from ..llm import LLMClient
 from ..persian import normalize
 
 log = logging.getLogger(__name__)
@@ -80,12 +80,12 @@ class ShopHit(TypedDict):
 
 
 @cache
-def _client() -> AsyncOpenAI:
-    return AsyncOpenAI(base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY)
+def _client() -> LLMClient:
+    return LLMClient()
 
 
 async def embed_query(q: str) -> list[float]:
-    r = await _client().embeddings.create(model=config.EMBED_MODEL, input=[q], dimensions=config.EMBED_DIMS)
+    r = await _client().embed(config.EMBED_MODEL, [q], config.EMBED_DIMS)
     return r.data[0].embedding
 
 
