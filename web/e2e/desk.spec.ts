@@ -16,6 +16,16 @@ test("desk: three tiers, compare tray, pick goes to the radar", async ({ page })
   await cards.nth(1).getByRole("button", { name: "مقایسه" }).click();
   await expect(page.getByText("۲ مدل")).toBeVisible();
 
+  // The compare sheet stays mounted between opens: it must close again on the second open.
+  const opener = page.getByRole("button", { name: "باز کردن مقایسه" });
+  const compare = page.getByRole("dialog", { name: /مقایسه/ });
+  for (let i = 0; i < 2; i++) {
+    await opener.click();
+    await compare.getByRole("button", { name: "بستن" }).click();
+    await expect(compare).toHaveCount(0);
+    await expect(opener).toBeFocused();
+  }
+
   await cards.nth(1).getByRole("button", { name: "انتخاب این مدل" }).click();
   await page.waitForURL(/\/radar\//);
 });

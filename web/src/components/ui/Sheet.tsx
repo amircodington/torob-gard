@@ -31,6 +31,7 @@ export function Sheet({
   children: ReactNode;
 }) {
   const panel = useRef<HTMLDivElement>(null);
+  const root = useRef<HTMLDivElement>(null);
   const scrim = useRef<HTMLDivElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
   const latest = useRef(onClose);
@@ -43,21 +44,37 @@ export function Sheet({
     latest.current = onClose;
   });
 
+  // Modal while open: the rest of the page is inert, Tab cycles inside, focus goes back to the opener on close.
   useEffect(() => {
     if (!open) return;
+    const opener = document.activeElement;
+    const benched = [...document.body.children].filter((el): el is HTMLElement => el instanceof HTMLElement && el !== root.current && !el.inert);
+    benched.forEach((el) => (el.inert = true));
     closeBtn.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && latest.current();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return latest.current();
+      if (e.key !== "Tab" || !root.current) return;
+      const all = [...root.current.querySelectorAll<HTMLElement>("a[href], button:not(:disabled), input:not(:disabled), select, textarea, [tabindex]:not([tabindex='-1'])")];
+      const [first, last] = [all[0], all[all.length - 1]];
+      const wrapTo = e.shiftKey ? (document.activeElement === first ? last : null) : document.activeElement === last ? first : null;
+      if (!wrapTo) return;
+      e.preventDefault();
+      wrapTo.focus();
+    };
     window.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
+      benched.forEach((el) => (el.inert = false));
+      if (opener instanceof HTMLElement && opener.isConnected) opener.focus();
     };
   }, [open]);
 
   // Open: rises from the bottom (phone) or slides in from the inline-start edge (lg); reduced motion → fades.
   useLayoutEffect(() => {
     if (!open) return;
+    closing.current = false; // callers that keep the Sheet mounted reopen it after a close
     registerMotion();
     const mm = gsap.matchMedia();
     // `motion` is there because a conditions handler runs only while at least one condition matches.
@@ -123,7 +140,7 @@ export function Sheet({
   if (!open) return null;
   const desk = dock ? "lg:top-0 lg:end-auto lg:mx-0 lg:max-h-none lg:w-[440px] lg:max-w-none lg:rounded-ss-none lg:rounded-ee-sheet" : "";
   return createPortal(
-    <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby={labelledby}>
+    <div ref={root} className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby={labelledby}>
       <div ref={scrim} aria-hidden onClick={close} className={`absolute inset-0 bg-ink/45 ${dock ? "lg:bg-ink/20" : ""}`} />
       <div
         ref={panel}

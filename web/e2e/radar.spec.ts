@@ -91,8 +91,27 @@ test("radar: the store sheet takes focus, closes by «بستن», Escape and (ph
     expect(await panel.boundingBox()).toMatchObject({ y: 0, width: 440, height: 900 });
     await expect(sheet.locator("[data-sheet-handle]")).toBeHidden();
   }
+  // Modal: the page behind is inert and Tab wraps inside the sheet.
+  await expect(page.locator("main")).toHaveJSProperty("inert", true);
+  await page.keyboard.press("Shift+Tab");
+  await expect(sheet.getByRole("button", { name: "بستن" })).not.toBeFocused();
+  await expect(sheet.locator(":focus")).toHaveCount(1);
+  await page.keyboard.press("Tab");
+  await expect(sheet.getByRole("button", { name: "بستن" })).toBeFocused();
+
   await sheet.getByRole("button", { name: "بستن" }).click();
   await expect(sheet).toHaveCount(0);
+  await expect(rows.first().getByRole("button")).toBeFocused(); // focus returns to the row that opened it
+  await expect(page.locator("main")).toHaveJSProperty("inert", false);
+
+  // Filters keep their Sheet mounted: open → close → reopen → close.
+  const filtersBtn = page.getByRole("button", { name: /فیلترها/ });
+  for (let i = 0; i < 2; i++) {
+    await filtersBtn.click();
+    await sheet.getByRole("button", { name: "بستن" }).click();
+    await expect(sheet).toHaveCount(0);
+    await expect(filtersBtn).toBeFocused();
+  }
 
   await open();
   await page.keyboard.press("Escape");
