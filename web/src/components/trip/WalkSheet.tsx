@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Suspense, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { api, type ReportInput } from "../../lib/api";
+import { project } from "../../lib/gesture";
 import { faFreshness, faGroup, faNum, isStale } from "../../lib/fa";
 import type { FailReason, OfferRow, Trip } from "../../lib/types";
 import { useSession } from "../../state/session";
@@ -42,7 +43,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
   const router = useRouter();
   const pathname = usePathname();
   const sheet = useRef<HTMLElement>(null);
-  const drag = useRef<{ y0: number; base: number; moved: boolean } | null>(null);
+  const drag = useRef<{ y0: number; base: number; moved: boolean; y: number; t: number; v: number } | null>(null);
   const dragged = useRef(false);
   const [full, setFull] = useState(true);
   const [step, setStep] = useState<"idle" | "asked" | "had">("idle");
@@ -70,7 +71,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
   const floors = floorsAround(shop.floor);
 
   // Sheet gesture: follows the finger, rubber-bands past the ends, snaps to peek or full; grabbing interrupts a snap.
-  // ponytail: two snap points, no velocity-based fling; a resize while peeking keeps the old offset.
+  // Release picks the snap nearest where the fling would come to rest. ponytail: a resize while peeking keeps the old offset.
   const peekY = () => window.innerHeight * PEEK;
   const snapTo = (toFull: boolean) => {
     setFull(toFull);
@@ -80,7 +81,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
   };
   const down = (e: PointerEvent<HTMLButtonElement>) => {
     gsap.killTweensOf(sheet.current, "y");
-    drag.current = { y0: e.clientY, base: Number(gsap.getProperty(sheet.current, "y")), moved: false };
+    drag.current = { y0: e.clientY, base: Number(gsap.getProperty(sheet.current, "y")), moved: false, y: e.clientY, t: e.timeStamp, v: 0 };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const move = (e: PointerEvent) => {
@@ -88,15 +89,19 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
     if (!d) return;
     const y = d.base + e.clientY - d.y0;
     if (Math.abs(e.clientY - d.y0) > 6) d.moved = true;
+    if (e.timeStamp > d.t) d.v = 0.8 * ((e.clientY - d.y) / (e.timeStamp - d.t)) + 0.2 * d.v; // px/ms, smoothed
+    d.y = e.clientY;
+    d.t = e.timeStamp;
     const max = peekY();
     gsap.set(sheet.current, { y: y < 0 ? y / 4 : y > max ? max + (y - max) / 4 : y });
   };
-  const up = () => {
+  const up = (e: PointerEvent) => {
     const d = drag.current;
     drag.current = null;
     if (!d?.moved) return; // a tap: the click handler toggles
     dragged.current = true;
-    snapTo(Number(gsap.getProperty(sheet.current, "y")) < peekY() / 2);
+    const v = e.timeStamp - d.t > 100 ? 0 : d.v; // the finger stopped before lifting: no fling
+    snapTo(Number(gsap.getProperty(sheet.current, "y")) + project(v, 0.998) < peekY() / 2);
   };
 
   const report = (kind: ReportInput["kind"]) => api.report({ shopId: shop.id, productId: trip.productId, kind }).catch(() => {});

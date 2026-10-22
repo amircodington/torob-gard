@@ -1,8 +1,8 @@
 "use client";
 
-import gsap from "gsap";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { DoorClosed, Navigation, PackageX, PhoneOff, type LucideIcon } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { api, type ReportInput } from "../../lib/api";
 import { faPriceFull } from "../../lib/fa";
 import { todayHoursLabel } from "../../lib/hours";
@@ -17,13 +17,11 @@ import type { RadarAnchor } from "./AnchorPicker";
 import { PriceCheck } from "./PriceCheck";
 import { distanceLabel, placeLine } from "./ShopRow";
 
-const FAILS: { label: string; kind: ReportInput["kind"]; reason: FailReason }[] = [
-  { label: "جواب ندادن", kind: "no_answer", reason: "no-answer" },
-  { label: "موجود نبود", kind: "no_item", reason: "stock" },
-  { label: "بسته بود", kind: "closed", reason: "closed" },
+const FAILS: { label: string; kind: ReportInput["kind"]; reason: FailReason; icon: LucideIcon }[] = [
+  { label: "جواب ندادن", kind: "no_answer", reason: "no-answer", icon: PhoneOff },
+  { label: "موجود نبود", kind: "no_item", reason: "stock", icon: PackageX },
+  { label: "بسته بود", kind: "closed", reason: "closed", icon: DoorClosed },
 ];
-
-const REDUCED = "(prefers-reduced-motion: reduce)";
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -38,29 +36,8 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
   const { state, dispatch } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-  const body = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
-  const id = row?.store.id;
-
-  // Motion moment: the sheet slides up (power3.out, 320 ms). ponytail: animates ui/Sheet's panel via the parent of our content.
-  useLayoutEffect(() => {
-    const panel = body.current?.parentElement;
-    if (!id || !panel) return;
-    const mm = gsap.matchMedia();
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      gsap.from(panel, { yPercent: 100, duration: 0.32, ease: "power3.out" });
-    });
-    return () => mm.revert();
-  }, [id]);
-
-  // Stable: ui/Sheet refocuses «بستن» whenever onClose changes identity.
-  const close = useCallback(() => {
-    const panel = body.current?.parentElement;
-    const done = () => dispatch({ type: "OPEN_STORE", id: null });
-    if (!panel || window.matchMedia(REDUCED).matches) return done();
-    gsap.to(panel, { yPercent: 100, duration: 0.24, ease: "power3.in", onComplete: done });
-  }, [dispatch]);
 
   if (!row) return null;
   const { offer, store } = row;
@@ -98,8 +75,8 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
   const installment = store.installment === true ? "اقساط دارد" : store.installment === false ? "اقساط ندارد" : "اطلاعات اقساط ثبت نشده";
 
   return (
-    <Sheet open onClose={close} labelledby="store-title">
-      <div ref={body}>
+    <Sheet open onClose={() => dispatch({ type: "OPEN_STORE", id: null })} labelledby="store-title">
+      <div>
         <div className="pe-12">
           <h2 id="store-title" className="break-words text-[20px] font-extrabold leading-8">{store.name}</h2>
           <p className="mt-0.5 break-words text-[13px] leading-5 text-on-dark/70">{placeLine(store)}</p>
@@ -132,7 +109,7 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
         <PriceCheck key={store.id} productId={offer.productId} />
 
         <p className="mt-3 text-[12px] leading-5 text-on-dark/60">قبل از رفتن زنگ بزن؛ قیمت و موجودی رو خود فروشگاه تأیید می‌کنه.</p>
-        <Btn className="mt-3 w-full" disabled={busy} onClick={go}>
+        <Btn className="mt-3 w-full" icon={Navigation} disabled={busy} onClick={go}>
           برو همین‌جا
         </Btn>
         {error && (
@@ -148,8 +125,9 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
               type="button"
               disabled={busy}
               onClick={() => fail(f)}
-              className="min-h-11 rounded-md bg-panel-2 px-2 text-[13px] font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
+              className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-md bg-panel-2 px-2 py-1.5 text-[13px] font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
             >
+              <f.icon aria-hidden className="size-4" />
               {f.label}
             </button>
           ))}

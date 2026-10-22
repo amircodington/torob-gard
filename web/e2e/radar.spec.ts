@@ -29,7 +29,7 @@ function lastSaturdayNoon(): Date {
 
 test("radar: anchor fallback, sort, open-now filter, missing unit, a failure opens Plan B", async ({ page, request }) => {
   const now = lastSaturdayNoon();
-  await page.clock.setFixedTime(now);
+  await page.clock.setSystemTime(now); // time still flows: GSAP's ticker reads Date.now, a frozen clock freezes the sheet
   await page.goto(`/radar/${PRODUCT}`);
   const rows = page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem");
   await expect(rows.first()).toBeVisible();
@@ -72,4 +72,51 @@ test("radar: anchor fallback, sort, open-now filter, missing unit, a failure ope
   await page.waitForURL(/planb=stock/);
   await expect(sheet.getByText("قیمت ثبت‌شده‌ی فروشگاه در ترب")).toHaveCount(0);
   await expect(page.getByRole("dialog", { name: "پلن B" })).toBeVisible();
+});
+
+test("radar: the store sheet takes focus, closes by «بستن», Escape and (phone) a drag down; docks at lg", async ({ page }, info) => {
+  await page.goto(`/radar/${PRODUCT}`);
+  const rows = page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem");
+  const sheet = page.getByRole("dialog");
+  const open = async () => {
+    await rows.first().getByRole("button").click();
+    await expect(sheet.getByRole("button", { name: "بستن" })).toBeFocused();
+  };
+
+  await open();
+  const panel = sheet.locator("[data-sheet-panel]");
+  if (info.project.name === "desktop") {
+    // Docked to the inline-start edge (the right in RTL), full height, 440 px wide.
+    await expect.poll(async () => (await panel.boundingBox())?.x).toBe(1440 - 440);
+    expect(await panel.boundingBox()).toMatchObject({ y: 0, width: 440, height: 900 });
+    await expect(sheet.locator("[data-sheet-handle]")).toBeHidden();
+  }
+  await sheet.getByRole("button", { name: "بستن" }).click();
+  await expect(sheet).toHaveCount(0);
+
+  await open();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+
+  if (info.project.name !== "phone") return;
+  await open();
+  await page.waitForTimeout(400); // the rise
+  const handle = (await sheet.locator("[data-sheet-handle]").boundingBox())!;
+  const x = handle.x + handle.width / 2;
+  const y = handle.y + handle.height / 2;
+  // A short, slow drag snaps back.
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 60, { steps: 6 });
+  await page.waitForTimeout(150);
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  await expect(sheet).toBeVisible();
+  expect((await sheet.locator("[data-sheet-handle]").boundingBox())!.y).toBeCloseTo(handle.y, 0);
+  // A long drag closes it.
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 400, { steps: 10 });
+  await page.mouse.up();
+  await expect(sheet).toHaveCount(0);
 });
