@@ -7,10 +7,15 @@ services:
       POSTGRES_DB: torobgard
     ports: ["${DB_PORT:-5432}:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U torobgard -d torobgard"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
   redis:
     image: redis:7-alpine
     ports: ["${REDIS_PORT:-6379}:6379"]
-  api:  # Dockerfile arrives in Task 2
+  api:
     build: ./api
     env_file: .env
     environment:
@@ -19,7 +24,11 @@ services:
       DATASET_DIR: /data
       SHARED_DIR: /shared
     ports: ["8000:8000"]
-    depends_on: [db, redis]
+    # exec so SIGTERM from `compose down` reaches runserver, not the shell
+    command: sh -c "python manage.py migrate && exec python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
     volumes:
       - ./api:/app
       - ./shared:/shared:ro

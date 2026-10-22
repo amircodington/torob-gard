@@ -1,4 +1,4 @@
-# ponytail: api (Task 2) and web (Task 9) don't exist yet; dev and check skip them while their dirs are missing.
+# ponytail: api runs only in Docker (host has no GDAL); web runs on the host with pnpm. No CI yet, pre-push runs check.
 .PHONY: dev down check test-api ingest psql hooks
 
 .env:
@@ -7,21 +7,26 @@
 hooks:
 	git config core.hooksPath .githooks
 
-dev: .env hooks
-	docker compose up -d --build db redis $$(test -d api && echo api)
-	@if [ -d web ]; then pnpm -C web dev; fi
+web/node_modules: web/pnpm-lock.yaml
+	pnpm -C web install --frozen-lockfile
+	touch $@
+
+dev: .env hooks web/node_modules
+	docker compose up -d --build db redis api
+	pnpm -C web dev
 
 down:
 	docker compose down
 
-check: .env
-	@if [ -d api ]; then docker compose run --rm api sh -c "ruff check . && pytest"; fi
-	@if [ -d web ]; then pnpm -C web typecheck && pnpm -C web test && pnpm -C web lint; fi
+check: .env web/node_modules
+	docker compose run --rm api sh -c "ruff check . && pytest"
+	pnpm -C web typecheck && pnpm -C web test && pnpm -C web lint
 
 test-api: .env
 	docker compose run --rm api pytest $(ARGS)
 
 ingest: .env
+	docker compose run --rm api python manage.py migrate
 	docker compose run --rm api python manage.py load_csv --dir /data
 	docker compose run --rm api python manage.py parse_addresses
 	docker compose run --rm api python manage.py build_venues

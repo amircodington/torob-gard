@@ -29,7 +29,7 @@ quality   verification, shop_report, eval_case, eval_run, eval_result
 | aliases | text[] | «علاالدین 2», «علاءالدین2» … |
 | kind | enum(pasazh, bazaar, building, street) | |
 | address | text | |
-| geom | geography(Point,4326) | centroid of member shops |
+| geom | geography(Point,4326) null | centroid of member shops, null until build_venues |
 | floors | jsonb | `[{"floor":"-1","label":"زیرزمین"}, …]` filled by students |
 | directory_photo_ids | uuid[] | media uploaded by students |
 | shop_count | int | denormalized |
@@ -216,7 +216,7 @@ Stops are ordered by (venue, floor) so the shopper walks floor by floor.
 | photo_ids | uuid[] |
 
 ### shop_report — one-tap feedback from shoppers
-`id, user_id, shop_id, kind enum(open, closed, had_item, no_item, price_ok, price_high), product_id null, created_at`.
+`id, user_id, shop_id, kind enum(open, closed, had_item, no_item, no_answer, price_ok, price_high), product_id null, created_at`.
 
 ### eval_case / eval_run / eval_result — the agent test set
 | eval_case | eval_run | eval_result |
