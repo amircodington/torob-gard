@@ -75,7 +75,8 @@ TOOLS: list[dict] = [
 
 _ID_KEYS = {"id", "shop_id", "product_id", "offer_id"}
 # free text that came from sellers/shops: the model must read it as data, not instructions
-_TEXT_KEYS = {"name", "venue_name", "title", "brand", "hint", "location_hint", "address", "location_label"}
+_TEXT_KEYS = {"name", "venue_name", "title", "brand", "hint", "location_hint", "address", "location_label",
+              "contact", "seller_title", "note", "floor", "unit"}
 
 
 @dataclass

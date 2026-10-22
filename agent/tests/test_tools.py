@@ -81,3 +81,28 @@ async def test_run_tool_ids_and_errors(conn):
     assert ok.data == {"ok": True}
     assert {t["function"]["name"] for t in TOOLS} == {
         "search_products", "search_shops", "price_check", "locate_shop", "plan_trip", "remember"}
+
+
+async def test_remember_unknown_id_is_data_not_a_crash(conn):
+    r = await run_tool(ToolCall("1", "remember", {"state": "seen", "shop_id": "hallucinated"}),
+                       user_id=USER, db=conn)
+    assert "unknown shop_id" in r.data["error"]
+    ok = await run_tool(ToolCall("2", "remember", {"state": "seen", "product_id": T}), user_id=USER, db=conn)
+    assert ok.data == {"ok": True}  # the connection is still usable
+
+
+async def test_price_check_ignores_outliers_and_ids_cover_price_and_trip(conn):
+    r = await run_tool(ToolCall("1", "price_check", {"product_id": T, "quoted_price": 600_000}), db=conn)
+    assert r.data["max"] == 520_000 and "t_o4" not in r.data["offer_ids"]
+    assert {T, "t_o1", "t_o2", "t_o3", "t_shop_b1"} <= r.ids
+    t = await run_tool(ToolCall("2", "plan_trip", {"shop_ids": ["t_shop_a1", "t_shop_b1"]}), db=conn)
+    assert t.ids == {"t_shop_a1", "t_shop_b1"}
+
+
+async def test_all_shop_text_is_wrapped(conn):
+    r = await run_tool(ToolCall("1", "search_shops", {"product_ids": [T]}), db=conn)
+    out = serialise(r)
+    assert '"contact": "<data>021</data>"' in out and '"unit": null' in out
+    assert '"floor": null' in out and "<data>t-venue-a</data>" in out  # venue_name
+    n = serialise(type(r)("x", {"seller_title": "s", "note": "n", "floor": "2", "unit": "3"}))
+    assert n.count("<data>") == 4
