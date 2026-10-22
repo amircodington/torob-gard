@@ -14,6 +14,10 @@ test.use({ permissions: [] });
 test("plan B: fail a shop, re-rank by price then distance, every shop failed → diagnosis", async ({ page, request }) => {
   await page.goto(`/radar/${PRODUCT}`);
   const rows = page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem");
+  // A 1 km cap: Plan B ranks every offer, so its farthest pick is one the radar list hides.
+  await page.getByRole("button", { name: /فیلترها/ }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "۱ کیلومتر", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: /دیدن/ }).click();
   await rows.first().getByRole("button").click();
   await page.getByRole("dialog").getByRole("button", { name: "موجود نبود" }).click();
   await page.waitForURL(/planb=stock/);
@@ -39,12 +43,14 @@ test("plan B: fail a shop, re-rank by price then distance, every shop failed →
   const ds = await Promise.all((await cards.all()).map(metres));
   expect(ds[0]).toBe(Math.min(...ds));
 
-  // Accept: the overlay closes, the param goes, the new shop's sheet opens.
-  const nearest = await cards.first().getByRole("heading").innerText();
-  await cards.first().getByRole("button", { name: "انتخاب این فروشگاه" }).click();
+  // Accept a shop the 1 km filter hides: the overlay closes, the param goes, its sheet still opens.
+  const far = cards.last();
+  expect(await metres(far)).toBeGreaterThan(1000);
+  const farName = await far.getByRole("heading").innerText();
+  await far.getByRole("button", { name: "انتخاب این فروشگاه" }).click();
   await expect(planB).toHaveCount(0);
   await expect(page).not.toHaveURL(/planb=/);
-  await expect(page.getByRole("dialog").getByRole("heading", { name: nearest })).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("heading", { name: farName })).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: "بستن" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
 

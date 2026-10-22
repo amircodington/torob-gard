@@ -67,7 +67,8 @@ function Radar({ id }: { id: string }) {
 
   // Keep the last good product title while a new anchor refetches.
   const product = cur?.product ?? res?.product;
-  const open = rows.find((r) => r.store.id === state.selectedStoreId) ?? null;
+  // From every offer, not the filtered list: Plan B can pick a shop the filters hide.
+  const open = all?.find((r) => r.store.id === state.selectedStoreId) ?? null;
 
   return (
     <>
