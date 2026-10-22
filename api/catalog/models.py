@@ -2,11 +2,12 @@ from uuid import uuid4
 
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField
-from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.indexes import GinIndex, PostgresIndex
 from django.contrib.postgres.search import SearchVectorField
+from django.db.models.expressions import RawSQL
 from django.utils.text import slugify
 
-# ponytail: no __str__/managers/abstract bases; embedding tables arrive in P2.
+# ponytail: no __str__/managers/abstract bases.
 
 
 def text_array():
@@ -85,6 +86,13 @@ class Category(models.Model):
     shop_count = models.IntegerField(default=0)
 
 
+SEARCH_TSV_SQL = (
+    "to_tsvector('simple'::regconfig, translate(coalesce(title_norm, '') || ' ' || "
+    "coalesce(brand_name, '') || ' ' || coalesce(specs_text, ''), "
+    "'يكةى×۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', 'یکهیx01234567890123456789'))"
+)
+
+
 class Product(models.Model):
     id = models.CharField(primary_key=True, max_length=64)
     persian_title = models.TextField()
@@ -95,7 +103,10 @@ class Product(models.Model):
     image_urls = text_array()
     specs = models.JSONField(default=list)
     specs_text = models.TextField(blank=True, default="")
-    search_tsv = SearchVectorField(null=True)
+    # × -> x so «16×5» and «16x5» are one lexeme; translate also normalises brand_name.
+    search_tsv = models.GeneratedField(
+        expression=RawSQL(SEARCH_TSV_SQL, ()), output_field=SearchVectorField(), db_persist=True
+    )
     min_price = models.BigIntegerField(null=True)
     median_price = models.BigIntegerField(null=True)
     max_price = models.BigIntegerField(null=True)
@@ -145,3 +156,53 @@ class ShopReport(models.Model):
     kind = models.TextField(choices=Kind.choices)
     product = models.ForeignKey(Product, null=True, on_delete=models.SET_NULL)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+EMBED_DIMS = 1024  # EMBED_DIMS in .env; changing it needs a migration
+
+
+class VectorField(models.Field):
+    """pgvector column; values are lists of floats. ponytail: no pgvector/numpy dependency."""
+
+    def __init__(self, *args, dimensions=EMBED_DIMS, **kwargs):
+        self.dimensions = dimensions
+        super().__init__(*args, **kwargs)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+        return name, path, args, {**kwargs, "dimensions": self.dimensions}
+
+    def db_type(self, connection):
+        return f"vector({self.dimensions})"
+
+    def get_prep_value(self, value):
+        return None if value is None else "[" + ",".join(map(str, value)) + "]"
+
+    def from_db_value(self, value, expression, connection):
+        return None if value is None else [float(x) for x in value.strip("[]").split(",")]
+
+
+class HnswIndex(PostgresIndex):
+    suffix = "hnsw"
+
+
+class ProductEmbedding(models.Model):
+    product = models.OneToOneField(Product, primary_key=True, on_delete=models.CASCADE)
+    model = models.TextField()
+    embedding = VectorField()
+    text_hash = models.TextField()
+
+    class Meta:
+        indexes = [HnswIndex(name="product_emb_hnsw", fields=["embedding"],
+                             opclasses=["vector_cosine_ops"])]
+
+
+class ShopEmbedding(models.Model):
+    shop = models.OneToOneField(Shop, primary_key=True, on_delete=models.CASCADE)
+    model = models.TextField()
+    embedding = VectorField()
+    text_hash = models.TextField()
+
+    class Meta:
+        indexes = [HnswIndex(name="shop_emb_hnsw", fields=["embedding"],
+                             opclasses=["vector_cosine_ops"])]
