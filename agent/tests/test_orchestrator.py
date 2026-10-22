@@ -246,3 +246,54 @@ async def test_persisted_assistant_message_carries_the_turns_cost(conn):
     cost = (await conn.execute(text("SELECT cost FROM conversation_message WHERE id = :i"),
                                {"i": events[-1].message_id})).scalar()
     assert float(cost) == pytest.approx(0.0123)
+
+
+def test_sessionless_requests_are_limited_by_the_forwarded_client(monkeypatch):
+    r = FakeRedis()
+    monkeypatch.setattr(api, "redis", lambda: r)
+
+    async def fake_turn(session_id, txt, ctx, **kw):
+        yield Done(uuid4(), [], uuid4())
+
+    async def fake_explain(body):
+        return {"tiers": {}}
+
+    async def fake_price(*a):
+        return {"verdict": "fair"}
+    monkeypatch.setattr(api, "run_turn", fake_turn)
+    monkeypatch.setattr(api, "explain", fake_explain)
+    monkeypatch.setattr(api, "price_check", fake_price)
+    c = TestClient(app)
+    me = {"X-Forwarded-For": "5.6.7.8, 10.0.0.2"}  # first hop is the shopper; Next adds itself after
+    for _ in range(api.TURNS):
+        assert c.post("/agent/chat", json={"text": "سلام"}, headers=me).status_code == 200
+    assert c.post("/agent/chat", json={"text": "سلام"}, headers=me).status_code == 429
+    assert c.post("/agent/explain", json={"tiers": []}, headers=me).status_code == 429
+    pc = {"product_id": "product_1", "quoted_price": 900}
+    assert c.post("/agent/price_check", json=pc, headers=me).status_code == 429
+    assert "rl:agent:5.6.7.8" in r.n
+    other = {"X-Forwarded-For": "9.9.9.9"}
+    assert c.post("/agent/chat", json={"text": "سلام"}, headers=other).status_code == 200
+    assert c.post("/agent/chat", json={"text": "سلام"}).status_code == 200  # no proxy: the client host
+    sid = str(uuid4())
+    assert c.post("/agent/chat", json={"text": "سلام", "session_id": sid}, headers=me).status_code == 200
+
+
+def test_chat_context_is_size_capped(monkeypatch):
+    async def yes(*a):
+        return True
+    monkeypatch.setattr(api, "allow", yes)
+    c = TestClient(app)
+    for field in ("req", "anchor"):
+        r = c.post("/agent/chat", json={"text": "سلام", "context": {field: {"k": "x" * 2000}}})
+        assert r.status_code == 422, field
+    assert c.post("/agent/chat", json={"text": "سلام", "context": {"stage": "x" * 100}}).status_code == 422
+
+
+async def test_model_profile_updates_are_allow_listed_and_bounded(conn):
+    updates = {"category": "mobile", "budget_max": 30_000_000, "priority": "y" * 500, "budget_min": -5,
+               "evil": "x" * 5000}
+    events = await turn(conn, FakeLLM(say({"say": "باشه", "profile_updates": updates})))
+    ctx = (await conn.execute(text("SELECT context FROM conversation_session WHERE id = :s"),
+                              {"s": events[-1].session_id})).scalar()
+    assert ctx["profile"] == {"category": "mobile", "budget_max": 30_000_000}

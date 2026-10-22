@@ -2,6 +2,7 @@ import logging
 import re
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from datetime import datetime
 from functools import cache
 from typing import TypedDict
 
@@ -73,6 +74,8 @@ class ShopHit(TypedDict):
     contact: str | None
     offer_id: str | None
     price: int | None
+    last_price_changed_at: datetime | None  # honesty rule 1: every price shows its age
+    price_age_days: int | None  # the same age in days, so the model never does date arithmetic
     stock: str  # "confirmed" | "unknown", as in P1 offer rows
 
 
@@ -212,7 +215,8 @@ async def search_shops(
     where, order = ["true"], []
     if product_ids:
         best = """JOIN (
-            SELECT DISTINCT ON (o.shop_id) o.shop_id, o.id, o.product_id, o.price_toman
+            SELECT DISTINCT ON (o.shop_id)
+                o.shop_id, o.id, o.product_id, o.price_toman, o.last_price_changed_at
             FROM catalog_offer o WHERE o.product_id = ANY(:pids) AND NOT o.is_outlier
             ORDER BY o.shop_id, o.price_toman
         ) o ON o.shop_id = s.id
@@ -224,10 +228,13 @@ async def search_shops(
         ) r ON true"""
         params["pids"] = product_ids
         where.append("r.kind IS DISTINCT FROM 'no_item'")
-        offer = "o.id AS offer_id, o.price_toman AS price, coalesce(r.kind = 'had_item', false) AS confirmed"
+        offer = ("o.id AS offer_id, o.price_toman AS price, o.last_price_changed_at,"
+                 " current_date - o.last_price_changed_at::date AS price_age_days,"
+                 " coalesce(r.kind = 'had_item', false) AS confirmed")
     else:
         best = ""
-        offer = "NULL AS offer_id, NULL::bigint AS price, false AS confirmed"
+        offer = ("NULL AS offer_id, NULL::bigint AS price, NULL::timestamptz AS last_price_changed_at,"
+                 " NULL::int AS price_age_days, false AS confirmed")
     if category:
         where.append(":category = ANY(s.category_names)")
         params["category"] = category

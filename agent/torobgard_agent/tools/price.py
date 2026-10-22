@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from statistics import median
 from typing import Literal, TypedDict
 
@@ -20,6 +20,7 @@ class PriceCheck(TypedDict):
     pct_vs_median: int | None
     cheaper_nearby: list[ShopHit]
     newest_price_at: datetime | None  # the honesty rule: every price shows its age
+    newest_price_age_days: int | None
 
 
 async def price_check(
@@ -39,7 +40,10 @@ async def price_check(
             "product_id": product_id, "min": None, "median": None, "max": None,
             "offer_ids": [r[0] for r in rows], "verdict": "unknown", "pct_vs_median": None,
             "cheaper_nearby": [], "newest_price_at": max((r[2] for r in rows), default=None),
+            "newest_price_age_days": None,
         }
+        if out["newest_price_at"]:
+            out["newest_price_age_days"] = (datetime.now(UTC) - out["newest_price_at"]).days
         if not prices:
             return out
         med = round(median(prices))

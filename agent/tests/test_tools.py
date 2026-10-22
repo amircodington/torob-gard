@@ -33,6 +33,7 @@ async def test_price_check_high(conn):
     assert (r["min"], r["median"], r["max"]) == (600_000, 610_000, 620_000)
     assert r["verdict"] == "high" and r["pct_vs_median"] == 48
     assert r["offer_ids"] == ["t_q1", "t_q2", "t_q3"] and r["newest_price_at"] is not None
+    assert r["newest_price_age_days"] == 0  # honesty rule 1: the model quotes the age, not a timestamp
     assert [s["id"] for s in r["cheaper_nearby"]] == ["t_shop_b1", "t_shop_a1", "t_shop_far"]
 
 
@@ -125,3 +126,11 @@ async def test_price_check_rejects_names_and_non_positive_quotes(conn):
     for q in (0, -5):
         r = await run_tool(ToolCall("1", "price_check", {"product_id": T, "quoted_price": q}), db=conn)
         assert "quoted_price" in r.data["error"]
+
+
+async def test_model_controlled_sizes_are_bounded():
+    many = [f"shop_{i}" for i in range(21)]
+    for name, args in [("search_shops", {"limit": 5000}), ("search_shops", {"product_ids": many}),
+                       ("search_products", {"q": "x", "limit": 21}), ("plan_trip", {"shop_ids": many})]:
+        r = await run_tool(ToolCall("1", name, args))  # rejected before any DB work
+        assert "error" in r.data, (name, args)

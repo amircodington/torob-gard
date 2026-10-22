@@ -32,12 +32,30 @@ def redis() -> Redis:
 
 
 async def allow(r: Redis, key: str) -> bool:
-    # ponytail: fixed window keyed by session; a client that drops its session id escapes it — key by
-    # user once auth lands (P3)
+    # ponytail: fixed window keyed by session, else by client address; a client can mint session ids or
+    # send its own X-Forwarded-For (Next keeps it) — key by user once auth lands (P3)
     n = await r.incr(f"rl:agent:{key}")
     if n == 1:
         await r.expire(f"rl:agent:{key}", WINDOW_S)
     return n <= TURNS
+
+
+def _client(request: Request) -> str:
+    """The shopper's address: the first X-Forwarded-For hop, else the socket peer."""
+    # ponytail: Next 16's dev rewrite passes an incoming X-Forwarded-For through but adds none, so dev
+    # falls back to the proxy's address (one bucket); prod nginx must set it to $remote_addr (P3 deploy)
+    first = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    return first or (request.client.host if request.client else "anon")
+
+
+async def _limit(key: str) -> None:
+    try:
+        ok = await allow(redis(), key)
+    except RedisError:
+        log.exception("rate limit unavailable; letting the request through")
+        return
+    if not ok:
+        raise HTTPException(429, "too many turns, wait a few minutes")
 
 
 def _sse(event: str, data) -> str:
@@ -45,13 +63,8 @@ def _sse(event: str, data) -> str:
 
 
 @router.post("/agent/chat")
-async def chat(body: ChatIn):
-    if body.session_id:
-        try:
-            if not await allow(redis(), str(body.session_id)):
-                raise HTTPException(429, "too many turns, wait a few minutes")
-        except RedisError:
-            log.exception("rate limit unavailable; letting the turn through")
+async def chat(body: ChatIn, request: Request):
+    await _limit(str(body.session_id or _client(request)))
 
     async def events():
         try:
@@ -79,19 +92,14 @@ class PriceCheckIn(BaseModel):
 
 
 @router.post("/agent/price_check")
-async def price_check_route(body: PriceCheckIn):
+async def price_check_route(body: PriceCheckIn, request: Request):
     """The store sheet's «این قیمت منصفانه‌ست؟»: the tool alone, no LLM."""
+    await _limit(_client(request))
     return await price_check(body.product_id, body.quoted_price, None)
 
 
 @router.post("/agent/explain")
 async def explain_route(body: ExplainIn, request: Request):
     """Desk copy by FAST_MODEL; a tier missing from the answer keeps its P1 template."""
-    # ponytail: no session on a seeded journey, so those share their client address's window
-    key = str(body.session_id or (request.client.host if request.client else "anon"))
-    try:
-        if not await allow(redis(), key):
-            raise HTTPException(429, "too many turns, wait a few minutes")
-    except RedisError:
-        log.exception("rate limit unavailable; letting the request through")
+    await _limit(str(body.session_id or _client(request)))
     return await explain(body)

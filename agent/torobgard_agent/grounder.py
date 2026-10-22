@@ -21,11 +21,28 @@ _QUOTE = re.compile(r"گفت|گفته|پیشنهاد")
 _MARKET = re.compile(r"میانه|میانگین|کمترین|بیشترین|ارزون|بازار|مغازه|فروشگاه")
 _NAME_KEYS = {"name", "title"}
 _STOCK = re.compile(r"(?<!نا)(?<!\u200c)موجود(?:ه|\s*(?:است|هست))(?!\s*یا)")
+# honesty rules 1 and 4: a floor or unit the shopper will walk to must be in a tool result, hedged when the
+# address parse was unsure. Floor words map to the stored values (api/ingest/address.py _FLOORS).
+_T = r"طبقه\u200c?(?:\s*ی(?=[\s\u200c]))?[\s\u200c:]*"  # «طبقه»، «طبقه‌ی»، «طبقه ی»
+_ORD = {"اول": 1, "یکم": 1, "دوم": 2, "سوم": 3, "چهارم": 4, "پنجم": 5,
+        "ششم": 6, "هفتم": 7, "هشتم": 8, "نهم": 9, "دهم": 10}
+_NUM = {"یک": "1", "دو": "2", "سه": "3"}
+_FLOORS: list[tuple[re.Pattern, Callable[[re.Match], str]]] = [  # first match wins; each match is masked
+    (re.compile(r"منفی[\s\u200c]*(\d+|یک|دو|سه)"), lambda m: f"-{_NUM.get(m[1], m[1])}"),
+    (re.compile(r"زیر[\s\u200c]*هم[\s\u200c]*کف|زیر[\s\u200c]*زمین"), lambda m: "-1"),
+    (re.compile(r"نیم[\s\u200c]*طبقه"), lambda m: "M"),
+    (re.compile(r"هم[\s\u200c]*کف"), lambda m: "0"),
+    (re.compile(_T + r"(-)?(\d+)(?!\d)"), lambda m: ("-" if m[1] else "") + str(int(m[2]))),
+    (re.compile(_T + "(" + "|".join(_ORD) + r")(?![^\W\d_])"), lambda m: str(_ORD[m[1]])),
+]
+_UNIT = re.compile(r"(?:واحد|پلاک)[\s\u200c:]*(?:شماره[\s\u200c]*)?([A-Za-z]*\d[A-Za-z0-9]*)")
+_HEDGE = re.compile(r"احتمال")
+SURE = 0.8
 
 
 @dataclass
 class Violation:
-    kind: str  # "id" | "price" | "stock" | "format"
+    kind: str  # "id" | "price" | "stock" | "floor" | "unit" | "hedge" | "format"
     value: str
     message: str
 
@@ -107,6 +124,65 @@ def _drop_user_echo(say: str, user_prices: set[int], quoted: set[int], names: se
     return "|".join(quote(c) for c in _CLAUSE.split(said))
 
 
+def floors(t: str) -> list[str]:
+    t, out = normalize(t), []
+    for rx, value in _FLOORS:
+        out += [value(m) for m in rx.finditer(t)]
+        t = rx.sub(lambda m: " " * len(m[0]), t)
+    return out
+
+
+def units(t: str) -> list[str]:
+    return [u.upper() for u in _UNIT.findall(normalize(t))]
+
+
+def _places(data: Any) -> list[dict]:
+    """Shop rows with a location (search_shops, locate_shop, plan_trip, price_check's cheaper_nearby)."""
+    if isinstance(data, list):
+        return [p for x in data for p in _places(x)]
+    if not isinstance(data, dict):
+        return []
+    return [data] * ("floor" in data) + [p for v in data.values() for p in _places(v)]
+
+
+def _strings(data: Any) -> list[str]:
+    if isinstance(data, str):
+        return [data]
+    items = data.values() if isinstance(data, dict) else data if isinstance(data, list) else []
+    return [s for x in items for s in _strings(x)]
+
+
+def _locations(answer: Answer, results: list[ToolResult]) -> list[Violation]:
+    """Each «طبقه N» / «واحد N» in the answer's text must match a shop in the results; when the shops it can
+    mean (the cited ones, else all with that value) were parsed with confidence < 0.8, its clause hedges."""
+    places = [p for r in results for p in _places(r.data)]
+    # a unit/plate may also come from address text (the building's «پلاک ۳۲»); that has no confidence
+    plates = {u for r in results for s in _strings(r.data) for u in units(s)}
+    cited = set(cited_ids(answer))
+    said = normalize(" ".join(_texts(answer)))
+    out: list[Violation] = []
+
+    def check(kind: str, value: str, clause: str) -> None:
+        same = [p for p in places if str(p.get(kind) or "").upper() == value]
+        if not same and value not in (plates if kind == "unit" else ()):
+            out.append(Violation(kind, value, f"{kind} {value} matches no shop in the tool results"))
+            return
+        named = [p for p in same if p.get("id", p.get("shop_id")) in cited
+                 or len(normalize(p.get("name") or "")) > 2 and normalize(p["name"]) in said]
+        sure = [p.get("parse_confidence", p.get("confidence", 1.0)) >= SURE for p in named or same]
+        unsure = not all(sure) if named else bool(same) and not any(sure)
+        if unsure and not _HEDGE.search(clause):
+            out.append(Violation("hedge", value, f"the shop's address parse is unsure (confidence < {SURE}):"
+                                 f" say «احتمالاً» before its {kind}"))
+    for t in _texts(answer):
+        for clause in _CLAUSE.split(_norm(t)):
+            for f in floors(clause):
+                check("floor", f, clause)
+            for u in units(clause):
+                check("unit", u, clause)
+    return out
+
+
 def cited_ids(answer: Answer) -> list[str]:
     """Every record id the answer names, in blocks or in its text (the message's receipts)."""
     ids = [i for t in _texts(answer) for i in _ID.findall(t)]
@@ -126,6 +202,7 @@ def ground(answer: Answer, results: list[ToolResult], user_prices: set[int] = fr
     for t in texts:
         for m in _STOCK.findall(t):
             out.append(Violation("stock", m, "stock is unknown; say «موجودی رو قبل از رفتن بپرس» instead"))
+    out += _locations(answer, results)
     quoted = {r.args.get("quoted_price") for r in results  # a failed price_check judged nothing
               if r.name == "price_check" and not (isinstance(r.data, dict) and "error" in r.data)}
     names = set().union(*(_names(r.data) for r in results)) if results else set()
