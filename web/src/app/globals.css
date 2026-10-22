@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Vazirmatn";
+  src: url("/fonts/Vazirmatn[wght].woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+/* Names and values copied from docs/design/brand/tokens.json. */
+@theme {
+  --color-paper: #fbf7f3;
+  --color-blush: #ffd9c2;
+  --color-blush-soft: #f8e9e0;
+  --color-surface: #ffffff;
+  --color-surface-tint: #f3ebe5;
+  --color-ink: #161412;
+  --color-ink-muted: #7a6f67;
+  --color-line: #efe6df;
+  --color-orange: #ee8a2a;
+  --color-orange-deep: #d9741a;
+  --color-orange-tint: #fde9d6;
+  --color-on-orange: #ffffff;
+  --color-panel: #1c1a19;
+  --color-panel-2: #2a2624;
+  --color-panel-brown: #5b3a1f;
+  --color-panel-plum: #7a2d4c;
+  --color-on-dark: #ffffff;
+  --color-verified: #2e9e6b;
+  --color-signal: #d64545;
+  --color-focus: #2563eb;
+
+  --radius-sm: 14px;
+  --radius-md: 22px;
+  --radius-lg: 30px;
+  --radius-sheet: 40px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 10px 30px rgba(238, 138, 42, 0.07);
+  --shadow-pin: 0 8px 20px rgba(238, 138, 42, 0.4);
+  --shadow-sheet: 0 -12px 40px rgba(0, 0, 0, 0.25);
+
+  --font-sans: "Vazirmatn", system-ui, sans-serif;
+}
+
+/* Light only (decision 8): paper ground with the blush glow, ~520px tall at the top centre. */
+body {
+  background-color: var(--color-paper);
+  background-image: radial-gradient(
+    ellipse 100% 520px at 50% 0,
+    var(--color-blush),
+    var(--color-blush-soft) 55%,
+    transparent 100%
+  );
+  background-repeat: no-repeat;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@utility tabular {
+  font-feature-settings: "tnum";
+}

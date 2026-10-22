@@ -16,7 +16,7 @@ down:
 
 check: .env
 	@if [ -d api ]; then docker compose run --rm api sh -c "ruff check . && pytest"; fi
-	@if [ -d web ]; then pnpm -C web tsc --noEmit && pnpm -C web vitest run && pnpm -C web lint; fi
+	@if [ -d web ]; then pnpm -C web typecheck && pnpm -C web test && pnpm -C web lint; fi
 
 test-api: .env
 	docker compose run --rm api pytest $(ARGS)
