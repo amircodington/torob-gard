@@ -13,6 +13,7 @@ import { Btn, btnClass } from "../ui/Btn";
 import { ROW_LINK } from "../catalog/parts";
 import { Chip } from "../ui/Chip";
 import { EmptyState } from "../ui/EmptyState";
+import { Mascot } from "../Mascot";
 
 /** On a shared phone the next person must not chat on this account's agent session or trips. */
 async function forgetDevice() {
@@ -64,7 +65,7 @@ export function MePage() {
   if (me === null)
     return (
       <EmptyState
-        pose="idle"
+        pose="phone"
         title="هنوز وارد نشدی"
         body="روی صفحه‌ی سفر «ذخیره‌ی سفر» رو بزن و با شماره‌ت وارد شو؛ سفرهات اینجا جمع می‌شن."
         actions={<Link href="/start" className={btnClass()}>شروع کن</Link>}
@@ -76,9 +77,12 @@ export function MePage() {
   const out = () => logOut().then(() => setMe(null), () => undefined);
   return (
     <>
-      <h1 className="mb-3 text-[34px] leading-[48px] font-light">
-        صفحه‌ی <span className="font-extrabold">من</span>
-      </h1>
+      <div className="mb-3 flex items-end gap-3">
+        <h1 className="text-[34px] leading-[48px] font-light">
+          صفحه‌ی <span className="font-extrabold">من</span>
+        </h1>
+        <Mascot pose="wave" react="wave" className="-mb-1 size-16 lg:size-20" />
+      </div>
       {me.phoneMasked && (
         <p className="-mt-3 mb-2 text-[13px] text-ink-muted">
           وارد شدی با <span dir="ltr" className="tabular">{faNum(me.phoneMasked)}</span>

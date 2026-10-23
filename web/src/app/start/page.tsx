@@ -8,6 +8,7 @@ import { Composer } from "../../components/chat/Composer";
 import { ConsultFrame } from "../../components/chat/ConsultFrame";
 import { ReqSummary } from "../../components/chat/ReqSummary";
 import { ShopCards } from "../../components/chat/ShopCards";
+import { Mascot } from "../../components/Mascot";
 import { JourneyShell } from "../../components/JourneyShell";
 import { consult } from "../../state/agentBridge";
 import { useSession, type Chip, type Msg } from "../../state/session";
@@ -49,11 +50,17 @@ function Consult() {
   return (
     <main className="page flex min-h-[calc(100dvh-60px)] flex-col pt-2">
       <ConsultFrame aside={<ReqSummary />}>
-      <h1 data-page-head className="mt-4 animate-rise text-[28px] leading-[40px]">
-        <span className="font-light">مشاوره‌ی </span>
-        <span className="font-extrabold">خرید</span>
-      </h1>
-      <p data-page-head className="animate-rise text-[15px] leading-6 text-ink-muted">چند سوال کوتاه، بعد سه گزینه با دلیل.</p>
+      {/* Phone/md: the intro radish on its phone beside the title; lg shows it in the summary rail instead. */}
+      <div className="mt-4 flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 data-page-head className="animate-rise text-[28px] leading-[40px]">
+            <span className="font-light">مشاوره‌ی </span>
+            <span className="font-extrabold">خرید</span>
+          </h1>
+          <p data-page-head className="animate-rise text-[15px] leading-6 text-ink-muted">چند سوال کوتاه، بعد سه گزینه با دلیل.</p>
+        </div>
+        <Mascot pose="phone" react="pop" className="size-16 lg:hidden" />
+      </div>
       {state.agentOffline && (
         <p role="status" className="mt-3 rounded-md bg-surface-tint px-4 py-2 text-[13px] font-semibold leading-5 text-ink">
           دستیار هوشمند موقتاً در دسترس نیست

@@ -69,7 +69,7 @@ function Desk() {
   const current = res?.key === key ? res : null;
 
   if (ready && !req.category)
-    return <EmptyState pose="idle" title="هنوز نیازهات رو نگفتی" body="چند سوال کوتاه، بعد سه گزینه با دلیل." actions={editBtn} />;
+    return <EmptyState pose="phone" title="هنوز نیازهات رو نگفتی" body="چند سوال کوتاه، بعد سه گزینه با دلیل." actions={editBtn} />;
 
   if (current?.error)
     return (
@@ -91,7 +91,7 @@ function Desk() {
   if (empty === "budget")
     return (
       <EmptyState
-        pose="stuck"
+        pose="search"
         title="تو این بودجه مدلی با دست‌کم دو فروشنده پیدا نکردم"
         body="نیازهات حفظ شدن؛ بودجه رو باز کن یا نیازها رو عوض کن."
         actions={
@@ -108,7 +108,7 @@ function Desk() {
   if (empty === "other")
     return (
       <EmptyState
-        pose="idle"
+        pose="think"
         title="برای این دسته هنوز میز تصمیم نداریم"
         body="داده‌ی ترب‌گرد فعلاً روی موبایل، لپ‌تاپ و لوازم جانبی گوشیه. نیازهات حفظ شدن؛ با یکی از این دسته‌ها بدون از دست دادن جلسه ادامه بده."
         actions={
@@ -143,7 +143,7 @@ function Desk() {
             خودم «بهترین» رو انتخاب نمی‌کنم؛ بر اساس چیزهایی که گفتی، هر استراتژی یک مصالحه‌ی متفاوته.
           </p>
         </div>
-        <Mascot pose="idle" react="hop" className="size-20 lg:col-start-3 lg:row-start-1" />
+        <Mascot pose="think" react="hop" className="size-20 lg:col-start-3 lg:row-start-1" />
         <ReqChips req={req} onEdit={edit} className="col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1" />
       </div>
 

@@ -102,7 +102,7 @@ function Radar({ id }: { id: string }) {
       </div>
 
       {all?.length === 0 ? (
-        <EmptyState pose="stuck" title="برای این مدل فروشگاهی ثبت نشده" body="هیچ فروشگاهی در ترب این مدل رو پیشنهاد نداده." actions={changeModel} />
+        <EmptyState pose="search" title="برای این مدل فروشگاهی ثبت نشده" body="هیچ فروشگاهی در ترب این مدل رو پیشنهاد نداده." actions={changeModel} />
       ) : (
         <>
           <div className="mt-4 flex md:hidden">
@@ -119,7 +119,7 @@ function Radar({ id }: { id: string }) {
                 <RowSkeletons />
               ) : rows.length === 0 ? (
                 <EmptyState
-                  pose="idle"
+                  pose="search"
                   title="هیچ فروشگاهی با این فیلترها جور در نمی‌آد"
                   body="مدلت دست‌نخورده؛ فقط محدوده رو بازتر کن."
                   actions={<Btn onClick={() => dispatch({ type: "SET_FILTERS", patch: NO_FILTERS })}>پاک کردن فیلترها</Btn>}

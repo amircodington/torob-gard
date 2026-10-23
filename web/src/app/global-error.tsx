@@ -5,6 +5,8 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
   return (
     <html lang="fa" dir="rtl">
       <body style={{ fontFamily: "system-ui, sans-serif", textAlign: "center", padding: "64px 16px", background: "#fbf7f3" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- no layout, no optimizer: a static file is all that is left */}
+        <img src="/mascot/torob-gard-mascot-stuck.webp" alt="" aria-hidden width={144} height={144} />
         <h1 style={{ fontSize: 24 }}>یه مشکلی پیش اومد</h1>
         <p>
           <button type="button" onClick={reset} style={{ minHeight: 44, padding: "0 16px" }}>

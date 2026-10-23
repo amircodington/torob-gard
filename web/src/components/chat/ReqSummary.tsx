@@ -11,7 +11,7 @@ export function ReqSummary() {
   const { state, dispatch } = useSession();
   return (
     <div className="flex flex-col items-center gap-4 rounded-lg bg-surface p-6 text-center shadow-card">
-      <Mascot pose="idle" className="size-28" />
+      <Mascot pose="phone" react="pop" className="size-28" />
       <h2 className="text-[17px] font-bold leading-7">نیاز تو تا اینجا</h2>
       <ReqChips req={state.req} className="justify-center" />
       {state.req.category && (

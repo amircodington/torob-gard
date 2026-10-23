@@ -97,20 +97,30 @@ Mark: the mascot `icon` pose. Map pins keep the `orange` circle with the unit nu
 
 ### The mascot
 
-**ترب‌گرد** is a red sprout with dark-red leaves, a navy backpack with brass buckles and a brass
-compass: a small explorer who knows the bazaar. Five poses, one job each:
+**ترب‌گرد** is a 3D radish (decision 13) with a backpack and a brass compass: a small explorer who
+knows the bazaar. Eleven poses plus the icon, one job each (`web/public/mascot/`, transparent
+640×640 WebP, `<Mascot pose>` in `web/src/components/Mascot.tsx`):
 
-| Pose | File | Where |
-|---|---|---|
-| wave | `torob-gard-mascot-wave` | landing hero, first chat message |
-| idle | `torob-gard-mascot-idle` | decision desk header, empty states that are fine |
-| point | `torob-gard-mascot-point` | Plan B, "go here" moments |
-| stuck | `torob-gard-mascot-stuck` | errors, no results, agent offline |
-| icon | `torob-gard-icon` | app icon, favicon, chat avatar |
+| Pose | Means | Where | Motion (once; reduced motion: none or a fade) |
+|---|---|---|---|
+| wave | hello | landing hero, `/me` header, "your data is deleted" | wave after the hero rise; `/me` waves once |
+| idle | standing by | product/catalog image fallback | none |
+| think | weighing options | decision desk header, the agent's "thinking" avatar, landing FAQ, "no desk for this category yet" | desk header hops |
+| point | go here | trip checklist header, Plan B, landing step «پلن B» | hop |
+| search | looking / no results | page loader, search no-results, radar "no shops" and "no filter match", desk "nothing in this budget", checklist "no shop chosen", landing step «رادار» | loader hop; empty states pop in |
+| stuck | something broke | 404, offline, error and global error, "server unreachable" and "model not found" states | one shake |
+| celebrate | it worked | trip saved / logged in after the SMS code (`SaveTrip`) | pop + one 8-dot burst (600 ms) |
+| bags | ready to shop | landing closing band | none |
+| phone | talk to me | consult intro (`/start` header on phone, summary rail on lg), desk "needs not told yet", `/me` logged out, landing step «مشاوره» | pop |
+| walk | on the way | walk mode, on the paper above the black sheet; landing step «چک‌لیست» | pop |
+| check | honest checklist | trip «چک‌لیست واقع‌بینانه» card, landing honesty section | pop |
+| icon | the brand | app icon, favicon, wordmark, chat avatar | wordmark logo-in |
 
-Rules: the mascot sits on `paper` or inside a `surface-tint` circle, never on orange or on the
-black sheet; one mascot per screen; it never speaks in a speech bubble of its own (the assistant
-voice is the chat). Ship as WebP ≤ 60 KB (the PNGs in the prototype are 1.4 MB each).
+Rules: the mascot sits on `paper`, `surface` or inside a `surface-tint` circle, never on orange or on
+the black sheet; at most one large mascot per screen, any others small (≤ 64 px) beside a heading
+or a status; decorative (`alt=""`) unless it carries meaning; it never blocks content or taps, and
+its caption never claims more than happened (a shared trip says «وارد شدی!», not «ذخیره شد»). It
+never speaks in a speech bubble of its own (the assistant voice is the chat). Ship as WebP ≤ 60 KB (the PNGs in the prototype are 1.4 MB each).
 
 ### Iconography and glass circles
 

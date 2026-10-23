@@ -113,6 +113,8 @@
   --animate-wiggle: wiggle 400ms var(--ease-out);
   --animate-pin-drop: pin-drop 360ms var(--ease-out) backwards;
   --animate-spin-once: spin-once 400ms var(--ease-out);
+  /* The celebrate radish's one-time burst: a dot flies to its own --x/--y and fades (600 ms, once). Reduced motion: none, the dots stay hidden. */
+  --animate-confetti: confetti 600ms var(--ease-out) both;
 
   @keyframes rise {
     from {
@@ -247,6 +249,17 @@
       rotate: var(--spin, -360deg);
     }
   }
+  @keyframes confetti {
+    from {
+      opacity: 1;
+      translate: 0 0;
+    }
+    to {
+      opacity: 0;
+      translate: var(--x) var(--y);
+      scale: 0.5;
+    }
+  }
   @keyframes hop {
     40% {
       translate: 0 -4px;
@@ -284,6 +297,7 @@
     --animate-wiggle: none;
     --animate-pin-drop: fade var(--duration-base) var(--ease-out) backwards;
     --animate-spin-once: none;
+    --animate-confetti: none;
   }
 }
 

@@ -78,5 +78,6 @@ test("search: spelling variants, honest empty state, noindex; robots lists sitem
   await noSideScroll(page);
   await page.goto("/search?q=zzqqxx");
   await expect(page.getByRole("heading", { name: /پیدا نشد/ })).toBeVisible();
+  await expect(page.locator("main section img")).toHaveAttribute("src", /mascot-search/); // no results → the searching radish, not «stuck»
   expect(await (await request.get("/robots.txt")).text()).toMatch(/Sitemap: .*\/sitemap\/0\.xml/);
 });

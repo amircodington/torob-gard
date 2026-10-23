@@ -44,7 +44,7 @@ export default async function SearchPage({ searchParams }: Props) {
         {!q && <p className="text-[15px] leading-6 text-ink-muted">اسم مدل، برند یا مغازه رو بنویس؛ با فارسی یا انگلیسی، با ۱۳ یا ۱۳.</p>}
         {empty && (
           <EmptyState
-            pose="stuck" title={`چیزی برای «${q}» پیدا نشد`}
+            pose="search" title={`چیزی برای «${q}» پیدا نشد`}
             body="تو داده‌ی ما نیست یا جور دیگه‌ای نوشته شده. اسم کوتاه‌تر یا فقط برند رو امتحان کن."
             actions={<Link href="/start" className={btnClass("ghost")}>از نیازت شروع کن</Link>}
           />

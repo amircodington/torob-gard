@@ -11,6 +11,7 @@ import { byKeyboard, DUR, reduced, registerMotion } from "../../lib/motion";
 import { faFreshness, faGroup, faNum, isStale } from "../../lib/fa";
 import type { FailReason, OfferRow, Trip } from "../../lib/types";
 import { useSession } from "../../state/session";
+import { Mascot } from "../Mascot";
 import { PlanB } from "../planb/PlanB";
 import { Success } from "./Success";
 
@@ -130,6 +131,8 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
   return (
     <main className="min-h-dvh">
       <div className="mx-auto flex max-w-md items-center gap-3 px-4 lg:max-w-lg">
+        {/* On the paper above the black sheet (the sheet itself stays mascot-free): the radish walking with its map. */}
+        <Mascot pose="walk" react="pop" className="size-12" />
         <p className="min-w-0 flex-1 truncate text-[13px] text-ink-muted">{trip.product.title}</p>
         <Link href={`/trip/${trip.id}`} className="inline-flex min-h-11 shrink-0 items-center text-[13px] font-bold underline underline-offset-4">
           برگشت به چک‌لیست

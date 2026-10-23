@@ -55,7 +55,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
   if (!shop)
     return (
       <EmptyState
-        pose="idle"
+        pose="search"
         title="هنوز فروشگاه مقصد انتخاب نشده"
         body="از رادار یه فروشگاه انتخاب کن تا چک‌لیست ساخته بشه."
         actions={<Link href={`/radar/${trip.productId}`} className={btnClass()}>رفتن به رادار</Link>}
@@ -203,7 +203,10 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
         </section>
 
         <section className="mt-3 rounded-lg bg-surface p-5 shadow-card">
-          <h2 className="text-[15px] font-extrabold">چک‌لیست واقع‌بینانه</h2>
+          <h2 className="flex items-center justify-between gap-3 text-[15px] font-extrabold">
+            چک‌لیست واقع‌بینانه
+            <Mascot pose="check" react="pop" loading="lazy" className="-my-2 size-12" />
+          </h2>
           <ul aria-label="چک‌لیست" className="mt-2 divide-y divide-line">
             {items.map((c, i) => {
               const m = MARK[c.ok === true ? "ok" : c.ok === false ? "warn" : "unknown"];
