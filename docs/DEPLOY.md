@@ -43,7 +43,7 @@ Never commit `.env.prod` (gitignored); `.env.prod.example` has the names only.
 | `KAVENEGAR_KEY`, `KAVENEGAR_TEMPLATE` | api | for login | without them no OTP SMS can be sent in prod (the dev sender works only with DEBUG), so phone login fails; guest use is unaffected |
 | `BOXAPI_KEY` | agent, api (`embed`) | yes | |
 | `BOXAPI_KEY_SECOND` | agent | no | used once the first key is out of credit |
-| `BOXAPI_BASE_URL` | agent | yes | `https://ai.boxapi.ir/ai/v1` |
+| `BOXAPI_BASE_URL` | agent | yes | `https://api.gapgpt.app/v1` (GapGPT, decision 14; `https://api.gapapi.com/v1` if that host is unreachable). Models: `AGENT_MODEL` / `FAST_MODEL` `gpt-6-luna`, `EMBED_MODEL` `text-embedding-3-small`. A dump made before 2026-10-23 tags embeddings `openai/text-embedding-3-small`: run `UPDATE catalog_productembedding SET model = 'text-embedding-3-small';` (and `catalog_shopembedding`) after restoring |
 | `AGENT_MODEL`, `FAST_MODEL` | agent | yes | as in `.env.example` |
 | `EMBED_MODEL`, `EMBED_DIMS` | agent, api | yes | must match the stored embeddings (`text-embedding-3-small`, 1024) |
 | `BOXAPI_TOOLS` | agent | yes | `1` |
@@ -70,7 +70,7 @@ Set in the compose file, not the env file: `DEBUG=0`, `DATABASE_URL`, `REDIS_URL
    `certbot renew --webroot -w <DEPLOY_DIR>/deploy/certbot --deploy-hook "docker compose -f <DEPLOY_DIR>/docker-compose.prod.yml --env-file <DEPLOY_DIR>/.env.prod exec nginx nginx -s reload"`
    in root's crontab. Your own certificate: put it under `CERTS_DIR` and set `TLS_CERT`/`TLS_KEY`.
 4. `.env.prod` (§2), then `docker compose ... up -d --build` (§1) and `deploy/smoke.sh`.
-5. Data. The CSV dataset is not in git, and re-embedding costs BoxAPI money, so seed from a dump of a
+5. Data. The CSV dataset is not in git, and re-embedding costs GapGPT money, so seed from a dump of a
    loaded DB (the Mac's dev DB): `make` stack running, then on the Mac
    `docker compose exec -T db pg_dump -U torobgard -Fc torobgard > seed.dump`, copy it over, and
    restore it as in §5 into `torobgard` (stop `api agent web cron` first; drop and recreate the DB, then
