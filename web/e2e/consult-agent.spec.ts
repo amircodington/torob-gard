@@ -31,7 +31,7 @@ test("consult via the agent: ask chips → desk", async ({ page }) => {
   await page.goto("/start");
   await say(page, "یه گوشی می‌خوام");
   await expect(page.getByText("گوشی برای چه کاری؟")).toHaveCount(1); // the ask's question is not said twice
-  await page.getByRole("button", { name: "عکاسی" }).click();
+  await page.getByRole("button", { name: "عکاسی", exact: true }).click();
   await page.waitForURL(/\/desk$/);
   await expect(page.getByRole("article")).toHaveCount(3);
   expect(bodies[0]).toMatchObject({ text: "یه گوشی می‌خوام", context: { stage: "consult" } });

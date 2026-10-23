@@ -9,7 +9,7 @@ import type { Action, JourneyReq } from "./session";
 /** Ruling R7: no event of any kind (status included) for this long → abort and fall back. */
 export const STALL_MS = 8000;
 
-const CATEGORIES: Category[] = ["mobile", "laptop", "accessory", "other"];
+const CATEGORIES: Category[] = ["mobile", "laptop", "tablet", "tv", "headphone", "powerbank", "photo", "accessory", "other"];
 
 function deskReq(b: Record<string, unknown>): Partial<JourneyReq> {
   const req: Partial<JourneyReq> = {};

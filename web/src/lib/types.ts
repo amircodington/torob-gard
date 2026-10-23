@@ -1,6 +1,6 @@
 /* Domain types — ported from the prototype, Store/Offer reshaped to the real API (camelCase). */
 
-export type Category = "mobile" | "laptop" | "accessory" | "other";
+export type Category = "mobile" | "laptop" | "tablet" | "tv" | "headphone" | "powerbank" | "photo" | "accessory" | "other";
 
 // The prototype's "unconfirmed" is dropped: the API never sends no_item rows.
 export type StockStatus = "confirmed" | "unknown";

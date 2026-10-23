@@ -24,14 +24,20 @@ Embedder = Callable[[str], Awaitable[list[float]]]
 DESK_CATEGORIES: dict[str, list[str]] = {
     "mobile": ["گوشی موبایل"],
     "laptop": ["لپ تاپ و نوت بوک"],
-    "accessory": [
-        "هدفون، هدست و هندزفری", "شارژر گوشی", "کیف و کاور گوشی", "محافظ صفحه نمایش گوشی",
-    ],
+    "accessory": ["شارژر گوشی", "کیف و کاور گوشی", "محافظ صفحه نمایش گوشی"],
+    "tablet": ["تبلت"],
+    "tv": ["تلویزیون"],
+    "powerbank": ["پاوربانک و شارژر همراه"],
+    "photo": ["دوربین عکاسی و فیلمبرداری"],
+    "headphone": ["هدفون، هدست و هندزفری"],
 }
 # desk ids and their everyday Persian names, keyed by _compact(); the model often sends these
 _DESK_WORDS = {"mobile": "mobile", "موبایل": "mobile", "گوشی": "mobile", "laptop": "laptop",
                "لپتاپ": "laptop", "accessory": "accessory", "accessories": "accessory",
-               "لوازمجانبی": "accessory"}
+               "لوازمجانبی": "accessory", "tablet": "tablet", "tv": "tv", "powerbank": "powerbank",
+               "پاوربانک": "powerbank", "photo": "photo", "دوربینعکاسی": "photo",
+               "headphone": "headphone", "headphones": "headphone", "هدفون": "headphone",
+               "هندزفری": "headphone"}
 _SEPARATORS = "[\\s\u200c،,_-]"  # spaces, ZWNJ, punctuation: «لپ‌تاپ» == «لپ تاپ»
 MIN_TRIGRAM = 0.5
 # ponytail: half an RRF vote per in-category ranker is a guess; tune it once the eval set grows

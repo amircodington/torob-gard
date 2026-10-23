@@ -161,3 +161,117 @@ def test_desk_price_age_is_the_min_price_offers(client, db):
                     content_type="application/json")
     tier = next(t for t in r.json()["tiers"] if t["product_id"] == "cheap")
     assert tier["newest_price_at"].startswith("2026-07-25")
+
+
+def _cat_products(name: str, rows: list[tuple[str, int, list[tuple[str, str]]]]):
+    cat = Category.objects.create(name=name, name_norm=name)
+    for pid, price, specs in rows:
+        Product.objects.create(
+            id=pid, persian_title=pid, title_norm=pid, category=cat, min_price=price * M,
+            offer_count=2, specs=[{"key": k, "section": "", "value": v} for k, v in specs],
+        )
+
+
+def test_spec_value_parsers():
+    from catalog.desk import spec_value
+
+    def one(key, value, parser):
+        return spec_value([{"key": key, "value": value}], [key], parser)
+
+    assert one("حداکثر رزولوشن", "6000 × 4000", "mp") == 24.0
+    assert one("حداکثر رزولوشن", "۲۴٫۲ مگاپیکسل", "mp") == 24.2
+    assert one("رزولوشن", "2160 × 3840 پیکسل", "max") == 3840.0
+    assert one("توان خروجی", "تایپ سی: 45 وات, یو اس بی: 22.5 وات", "max") == 45.0
+    assert one("وزن", "1.2 کیلوگرم", "g") == 1200.0
+    assert one("وزن", "(حدوداً) 360 گرم", "g") == 360.0
+    assert one("وزن", "0", "g") is None
+    assert one("عمر باتری", "تا 6 ساعت", "h") == 6.0
+    assert one("عمر باتری", "300", "h") is None
+    assert one("قابلیت نویز کنسلینگ", "نویز کنسلینگ فعال (ANC)", "anc") == 1.0
+    assert one("قابلیت نویز کنسلینگ", "دارد", "anc") == 1.0
+    assert one("قابلیت نویز کنسلینگ", "نویز کنسلینگ میکروفون (ENC)", "anc") == 0.0
+    assert spec_value([], ["قابلیت نویز کنسلینگ"], "anc") is None
+
+
+def test_every_desk_priority_has_a_rule_and_copy():
+    from catalog import desk_config as C
+    for cat, prios in C.DESK_PRIORITIES.items():
+        assert cat in C.DESK_CATEGORIES and cat in C.TOP_SPECS
+        for p in prios:
+            assert p in C.PRIORITY_LABEL and p in C.BEST_BULLET
+            assert (cat, p) in C.PRIORITY_RULES or p in C.SPECIAL_PRIORITIES
+
+
+def test_tv_size_picks_and_explains_the_biggest(db):
+    _cat_products("تلویزیون", [
+        ("tv43", 60, [("اندازه صفحه نمایش", "43 اینچ"), ("رزولوشن", "1080 × 1920")]),
+        ("tv55", 90, [("سایز", "55 اینچ"), ("رزولوشن", "2160 × 3840")]),
+        ("tv65", 140, [("اندازه صفحه نمایش", "65 اینچ"), ("رزولوشن", "2160 × 3840")]),
+        ("tv50", 100, [("اندازه صفحه نمایش", "50 اینچ")]),
+    ])
+    t = pick_tiers("tv", 0, 150 * M, "size")
+    assert [x.tier for x in t] == ["budget", "balanced", "feature"]
+    assert t[1].product.id == "tv65"
+    ex = explain_tiers(t, "size", "tv")
+    assert any("۶۵ اینچ" in b and "بزرگ‌ترین" in b for b in ex["balanced"]["bullets"])
+
+
+def test_powerbank_light_ranks_grams_and_kilograms(db):
+    _cat_products("پاوربانک و شارژر همراه", [
+        ("heavy", 3, [("وزن", "0.5 کیلوگرم"), ("ظرفیت اسمی", "20000 میلی‌آمپر ساعت")]),
+        ("mid", 4, [("وزن", "350 گرم"), ("ظرفیت اسمی", "10000 میلی‌آمپر ساعت")]),
+        ("feather", 5, [("وزن", "180 گرم"), ("ظرفیت اسمی", "5000 میلی‌آمپر ساعت")]),
+    ])
+    t = pick_tiers("powerbank", 0, 6 * M, "light")
+    balanced = next(x for x in t if x.tier == "balanced")
+    assert balanced.product.id == "feather"
+    ex = explain_tiers(t, "light", "powerbank")
+    assert any("۱۸۰ گرم" in b for b in ex["balanced"]["bullets"])
+
+
+def test_headphone_anc_and_photo_resolution(db):
+    _cat_products("هدفون، هدست و هندزفری", [
+        ("enc", 2, [("قابلیت نویز کنسلینگ", "نویز کنسلینگ میکروفون (ENC)")]),
+        ("anc", 3, [("قابلیت نویز کنسلینگ", "نویز کنسلینگ فعال (ANC)")]),
+        ("none", 4, []),
+    ])
+    t = pick_tiers("headphone", 0, 5 * M, "anc")
+    assert next(x for x in t if x.tier == "balanced").product.id == "anc"
+    assert t[0].product.id == "enc"  # budget prefers one that lists the spec
+    _cat_products("دوربین عکاسی و فیلمبرداری", [
+        ("c18", 30, [("حداکثر رزولوشن", "5184 × 3456")]),
+        ("c24", 40, [("حداکثر رزولوشن", "6000x4000")]),
+        ("c14", 50, [("حداکثر رزولوشن", "14 مگاپیکسل")]),
+    ])
+    t = pick_tiers("photo", 0, 60 * M, "resolution")
+    assert next(x for x in t if x.tier == "balanced").product.id == "c24"
+
+
+def test_accessory_no_longer_holds_headphones():
+    from catalog import desk_config as C
+    assert "هدفون، هدست و هندزفری" not in C.DESK_CATEGORIES["accessory"]
+    assert C.DESK_CATEGORIES["headphone"] == ["هدفون، هدست و هندزفری"]
+
+
+def test_anc_is_not_claimed_when_none_of_the_three_has_it(db):
+    _cat_products("هدفون، هدست و هندزفری", [
+        ("e1", 2, [("قابلیت نویز کنسلینگ", "ندارد")]),
+        ("e2", 3, [("قابلیت نویز کنسلینگ", "نویز کنسلینگ میکروفون (ENC)")]),
+        ("e3", 4, [("قابلیت نویز کنسلینگ", "ندارد")]),
+    ])
+    ex = explain_tiers(pick_tiers("headphone", 0, 5 * M, "anc"), "anc", "headphone")
+    assert not any("نویز کنسلینگ فعال" in b for e in ex.values() for b in e["bullets"])
+
+
+def test_feature_tier_counts_missing_specs_and_stays_in_budget(db):
+    _cat_products("تلویزیون", [
+        ("below", 70, [("رزولوشن", "2160 × 3840")]),  # under the band, one spec only
+        ("a", 110, [("اندازه صفحه نمایش", "55 اینچ"), ("رزولوشن", "1080 × 1920")]),
+        ("b", 150, [("اندازه صفحه نمایش", "65 اینچ"), ("رزولوشن", "2160 × 3840")]),
+        ("c", 200, [("اندازه صفحه نمایش", "58 اینچ"), ("رزولوشن", "2160 × 3840")]),
+        ("thin", 220, [("رزولوشن", "2160 × 3840")]),  # missing size must not score as full marks
+    ])
+    t = pick_tiers("tv", 100 * M, 250 * M, "size")
+    ids = {x.tier: x.product.id for x in t}
+    assert "below" not in ids.values()
+    assert ids["feature"] in {"b", "c"}

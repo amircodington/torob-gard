@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { initialState, loadState, reducer, stagePath, type SessionState } from "./session";
 
 const last = (s: SessionState) => s.chat[s.chat.length - 1];
+const ALL_CATS = ["mobile", "laptop", "tablet", "tv", "headphone", "powerbank", "photo", "accessory", "other"] as const;
 const chip = (s: SessionState, id: string) => {
   const c = last(s).chips?.find((x) => x.id === id);
   if (!c) throw new Error(`no chip ${id} in: ${last(s).text}`);
@@ -22,6 +23,31 @@ describe("consult reducer", () => {
   it("an accessory for a phone is an accessory, not a phone", () => {
     const s = reducer(initialState(), { type: "CHAT_TEXT", text: "شارژر گوشی می‌خوام" });
     expect(s.req.category).toBe("accessory");
+  });
+
+  it.each([
+    ["تلویزیون ۵۵ اینچ می‌خوام", "tv"],
+    ["یه هدفون بی‌سیم خوب", "headphone"],
+    ["هندزفری برای ورزش", "headphone"],
+    ["پاوربانک ۲۰ هزار", "powerbank"],
+    ["تبلت برای بچه", "tablet"],
+    ["دوربین عکاسی بدون آینه", "photo"],
+    ["یه گوشی برای عکاسی", "mobile"],
+    ["شارژر گوشی", "accessory"],
+  ])("«%s» detects %s", (text, cat) => {
+    expect(reducer(initialState(), { type: "CHAT_TEXT", text }).req.category).toBe(cat);
+  });
+
+  it("every desk category asks its own budget and priorities", () => {
+    for (const cat of ALL_CATS.filter((c) => c !== "other")) {
+      let s = reducer(initialState(), { type: "CHAT_CHIP", chip: { id: `cat:${cat}`, label: cat } });
+      expect(s.req.category).toBe(cat);
+      const band = last(s).chips?.find((c) => c.id.startsWith("budget:"));
+      expect(band, cat).toBeTruthy();
+      s = reducer(s, { type: "CHAT_CHIP", chip: band! });
+      const prios = last(s).chips?.filter((c) => c.id.startsWith("prio:")) ?? [];
+      expect(prios.length, cat).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it("Arabic yeh («گوشي») still detects mobile", () => {
@@ -81,7 +107,7 @@ describe("consult reducer", () => {
   it("unknown category text gets the clarify message with category chips", () => {
     const s = reducer(initialState(), { type: "CHAT_TEXT", text: "چراغ آشپزخانه" });
     expect(s.req.category).toBeNull();
-    expect(last(s).chips?.map((c) => c.id)).toEqual(["cat:mobile", "cat:laptop", "cat:accessory", "cat:other"]);
+    expect(last(s).chips?.map((c) => c.id)).toEqual(ALL_CATS.map((c) => `cat:${c}`));
   });
 
   it("SEED runs the phone-camera conversation to the summary", () => {

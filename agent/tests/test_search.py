@@ -164,13 +164,15 @@ async def test_vector_pool_reaches_50_under_a_filter(conn):
     assert len(hits) >= 25 and all(h["min_price"] <= 1000 for h in hits)
 
 
-ACCESSORY = ["هدفون، هدست و هندزفری", "شارژر گوشی", "کیف و کاور گوشی", "محافظ صفحه نمایش گوشی"]
+ACCESSORY = ["شارژر گوشی", "کیف و کاور گوشی", "محافظ صفحه نمایش گوشی"]
 
 
 # the values the model sent in eval run 1
 @pytest.mark.parametrize("category, names", [
     ("accessory", ACCESSORY), ("لوازم جانبی", ACCESSORY), ("لپ‌تاپ", ["لپ تاپ و نوت بوک"]),
-    ("Mobile", ["گوشی موبایل"]),
+    ("Mobile", ["گوشی موبایل"]), ("tv", ["تلویزیون"]), ("headphone", ["هدفون، هدست و هندزفری"]),
+    ("هدفون", ["هدفون، هدست و هندزفری"]), ("powerbank", ["پاوربانک و شارژر همراه"]),
+    ("photo", ["دوربین عکاسی و فیلمبرداری"]), ("tablet", ["تبلت"]),
 ])
 async def test_desk_words_mean_their_catalog_categories(conn, category, names):
     assert await resolve_category(category, db=conn) == names

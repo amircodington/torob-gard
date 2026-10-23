@@ -22,6 +22,33 @@ def spec_number(specs: list[dict], keys: list[str]) -> float | None:
     return None
 
 
+def spec_value(specs: list[dict], keys: list[str], parser: str | None = None) -> float | None:
+    """spec_number with a reading rule (desk_config Spec): max, mp, g (grams), h (hours) or anc."""
+    if parser is None:
+        return spec_number(specs, keys)
+    by_key = {normalize(s.get("key")): str(s.get("value") or "") for s in reversed(specs)}
+    for k in keys:
+        v = by_key.get(normalize(k), "")
+        if not v:
+            continue
+        if parser == "anc":
+            return 1.0 if ("ANC" in v.upper() or "فعال" in v or v.strip() == "دارد") else 0.0
+        nums = [float(n) for n in _NUM.findall(to_ascii_digits(v).replace("٫", "."))]
+        if not nums:
+            continue
+        if parser == "max":
+            return max(nums)
+        if parser == "mp":  # «6000 × 4000» → 24 MP; «۲۴٫۲ مگاپیکسل» → 24.2
+            pixels = len(nums) > 1 and min(nums[:2]) > 100
+            return round(nums[0] * nums[1] / 1e6, 1) if pixels else nums[0]
+        # ponytail: > 100 h is standby or case total, not playback; a unit table if it recurs
+        if parser == "h":
+            return nums[0] if nums[0] <= 100 else None
+        if parser == "g":  # a listed «0» is a placeholder, not a weightless product
+            return None if nums[0] <= 0 else nums[0] * 1000 if "کیلو" in v else nums[0]
+    return None
+
+
 def _kg(specs: list[dict]) -> float | None:
     kg = spec_number(specs, C.PRIORITY_SPECS["weight"])
     v = next((str(s.get("value")) for s in specs if normalize(s.get("key")) == "وزن"), "")
@@ -46,28 +73,33 @@ def _normaliser(values: list[float | None]):
 
 
 def _scores(category: str, priority: str | None, cands: list[Product]) -> list[dict]:
-    raw = {k: [spec_number(p.specs, keys) for p in cands] for k, keys in C.FEATURE_SPECS.items()}
+    features = C.CATEGORY_FEATURES.get(
+        category, {k: (keys, None) for k, keys in C.FEATURE_SPECS.items()}
+    )
+    raw = {k: [spec_value(p.specs, keys, parser) for p in cands]
+           for k, (keys, parser) in features.items()}
     norm = {k: list(map(_normaliser(v), v)) for k, v in raw.items()}
+    rule = C.PRIORITY_RULES.get((category, priority or ""))
     out = []
     for i, p in enumerate(cands):
+        # a spec the listing lacks counts as 0: «بیشترین امکانات» is what is known, not guessed
         have = [norm[k][i] for k in norm if norm[k][i] is not None]
-        s: dict[str, float | None] = {"spec": sum(have) / len(have) if have else 0.0}
+        s: dict[str, float | None] = {"spec": sum(have) / len(norm) if norm else 0.0}
         # "missing" = the priority's own spec is absent (scored 0 / _MISSING);
         # the budget tier avoids those.
         s["missing"] = 0.0
-        if category == "mobile" and priority in ("camera", "battery"):
-            s["priority"] = raw[priority][i] or 0.0
-            s["missing"] = float(raw[priority][i] is None)
+        if rule:
+            (keys, parser), higher = rule
+            v = spec_value(p.specs, keys, parser)
+            s["priority"] = (v or 0.0) if higher else (_MISSING if v is None else -v)
+            s["missing"] = float(v is None)
         elif category == "mobile" and priority == "both":
             s["priority"] = ((norm["camera"][i] or 0) + (norm["battery"][i] or 0)) / 2
         elif category == "laptop" and priority == "weight":
             kg = _kg(p.specs)
             s["priority"] = _MISSING if kg is None else -kg
             s["missing"] = float(kg is None)
-        elif category == "laptop" and priority == "power":
-            s["priority"] = raw["ram"][i] or 0.0
-            s["missing"] = float(raw["ram"][i] is None)
-        elif category == "accessory" and priority == "price":
+        elif category in ("accessory", "headphone") and priority == "price":
             s["priority"] = -float(p.min_price)
         elif category == "accessory" and priority == "brand":
             s["priority"] = float(p.offer_count)
@@ -128,25 +160,36 @@ def pick_tiers(
     has_priority = any(r.scores["priority"] is not None for r in band)
     ranked = "priority" if has_priority else "spec"
     take("balanced", band, lambda r: (-r.scores[ranked], abs(r.price - target), -r.offer_count))
-    take("feature", [r for r in rows if r.price <= stretch],
+    # never below the budget band: the feature tier's copy says «یه کم بیشتر بدی»
+    take("feature", [r for r in rows if budget_min <= r.price <= stretch],
          lambda r: (-r.scores["spec"], r.price, -r.offer_count))
     if picked and picked[-1].tier == "feature" and budget_max is not None:
         picked[-1].over_max = max(0, picked[-1].price - budget_max)
     return picked
 
 
-def explain_tiers(tiers: list[Tier], priority: str | None) -> dict[str, dict]:
+def explain_tiers(
+    tiers: list[Tier], priority: str | None, category: str | None = None
+) -> dict[str, dict]:
     pscores = [t.scores.get("priority") for t in tiers]
     # a priority that does not apply to the category (phone + weight) gets no copy at all
     applies = any(s is not None for s in pscores)
     label = C.PRIORITY_LABEL.get(priority or "", "") if applies else ""
-    keys = C.PRIORITY_SPECS.get(priority or "") if applies else None
+    rule = C.PRIORITY_RULES.get((category or "", priority or ""))
+    keys, parser = rule[0] if rule else (C.PRIORITY_SPECS.get(priority or ""), None)
+    keys = keys if applies else None
     top = max((s for s in pscores if s is not None), default=None)
     cheapest = min((t.price for t in tiers), default=0)
     out = {}
     for t, ps in zip(tiers, pscores, strict=True):
         bullets, tradeoffs = [], []
-        fits = top is not None and ps == top and ps != _MISSING
+        if priority == "weight":
+            n = _kg(t.product.specs)
+        else:
+            n = spec_value(t.product.specs, keys, parser) if keys else None
+        # "best of the three" is claimed only when true in the absolute too (no ANC ≠ best ANC)
+        no_anc = parser == "anc" and n != 1.0
+        fits = top is not None and ps == top and ps != _MISSING and not no_anc
         if t.tier == "budget":
             # T_CHEAPEST only when it truly is the cheapest in the band
             cheapest_copy = C.T_CHEAPEST_WITH_SPEC.format(label=label)
@@ -155,10 +198,6 @@ def explain_tiers(tiers: list[Tier], priority: str | None) -> dict[str, dict]:
             bullets.append(C.BALANCED_BULLET[priority])
         elif t.tier == "feature":
             bullets.append(C.T_FEATURE)
-        if priority == "weight":
-            n = _kg(t.product.specs)
-        else:
-            n = spec_number(t.product.specs, keys) if keys else None
         if fits and len(tiers) > 1 and (n is not None or not keys):
             bullets.append(C.BEST_BULLET[priority].format(n=C.fa_num(n) if n is not None else ""))
         bullets.append(C.T_OFFERS.format(n=C.fa_num(t.offer_count)))

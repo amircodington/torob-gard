@@ -75,7 +75,7 @@ quality page (cost, p95, grounding failures, eval pass rate). P2.
 
 | Prototype (`lib/types.ts`) | Production source |
 |---|---|
-| `Category` mobile / laptop / accessory / other | category names: mobile = «گوشی موبایل» (814 products), laptop = «لپ تاپ و نوت بوک» (505), accessory = «هدفون، هدست و هندزفری», «شارژر گوشی», «کیف و کاور گوشی», «محافظ صفحه نمایش گوشی»; other → keyword search (P1: designed empty state, P2: the agent) |
+| `Category` mobile / laptop / tablet / tv / headphone / powerbank / photo / accessory / other | category names: mobile = «گوشی موبایل» (814 products), laptop = «لپ تاپ و نوت بوک» (505), tablet = «تبلت», tv = «تلویزیون», headphone = «هدفون، هدست و هندزفری», powerbank = «پاوربانک و شارژر همراه», photo = «دوربین عکاسی و فیلمبرداری», accessory = «شارژر گوشی», «کیف و کاور گوشی», «محافظ صفحه نمایش گوشی»; other → keyword search (P1: designed empty state, P2: the agent). Ids and specs: `api/catalog/desk_config.py` |
 | `BudgetBand` | the prototype's bands per category, checked against the dataset's price quantiles in P0 (Task 8 of the P0 plan) |
 | `Product.tier`, `bullets`, `tradeoffs`, `fitNote` | computed by `pick_tiers` + `explain_tiers` (§5.1) |
 | `Product.specs` | `product.specs` JSON, first 3 by a per-category key list |
@@ -115,7 +115,12 @@ Scores come from specs (`spec_number(specs, keys)` parses the first number in th
 | laptop | weight | −kg from «وزن» |
 | laptop | power | GB from «مقدار RAM», «حافظه RAM» |
 | accessory | price / brand | −price / offer count |
-| any | spec score (feature tier) | mean of normalised RAM, storage («حافظه داخلی»), battery, camera that exist |
+| tablet | screen / battery / storage | inches «اندازه صفحه نمایش» / mAh / GB «حافظه داخلی» |
+| tv | size / quality | inches «اندازه صفحه نمایش», «سایز» / the larger number of «رزولوشن» |
+| powerbank | capacity / fast / light | mAh «ظرفیت اسمی», «ظرفیت» / max W «توان خروجی کلی» / −grams «وزن» |
+| photo | resolution / speed / light | MP («W × H» or «… مگاپیکسل») / fps «سرعت عکاسی پیاپی» / −grams |
+| headphone | anc / playtime / price | active noise cancelling 1/0 / hours ≤ 100 / −price |
+| any | spec score (feature tier) | mean over the category's features (missing counts 0): RAM, storage, battery, camera for phones and laptops; `CATEGORY_FEATURES` for the rest. The feature tier never goes below the budget band. |
 
 Missing spec → score 0 and a trade-off line «این مشخصه ثبت نشده». `explain_tiers` writes
 `bullets` / `tradeoffs` / `fitNote` from comparisons between the three (P1: templates, P2: the

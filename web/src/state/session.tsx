@@ -68,6 +68,11 @@ const nextId = () => mid++;
 const CATEGORY_CHIPS: Chip[] = [
   { id: "cat:mobile", label: "موبایل" },
   { id: "cat:laptop", label: "لپ‌تاپ" },
+  { id: "cat:tablet", label: "تبلت" },
+  { id: "cat:tv", label: "تلویزیون" },
+  { id: "cat:headphone", label: "هدفون" },
+  { id: "cat:powerbank", label: "پاوربانک" },
+  { id: "cat:photo", label: "دوربین عکاسی" },
   { id: "cat:accessory", label: "لوازم جانبی" },
   { id: "cat:other", label: "چیز دیگه" },
 ];
@@ -139,9 +144,15 @@ const push = (chat: Msg[], ...msgs: Omit<Msg, "id">[]): Msg[] => [...chat, ...ms
 
 function detectCategory(text: string): Category | null {
   const t = normalize(text).replace(/‌/g, " ");
-  // Accessory first: «شارژر گوشی», «قاب گوشی» are accessories that name the phone.
-  if (/(هدفون|هندزفری|ایرپاد|شارژر|کاور|قاب|گلس|محافظ صفحه|پاوربانک|جانبی|اسپیکر)/i.test(t)) return "accessory";
+  // Things for a phone first: «شارژر گوشی», «قاب گوشی» are accessories that name the phone.
+  if (/(هدفون|هندزفری|ایرپاد|ایربادز|هدست)/i.test(t)) return "headphone";
+  if (/(پاوربانک|پاور بانک|شارژر همراه)/i.test(t)) return "powerbank";
+  if (/(شارژر|کاور|قاب|گلس|محافظ صفحه|جانبی|اسپیکر)/i.test(t)) return "accessory";
+  if (/(تبلت|آیپد|ایپد)/i.test(t)) return "tablet";
+  if (/(تلویزیون|تی وی|اسمارت تی)/i.test(t)) return "tv";
   if (/(گوشی|موبایل|آیفون|سامسونگ|شیائومی|پیکسل)/i.test(t)) return "mobile";
+  // after mobile: «گوشی برای عکاسی» is a phone; «دوربین» alone is often CCTV, so it needs a photo word
+  if (/(دوربین (عکاسی|دیجیتال|بدون آینه|فیلمبرداری|کانن|نیکون|سونی)|بدون آینه|dslr)/i.test(t)) return "photo";
   if (/(لپ تاپ|لپتاپ|notebook|نوت بوک|مک بوک|کامپیوتر)/i.test(t)) return "laptop";
   return null;
 }
@@ -154,8 +165,11 @@ export function parseBudget(text: string): BudgetBand | null {
   return { id: "custom", label: `${toFaDigits(String(lo))} تا ${toFaDigits(String(hi))} میلیون`, min: lo * 1_000_000, max: hi * 1_000_000 };
 }
 
-const catLabel = (c: Category): string =>
-  c === "mobile" ? "موبایل" : c === "laptop" ? "لپ‌تاپ" : c === "accessory" ? "لوازم جانبی" : "دسته‌ی دیگر";
+export const CAT_LABEL: Record<Category, string> = {
+  mobile: "موبایل", laptop: "لپ‌تاپ", tablet: "تبلت", tv: "تلویزیون", headphone: "هدفون",
+  powerbank: "پاوربانک", photo: "دوربین عکاسی", accessory: "لوازم جانبی", other: "دسته‌ی دیگر",
+};
+const catLabel = (c: Category): string => CAT_LABEL[c];
 
 function budgetAsk(cat: Category): Omit<Msg, "id"> {
   return {
@@ -168,15 +182,19 @@ function budgetAsk(cat: Category): Omit<Msg, "id"> {
   };
 }
 
+const PRIORITY_QUESTION: Partial<Record<Category, string>> = {
+  mobile: "دوربین مهم‌تره یا باتری؟",
+  laptop: "سبکی و حمل راحت مهم‌تره یا قدرت پردازش؟",
+  accessory: "قیمت مهم‌تره یا برند و کیفیت؟",
+  tablet: "صفحه‌ی بزرگ‌تر، باتری یا حافظه؟",
+  tv: "اندازه‌ی صفحه مهم‌تره یا کیفیت تصویر؟",
+  headphone: "نویز کنسلینگ، زمان پخش یا قیمت؟",
+  powerbank: "ظرفیت، شارژ سریع یا سبکی؟",
+  photo: "مگاپیکسل، عکاسی پیاپی یا سبکی؟",
+};
+
 function priorityAsk(cat: Category): Omit<Msg, "id"> {
-  const q =
-    cat === "mobile"
-      ? "دوربین مهم‌تره یا باتری؟"
-      : cat === "laptop"
-        ? "سبکی و حمل راحت مهم‌تره یا قدرت پردازش؟"
-        : cat === "accessory"
-          ? "قیمت مهم‌تره یا برند و کیفیت؟"
-          : "چی برات مهم‌تره؟";
+  const q = PRIORITY_QUESTION[cat] ?? "چی برات مهم‌تره؟";
   return {
     from: "assistant",
     text: q,

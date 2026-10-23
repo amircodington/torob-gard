@@ -67,7 +67,7 @@ def _top3(category: str, specs: list[dict]) -> list[dict]:
 @router.post("/desk", response=DeskOut)
 def desk(request, body: DeskIn):
     tiers = pick_tiers(body.category, body.budget_min, body.budget_max, body.priority)
-    ex = explain_tiers(tiers, body.priority)
+    ex = explain_tiers(tiers, body.priority, body.category)
     # ponytail: one freshness query per tier (≤ 3).
     return {"tiers": [
         {
