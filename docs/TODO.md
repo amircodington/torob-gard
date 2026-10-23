@@ -78,7 +78,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P3.2 Search, sitemap, robots — Mohammad
 - [x] P3.3 PWA + offline trips — Mohammad
 - [x] P3.4 Phone login + `/me` — Mohammad
-- [ ] P3.5 Production deploy + backups — Mohammad
+- [x] P3.5 Production deploy + backups — Mohammad (built + verified locally; VPS push is Mohammad's, R-P2)
 - [ ] P3.6 Load and cost check — Mohammad + T-13
 - [ ] T-14 Content and copy review — student
 

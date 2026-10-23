@@ -1,5 +1,5 @@
 # ponytail: api runs only in Docker (host has no GDAL); web runs on the host with pnpm. No CI yet, pre-push runs check.
-.PHONY: dev down check e2e eval test-api test-agent agent-testdb ingest psql hooks
+.PHONY: dev down check e2e eval test-api test-agent agent-testdb ingest psql hooks push-test
 
 .env:
 	cp .env.example .env
@@ -57,3 +57,7 @@ ingest: .env
 
 psql: .env
 	docker compose exec db psql -U torobgard torobgard
+
+# Ship HEAD to the VPS and smoke it (docs/DEPLOY.md). DEPLOY_HOST=user@vps make push-test
+push-test:
+	deploy/push-test.sh

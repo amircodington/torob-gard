@@ -1,0 +1,116 @@
+# Production stack. docs/DEPLOY.md:
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Own project name, so it never touches the dev stack in the same checkout.
+name: torobgard-prod
+
+x-app: &app
+  env_file: ${ENV_FILE:-.env.prod}
+  restart: unless-stopped
+  environment: &app-env
+    DEBUG: "0"
+    DATABASE_URL: postgresql://torobgard:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/torobgard
+    REDIS_URL: redis://redis:6379/0
+
+services:
+  db:
+    build: ./deploy/db  # arm64 + amd64; on an x86 VPS postgis/postgis:16-3.5 is the official base
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: torobgard
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: torobgard
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U torobgard -d torobgard"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    <<: *app
+    build: ./api
+    command: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput -v0
+      && exec gunicorn torobgard.wsgi -b 0.0.0.0:8000 -w ${API_WORKERS:-3} --access-logfile -"
+    volumes: [static:/app/staticfiles]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+
+  agent:
+    <<: *app
+    build: ./agent
+    command: uvicorn torobgard_agent.main:app --host 0.0.0.0 --port 8001 --workers ${AGENT_WORKERS:-2}
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_started}
+
+  web:
+    build:
+      context: ./web
+      args:
+        BUILD_ID: ${BUILD_ID:-}
+        SITE_URL: ${SITE_URL:?set SITE_URL}
+        NEXT_PUBLIC_IMG_BASE: ${NEXT_PUBLIC_IMG_BASE:-/img}
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:8000
+      AGENT_URL: http://agent:8001
+      SITE_URL: ${SITE_URL}
+    depends_on: [api, agent]
+
+  nginx:
+    image: nginx:1.28-alpine
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ${SERVER_NAME:?set SERVER_NAME}
+      TLS_CERT: ${TLS_CERT:-/etc/letsencrypt/live/${SERVER_NAME}/fullchain.pem}
+      TLS_KEY: ${TLS_KEY:-/etc/letsencrypt/live/${SERVER_NAME}/privkey.pem}
+    ports: ["${HTTP_PORT:-80}:80", "${HTTPS_PORT:-443}:443"]
+    volumes:
+      - ./deploy/nginx/torobgard.conf:/etc/nginx/templates/default.conf.template:ro  # replaces the stock default.conf
+      - ${CERTS_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
+      - ${ACME_DIR:-./deploy/certbot}:/var/www/certbot:ro
+      - static:/srv/static:ro
+      - imgcache:/var/cache/nginx/img
+    depends_on: [web]
+
+  # Nightly jobs (03:00 Tehran = 23:30 UTC). ponytail: a sleep loop, not crond; good enough for one VPS.
+  cron:
+    <<: *app
+    build: ./api
+    command: sh -c 'while :; do
+      sleep $$(( (84600 - $$(date -u +%s) % 86400 + 86400) % 86400 + 1 ));
+      python manage.py anonymise_sessions; python manage.py price_stats; done'
+    depends_on:
+      db: {condition: service_healthy}
+
+  backup:
+    build: {context: ./deploy, dockerfile: backup/Dockerfile}
+    env_file: ${ENV_FILE:-.env.prod}
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGUSER: torobgard
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: torobgard
+      # rclone's `store:` remote, so `exec backup rclone ...` works for restores too
+      RCLONE_CONFIG_STORE_TYPE: s3
+      RCLONE_CONFIG_STORE_PROVIDER: Other
+      RCLONE_CONFIG_STORE_ENDPOINT: ${S3_ENDPOINT:-}
+      RCLONE_CONFIG_STORE_ACCESS_KEY_ID: ${S3_ACCESS_KEY:-}
+      RCLONE_CONFIG_STORE_SECRET_ACCESS_KEY: ${S3_SECRET_KEY:-}
+    # 02:30 Tehran = 23:00 UTC, before the jobs above
+    command: sh -c 'while :; do
+      sleep $$(( (82800 - $$(date -u +%s) % 86400 + 86400) % 86400 + 1 ));
+      backup.sh || echo "backup FAILED"; done'
+    depends_on:
+      db: {condition: service_healthy}
+
+volumes:
+  pgdata:
+  static:
+  imgcache:

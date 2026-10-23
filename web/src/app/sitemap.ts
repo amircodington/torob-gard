@@ -9,6 +9,9 @@ export const fetchCache = "force-cache";
 const abs = (path: string) => new URL(path, SITE_URL).toString();
 
 const load = () => {
+  // A failed fetch while `next build` prerenders this route hangs the build; the prod image builds
+  // without the API (web/Dockerfile), so skip it there.
+  if (process.env.NEXT_PHASE === "phase-production-build") return Promise.reject(new Error("build"));
   process.env.API_URL ??= "http://localhost:8000"; // ponytail: as in lib/server.ts; set API_URL in prod.
   return api.sitemap();
 };
@@ -23,9 +26,10 @@ export async function generateSitemaps() {
 export default async function sitemap(props: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
   const id = Number(await props.id);
   if (id > 0) return (await api.sitemapProducts(id - 1)).map((p) => ({ url: abs(pathOf.product(p)) }));
-  const s = await load();
+  // ponytail: built without the API, chunk 0 starts as the two static pages; its first revalidation fills it.
+  const s = await load().catch(() => null);
   return [
     "/", "/about",
-    ...s.venues.map(pathOf.venue), ...s.categories.map(pathOf.category), ...s.shops.map(pathOf.shop),
+    ...(s ? [...s.venues.map(pathOf.venue), ...s.categories.map(pathOf.category), ...s.shops.map(pathOf.shop)] : []),
   ].map((path) => ({ url: abs(path) }));
 }

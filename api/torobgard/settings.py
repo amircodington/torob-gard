@@ -8,7 +8,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ponytail: dev-only default key; set DJANGO_SECRET_KEY before any real deploy
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-key")
 DEBUG = os.environ.get("DEBUG", "1") == "1"
-ALLOWED_HOSTS = ["*"]  # ponytail: open until deploy config exists
+# prod: the domain plus "api" (web SSR calls http://api:8000); nginx drops unknown hosts first
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+# nginx terminates TLS and sets X-Forwarded-Proto, so admin CSRF origin checks see https
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
     "unfold",
@@ -68,6 +71,7 @@ LANGUAGE_CODE = "fa"
 TIME_ZONE = "Asia/Tehran"
 USE_TZ = True
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"  # collectstatic in prod; nginx serves /static/
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
@@ -75,10 +79,13 @@ REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 PHONE_PEPPER = os.environ.get("PHONE_PEPPER", "")
 PHONE_KEY = os.environ.get("PHONE_KEY", "")  # base64 of 32 bytes
 KAVENEGAR_KEY = os.environ.get("KAVENEGAR_KEY", "")
 KAVENEGAR_TEMPLATE = os.environ.get("KAVENEGAR_TEMPLATE", "")
+if not DEBUG and SECRET_KEY == "dev-only-insecure-key":
+    raise RuntimeError("set DJANGO_SECRET_KEY")
 if not DEBUG and not (PHONE_PEPPER and PHONE_KEY):
     raise RuntimeError("set PHONE_PEPPER and PHONE_KEY")
 if PHONE_KEY and len(base64.b64decode(PHONE_KEY)) != 32:
