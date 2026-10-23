@@ -80,3 +80,28 @@ test("agent down: the rule reducer answers, the banner shows once, the next turn
   await expect(banner).toHaveCount(0);
   expect(calls).toBe(3);
 });
+
+test("«شروع دوباره» mid-turn: the chat unlocks at once and the old turn's late answer never lands", async ({ page }) => {
+  let release: () => void = () => {};
+  let calls = 0;
+  await page.route("**/agent/chat", async (r) => {
+    if (++calls === 1) await new Promise<void>((res) => (release = res)); // a slow BoxAPI turn
+    return r.fulfill({ status: 200, contentType: "text/event-stream",
+      body: sse(["token", { text: calls === 1 ? "جواب قدیمی" : "تلویزیون؛ بودجه‌ات چقدره؟" }], done) }).catch(() => {});
+  });
+  await page.goto("/start");
+  await say(page, "یه گوشی می‌خوام");
+  const box = page.getByRole("textbox", { name: "نیاز خرید تو" });
+  await box.fill("هنوز منتظرم");
+  await expect(page.getByRole("button", { name: "ارسال" })).toBeDisabled(); // locked while the turn is in flight
+  await page.getByRole("button", { name: "گفتگوی جدید" }).click();
+  await expect(page.getByRole("button", { name: "گفتگوی جدید" })).toHaveCount(0); // a fresh chat has nothing to leave
+  await box.fill("هنوز منتظرم");
+  await expect(page.getByRole("button", { name: "ارسال" })).toBeEnabled({ timeout: 2000 });
+  await expect(page.getByText("یه گوشی می‌خوام")).toHaveCount(0);
+  release();
+  await say(page, "تلویزیون می‌خوام");
+  await expect(page.getByText("تلویزیون؛ بودجه‌ات چقدره؟")).toBeVisible();
+  await expect(page.getByText("جواب قدیمی")).toHaveCount(0);
+  await expect(box).toBeEnabled();
+});

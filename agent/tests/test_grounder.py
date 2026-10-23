@@ -43,6 +43,16 @@ def test_why_and_ask_text_scanned():
     assert [(i.kind, i.value) for i in ground(q, R)] == [("id", "shop_7"), ("price", "1500000")]
 
 
+def test_budget_band_options_are_choices_not_prices():
+    # the turn that answered «نتونستم تأیید کنم…» (2026-10-23): a budget ask, not a price claim
+    bands = ["تا ۵۰۰ هزار تومان", "۵۰۰ هزار تا ۲ میلیون", "بالای ۵ میلیون", "زیر ۱ میلیون",
+             "کمتر از ۳ میلیون", "بیشتر از ۵ میلیون تومان"]
+    a = Answer(say="بودجه‌ات چقدره؟", blocks=[AskBlock(question="بودجه‌ات چقدره؟", options=bands)])
+    assert ground(a, R) == []
+    lone = Answer(say="x", blocks=[AskBlock(question="کدوم؟", options=["تا ۵ میلیون", "۷۹۹ هزار تومان"])])
+    assert [(i.kind, i.value) for i in ground(lone, R)] == [("price", "799000")]
+
+
 def test_route_stop_ids():
     stop = {"shop_id": "shop_zz", "venue_slug": None, "floor": None, "unit": None, "seq": 1}
     assert [i.value for i in ground(Answer(say="x", blocks=[RouteBlock(stops=[stop])]), R)] == ["shop_zz"]

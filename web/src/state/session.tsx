@@ -57,6 +57,7 @@ export interface SessionState {
   tripId: string | null; // the saved trip (/trip/[id]); Plan B patches it
   agentSessionId: string | null;
   agentOffline: boolean; // the last turn fell back to the rule reducer (banner); every turn still tries the agent
+  epoch: number; // bumped by RESET: a turn started before it is dropped (start/page.tsx)
 }
 
 export const STAGE_ORDER: Stage[] = ["consult", "products", "radar", "summary"];
@@ -103,6 +104,7 @@ export const initialState = (): SessionState => ({
   tripId: null,
   agentSessionId: null,
   agentOffline: false,
+  epoch: 0,
 });
 
 /* ----------------------------- actions ----------------------------- */
@@ -394,7 +396,7 @@ export function reducer(s: SessionState, a: Action): SessionState {
       // A shared trip link brings its own failures; the session's own list wins once it has one.
       return { ...s, tripId: a.id, failures: s.tripId === a.id ? s.failures : (a.failures ?? s.failures) };
     case "RESET":
-      return initialState();
+      return { ...initialState(), epoch: (s.epoch ?? 0) + 1 };
     case "HYDRATE": {
       // The page's stage wins over the stored one (browser Back); the furthest stage is kept.
       const stage = a.stage ?? a.state.stage;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MessageSquarePlus } from "lucide-react";
 import { Bubble, Typing } from "../../components/chat/Bubble";
 import { Chips } from "../../components/chat/Chips";
 import { Composer } from "../../components/chat/Composer";
@@ -11,13 +11,15 @@ import { ShopCards } from "../../components/chat/ShopCards";
 import { Mascot } from "../../components/Mascot";
 import { JourneyShell } from "../../components/JourneyShell";
 import { consult } from "../../state/agentBridge";
-import { useSession, type Chip, type Msg } from "../../state/session";
+import { resetStorage, useSession, type Chip, type Msg } from "../../state/session";
 
 function Consult() {
   const { state, dispatch } = useSession();
   const end = useRef<HTMLDivElement>(null);
   // The agent's turn in flight: the user's text and the latest status line (not in the session until done).
-  const [pending, setPending] = useState<{ text: string; status: string } | null>(null);
+  const [turnState, setPending] = useState<{ text: string; status: string; epoch: number } | null>(null);
+  // a turn from before «شروع دوباره» (an older epoch) is not shown and does not lock the composer
+  const pending = turnState?.epoch === state.epoch ? turnState : null;
 
   // Not when the turn leaves for the desk: the smooth scroll would outlive the page and leave the desk scrolled under the TopBar.
   useEffect(() => {
@@ -25,12 +27,19 @@ function Consult() {
     if (state.chat.length > 1 || pending) end.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [state.chat.length, pending, state.stage]);
 
+  // «شروع دوباره» (RESET bumps the epoch) cancels the turn in flight; its late answer is dropped below.
+  const turn = useRef<AbortController | null>(null);
+  useEffect(() => () => turn.current?.abort(), [state.epoch]);
+
   const send = async (raw: string) => {
     const text = raw.trim();
     if (!text || pending) return;
-    setPending({ text, status: "" });
+    const epoch = state.epoch;
+    setPending({ text, status: "", epoch });
+    const ctl = (turn.current = new AbortController());
     const body = { session_id: state.agentSessionId ?? undefined, text, context: { req: state.req, anchor: null, stage: "consult" } };
-    const actions = await consult(body, (status) => setPending({ text, status }));
+    const actions = await consult(body, (status) => !ctl.signal.aborted && setPending({ text, status, epoch }), undefined, undefined, { signal: ctl.signal });
+    if (ctl.signal.aborted) return;
     actions.forEach(dispatch);
     setPending(null);
   };
@@ -61,6 +70,20 @@ function Consult() {
         </div>
         <Mascot pose="phone" react="pop" className="size-16 lg:hidden" />
       </div>
+      {/* The TopBar's ↻ is an unlabelled icon; once a conversation exists, a labelled way out too. */}
+      {(state.chat.length > 1 || pending) && (
+        <button
+          type="button"
+          onClick={() => {
+            resetStorage();
+            dispatch({ type: "RESET" });
+          }}
+          className="mt-3 inline-flex min-h-11 items-center gap-2 self-start rounded-pill bg-surface-tint px-4 text-[14px] font-bold text-ink lift press focus-visible:outline-2 focus-visible:outline-focus"
+        >
+          <MessageSquarePlus aria-hidden className="hover-hop size-4" />
+          گفتگوی جدید
+        </button>
+      )}
       {state.agentOffline && (
         <p role="status" className="mt-3 rounded-md bg-surface-tint px-4 py-2 text-[13px] font-semibold leading-5 text-ink">
           دستیار هوشمند موقتاً در دسترس نیست

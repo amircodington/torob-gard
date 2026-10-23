@@ -74,8 +74,13 @@ def _texts(answer: Answer) -> list[str]:
         if isinstance(b, ShopCardsBlock):
             out += b.why.values()
         elif isinstance(b, AskBlock):
-            out += [b.question, *b.options]
+            out += [b.question, *(o for o in b.options if not _BUDGET_BAND.search(o))]
     return out
+
+
+# An ask option that is a budget range («تا ۵۰۰ هزار», «۲ تا ۵ میلیون», «بالای ۵ میلیون») is a choice
+# for the shopper, not a price claim; a lone amount («۷۹۹ هزار تومان») is still checked.
+_BUDGET_BAND = re.compile(r"(^\s*(تا|زیر|بالای|کمتر از|بیشتر از|حداکثر|حداقل)\s)|(\S\s+تا\s+\S)")
 
 
 def _block_prices(answer: Answer) -> list[int]:

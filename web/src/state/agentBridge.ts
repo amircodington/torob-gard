@@ -8,6 +8,8 @@ import type { Action, JourneyReq } from "./session";
 
 /** Ruling R7: no event of any kind (status included) for this long → abort and fall back. */
 export const STALL_MS = 8000;
+/** A whole turn, heartbeats included: past this a slow BoxAPI leaves the shopper to the rule consult. */
+export const TURN_MAX_MS = 40_000;
 
 const CATEGORIES: Category[] = ["mobile", "laptop", "tablet", "tv", "headphone", "powerbank", "photo", "accessory", "other"];
 
@@ -52,9 +54,19 @@ export function bridge(e: AgentEvent): Action[] {
 
 type Stream = (body: ChatBody, signal: AbortSignal) => AsyncIterable<AgentEvent>;
 
-/** One consult turn. The actions are applied together at `done`, so a fallback never leaves half a turn behind. */
-export async function consult(body: ChatBody, onStatus: (text: string) => void, stream: Stream = streamChat, stallMs = STALL_MS): Promise<Action[]> {
+/** One consult turn. The actions are applied together at `done`, so a fallback never leaves half a turn behind.
+ *  `signal` (a new chat) cancels the turn outright: no actions, not even the fallback. */
+export async function consult(
+  body: ChatBody,
+  onStatus: (text: string) => void,
+  stream: Stream = streamChat,
+  stallMs = STALL_MS,
+  { maxMs = TURN_MAX_MS, signal }: { maxMs?: number; signal?: AbortSignal } = {},
+): Promise<Action[]> {
   const ctl = new AbortController();
+  const cancel = () => ctl.abort();
+  signal?.addEventListener("abort", cancel);
+  const cap = setTimeout(cancel, maxMs);
   let timer: ReturnType<typeof setTimeout> | undefined;
   const arm = () => {
     clearTimeout(timer);
@@ -74,7 +86,10 @@ export async function consult(body: ChatBody, onStatus: (text: string) => void, 
     /* stall, network or parse failure → fallback below */
   } finally {
     clearTimeout(timer);
+    clearTimeout(cap);
+    signal?.removeEventListener("abort", cancel);
     ctl.abort(); // closes the stream when we stopped early
   }
+  if (signal?.aborted) return [];
   return [{ type: "CHAT_TEXT", text: body.text }, { type: "AGENT_OFFLINE" }];
 }

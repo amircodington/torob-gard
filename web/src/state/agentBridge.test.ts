@@ -80,4 +80,26 @@ describe("consult", () => {
     }
     expect((await consult(BODY, () => {}, stream))[1]).toEqual({ type: "AGENT_OFFLINE" });
   });
+
+  it("a turn that keeps sending status but never finishes falls back at the turn cap", async () => {
+    async function* stream(_b: unknown, signal: AbortSignal): AsyncGenerator<AgentEvent> {
+      while (!signal.aborted) {
+        yield { event: "status", data: { text: "هنوز دارم روش کار می‌کنم…" } };
+        await new Promise((r) => setTimeout(r, 5));
+      }
+      throw new Error("aborted");
+    }
+    const actions = await consult(BODY, () => {}, stream, 1000, { maxMs: 40 });
+    expect(actions).toEqual([{ type: "CHAT_TEXT", text: BODY.text }, { type: "AGENT_OFFLINE" }]);
+  });
+
+  it("a new chat aborts the turn: no actions at all, not even the fallback", async () => {
+    async function* stream(_b: unknown, signal: AbortSignal): AsyncGenerator<AgentEvent> {
+      yield { event: "status", data: { text: "…" } };
+      await new Promise((_, reject) => signal.addEventListener("abort", () => reject(new Error("aborted"))));
+    }
+    const outer = new AbortController();
+    setTimeout(() => outer.abort(), 10);
+    expect(await consult(BODY, () => {}, stream, 1000, { signal: outer.signal })).toEqual([]);
+  });
 });

@@ -50,6 +50,12 @@ describe("consult reducer", () => {
     }
   });
 
+  it("RESET starts a new chat epoch, so a late answer from the old chat can be told apart", () => {
+    const s = reducer(askedBudget(), { type: "RESET" });
+    expect(s.epoch).toBe(askedBudget().epoch + 1);
+    expect(s.chat).toHaveLength(1);
+  });
+
   it("Arabic yeh («گوشي») still detects mobile", () => {
     const s = reducer(initialState(), { type: "CHAT_TEXT", text: "گوشي" });
     expect(s.req.category).toBe("mobile");
