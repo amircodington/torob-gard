@@ -51,7 +51,7 @@ def make_client(key_var: str = "BOXAPI_KEY") -> OpenAI | None:
     if not key and key_var != "BOXAPI_KEY":
         return None
     return OpenAI(
-        base_url=os.environ.get("BOXAPI_BASE_URL", "https://ai.boxapi.ir/ai/v1"),
+        base_url=os.environ.get("BOXAPI_BASE_URL", "https://api.gapgpt.app/v1"),
         api_key=key, max_retries=5,
     )
 
@@ -60,7 +60,7 @@ class Command(BaseCommand):
     """Embed priced products and all shops. Resumable: unchanged text (text_hash) is skipped."""
 
     def handle(self, *args, **opts):
-        model = os.environ.get("EMBED_MODEL", "openai/text-embedding-3-small")
+        model = os.environ.get("EMBED_MODEL", "text-embedding-3-small")
         dims = int(os.environ.get("EMBED_DIMS", "1024"))
         clients = [make_client()]
         if second := make_client("BOXAPI_KEY_SECOND"):
