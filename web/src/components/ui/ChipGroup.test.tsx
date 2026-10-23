@@ -36,6 +36,17 @@ function Sorts({ start = "قیمت" }: { start?: string }) {
 
 const pillOf = (c: HTMLElement) => c.querySelectorAll<HTMLElement>("[data-pill]");
 
+describe("Chip", () => {
+  it("pops only once the user picks it, never at page load", () => {
+    render(<Sorts />);
+    const [price, near] = ["قیمت", "فاصله"].map((n) => screen.getByRole("button", { name: n }));
+    expect(price.className).not.toContain("animate-chip-pop"); // selected from the start
+    fireEvent.click(near);
+    expect(near.className).toContain("animate-chip-pop");
+    expect(price.className).not.toContain("animate-chip-pop");
+  });
+});
+
 describe("ChipGroup", () => {
   it("renders one pill behind the pressed chip and slides it on click", () => {
     const { container } = render(<Sorts />);

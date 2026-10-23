@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, type PointerEvent, type ReactNode }
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { dismiss, rubber } from "../../lib/gesture";
-import { DUR, REDUCED, registerMotion } from "../../lib/motion";
+import { byKeyboard, DUR, REDUCED, registerMotion, staggerStep } from "../../lib/motion";
 
 const DESK = "(min-width: 1024px)";
 
@@ -36,6 +36,7 @@ export function Sheet({
   const panel = useRef<HTMLDivElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const scrim = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
   const closeBtn = useRef<HTMLButtonElement>(null);
   const latest = useRef(onClose);
   const drag = useRef<{ grab: number; h: number; y: number; t: number; v: number } | null>(null);
@@ -75,6 +76,7 @@ export function Sheet({
   }, [open]);
 
   // Open: rises from the bottom (phone) or slides in from the inline-start edge (lg); reduced motion → fades.
+  // The content follows the panel in: its blocks rise 8px, 40 ms apart (all within 300 ms); a keyboard open skips it.
   useLayoutEffect(() => {
     if (!open) return;
     closing.current = false; // callers that keep the Sheet mounted reopen it after a close
@@ -87,6 +89,10 @@ export function Sheet({
       const from = desk && dock ? { xPercent: edge(panel.current) } : { yPercent: 100 };
       gsap.from(panel.current, { ...from, duration: DUR.sheet, ease: "tg.drawer" });
       gsap.from(scrim.current, { opacity: 0, duration: DUR.sheet, ease: "tg.drawer" });
+      const b = body.current;
+      if (!b || byKeyboard()) return;
+      const items = b.children.length === 1 ? b.firstElementChild!.children : b.children; // one wrapper (StoreSheet): its blocks
+      gsap.from(items, { y: 8, opacity: 0, duration: DUR.base, ease: "tg.out", delay: 0.08, stagger: staggerStep(items.length) });
     });
     return () => mm.revert();
   }, [open, dock]);
@@ -170,7 +176,7 @@ export function Sheet({
         >
           <X className="h-5 w-5" />
         </button>
-        <div className={`overflow-y-auto overscroll-contain px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))] ${dock ? "lg:pt-5" : ""}`}>{children}</div>
+        <div ref={body} className={`overflow-y-auto overscroll-contain px-5 pt-2 pb-[max(20px,env(safe-area-inset-bottom))] ${dock ? "lg:pt-5" : ""}`}>{children}</div>
       </div>
     </div>,
     document.body,

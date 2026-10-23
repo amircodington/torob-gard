@@ -70,6 +70,8 @@
   --shadow-card: 0 10px 30px rgba(238, 138, 42, 0.07);
   --shadow-pin: 0 8px 20px rgba(238, 138, 42, 0.4);
   --shadow-sheet: 0 -12px 40px rgba(0, 0, 0, 0.25);
+  /* shadow-card, deeper: what a hovered card or button (the lift utility) settles on. */
+  --shadow-lift: 0 16px 36px rgba(238, 138, 42, 0.16);
 
   --font-sans: "Dana", system-ui, sans-serif;
 
@@ -104,6 +106,13 @@
   --animate-loader-shadow: loader-shadow 900ms infinite;
   /* Skeleton sheen: constant motion, so linear; it sweeps from the reading start (the app is RTL-only). */
   --animate-shimmer: shimmer 1.4s linear infinite;
+  /* Micro-interactions (Redesign 2, Task 4). Each plays once, on a user action or a meaningful arrival. */
+  /* A chip the user just picked: 1 → 1.06 → 1 (Chip arms it on the first press, so a page load never pops). */
+  --animate-chip-pop: chip-pop 220ms var(--ease-out);
+  /* Icons: bookmark/heart wiggle on save, a pin drops in, restart spins once (counter-clockwise, like the arrow). */
+  --animate-wiggle: wiggle 400ms var(--ease-out);
+  --animate-pin-drop: pin-drop 360ms var(--ease-out) backwards;
+  --animate-spin-once: spin-once 400ms var(--ease-out);
 
   @keyframes rise {
     from {
@@ -202,6 +211,41 @@
       translate: -100% 0;
     }
   }
+  @keyframes chip-pop {
+    50% {
+      scale: 1.06;
+    }
+  }
+  @keyframes wiggle {
+    20% {
+      rotate: -12deg;
+    }
+    45% {
+      rotate: 9deg;
+    }
+    70% {
+      rotate: -5deg;
+    }
+    85% {
+      rotate: 2deg;
+    }
+  }
+  @keyframes pin-drop {
+    0% {
+      opacity: 0;
+      translate: 0 -8px;
+    }
+    60% {
+      opacity: 1;
+      translate: 0 1px;
+    }
+  }
+  /* counter-clockwise like RotateCcw; a clockwise icon sets [--spin:360deg] */
+  @keyframes spin-once {
+    to {
+      rotate: var(--spin, -360deg);
+    }
+  }
   @keyframes hop {
     40% {
       translate: 0 -4px;
@@ -235,6 +279,10 @@
     --animate-loader-hop: none;
     --animate-loader-shadow: none;
     --animate-shimmer: none;
+    --animate-chip-pop: none;
+    --animate-wiggle: none;
+    --animate-pin-drop: fade var(--duration-base) var(--ease-out) backwards;
+    --animate-spin-once: none;
   }
 }
 
@@ -297,15 +345,105 @@ body {
   }
 }
 
-/* Cards lift on hover (hover devices only; no movement under reduced motion). */
+/* Micro-interactions (Redesign 2, Task 4). Hover moves only on hover devices; reduced motion keeps colour and
+   shadow changes and drops every movement. lift and press share one transition list, so they compose on one element
+   (do not add a Tailwind transition-* class beside them: whichever comes later in the sheet would win).
+   ponytail: the hover shadow is a box-shadow transition (a repaint per frame) on the one hovered element; swap to a
+   ::after opacity if it ever shows in a trace. */
+:root {
+  --ui-transition:
+    translate var(--duration-base) var(--ease-out), scale var(--duration-press) var(--ease-out),
+    box-shadow var(--duration-base) var(--ease-out), background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out), opacity var(--duration-fast) var(--ease-out);
+}
+
+/* Cards, rows and buttons rise 2px (--lift) on hover and settle on --shadow-lift. A shadow-* class is needed for the
+   deeper shadow (it swaps --tw-shadow, so a ring-* outline stays). */
 @utility lift {
-  transition:
-    translate var(--duration-base) var(--ease-out),
-    scale var(--duration-press) var(--ease-out);
-  &:hover {
-    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-      translate: 0 -4px;
+  transition: var(--ui-transition);
+  @media (hover: hover) {
+    &:hover:not(:disabled, [aria-disabled="true"]) {
+      --tw-shadow: var(--shadow-lift);
     }
+    @media (prefers-reduced-motion: no-preference) {
+      &:hover:not(:disabled, [aria-disabled="true"]) {
+        translate: 0 calc(-1 * var(--lift, 2px));
+      }
+    }
+  }
+}
+
+/* Press feedback on every pressable: 0.97 (rows set [--press:0.99], big cards 0.98). No movement under reduced motion. */
+@utility press {
+  transition: var(--ui-transition);
+  @media (prefers-reduced-motion: no-preference) {
+    &:active:not(:disabled, [aria-disabled="true"]) {
+      scale: var(--press, 0.97);
+    }
+  }
+}
+
+/* On a forward arrow or chevron inside a link/button: slides 2px toward the reading direction while it is hovered.
+   ponytail: the app is RTL-only, so "forward" is always screen-left; an LTR page would need a +2px variant. */
+@utility nudge {
+  transition: translate var(--duration-fast) var(--ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :is(a, button, summary):hover:not(:disabled) & {
+      translate: -2px 0;
+    }
+  }
+}
+
+/* On an icon inside a card/row/control: one small hop (or a wiggle / one turn) as the pointer arrives. */
+@utility hover-hop {
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :is(a, button, label, .lift):hover:not(:disabled) & {
+      animation: var(--animate-hop);
+    }
+  }
+}
+@utility hover-wiggle {
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :is(a, button, .lift):hover:not(:disabled) & {
+      animation: var(--animate-wiggle);
+    }
+  }
+}
+@utility hover-spin {
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    :is(a, button):hover:not(:disabled) & {
+      animation: var(--animate-spin-once);
+    }
+  }
+}
+
+/* A product thumbnail inside a row link grows 4% while the row is hovered (scale is composite-only). */
+@utility hover-zoom {
+  transition: scale var(--duration-base) var(--ease-out);
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    a:hover & {
+      scale: 1.04;
+    }
+  }
+}
+
+/* A lucide check that draws its tick on mount (the first <path> is the tick in Check, CopyCheck and CircleCheck; a
+   circle or box around it stays). --draw is the tick's length in viewBox units: Check 23 (default), CopyCheck 9,
+   CircleCheck 12 with [--draw-dir:-1] (its path starts at the long stroke, so it draws from the end).
+   --draw-delay lines it up with a staggered row.
+   ponytail: stroke-dashoffset repaints a 20px icon for 360 ms, once; no transform equivalent exists for a stroke draw. */
+@utility draw-in {
+  & path:first-of-type {
+    stroke-dasharray: var(--draw, 23);
+    animation: draw 360ms var(--ease-out) calc(var(--draw-delay, 0ms) + 80ms) backwards;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: calc(var(--draw, 23) * var(--draw-dir, 1));
   }
 }
 

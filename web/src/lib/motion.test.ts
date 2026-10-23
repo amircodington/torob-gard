@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 import { gsap } from "gsap";
-import { DUR, registerMotion } from "./motion";
+import { DUR, registerMotion, staggerStep } from "./motion";
 
 // The CSS tokens and the GSAP mirror never drift.
 const css = readFileSync("src/app/globals.css", "utf8");
@@ -21,4 +21,11 @@ it("registers the brand curves once", () => {
   registerMotion();
   registerMotion();
   for (const name of ["tg.out", "tg.inOut", "tg.drawer"]) expect(gsap.parseEase(name)(0.5)).toBeGreaterThan(0);
+});
+
+it("staggers 40 ms apart, the whole group within 300 ms", () => {
+  expect(staggerStep(1)).toBe(0.04);
+  expect(staggerStep(5)).toBe(0.04);
+  expect(staggerStep(20) * 19).toBeCloseTo(0.3);
+  expect(staggerStep(20)).toBeLessThan(0.04);
 });

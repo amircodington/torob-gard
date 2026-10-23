@@ -21,7 +21,7 @@ test.use({ permissions: [] }); // geolocation denied → distances from the Saad
 test("journey: landing → chat → desk → radar → closed → Plan B → trip → walk", async ({ page }) => {
   test.slow();
   await page.goto("/");
-  await page.getByRole("main").getByRole("link", { name: "شروع کن" }).click();
+  await page.getByRole("main").getByRole("link", { name: "شروع کن" }).first().click(); // the hero's (the closing band repeats it)
   await page.waitForURL(/\/start$/);
   await stage(page, 1);
 

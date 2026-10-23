@@ -42,6 +42,50 @@ test.describe("reduced motion", () => {
   });
 });
 
+// Hover and press (Task 4 micro-interactions). A mouse device: hover lifts only where (hover: hover) matches.
+const ROW = '[aria-label="فروشگاه‌ها"] > li button';
+async function hoverAndPress(page: Page) {
+  await page.goto(`/radar/${PRODUCT}`);
+  const row = page.locator(ROW).first();
+  await row.waitFor();
+  await page.waitForTimeout(400); // the list's entrance is over
+  await row.hover();
+  await page.waitForTimeout(350); // past the 240 ms lift
+  const lifted = await row.evaluate((el) => getComputedStyle(el).translate);
+  await page.mouse.down();
+  await page.waitForTimeout(200); // past the 120 ms press
+  const pressed = await row.evaluate((el) => getComputedStyle(el).scale);
+  await page.mouse.move(0, 0); // release off the row: no click, no sheet
+  await page.mouse.up();
+  return { lifted, pressed };
+}
+
+test.describe("hover and press on a mouse device", () => {
+  test.use({ isMobile: false, hasTouch: false });
+
+  test("a shop row lifts 2px on hover and presses to 0.99; a forward arrow nudges toward the reading direction", async ({ page }) => {
+    expect(await hoverAndPress(page)).toEqual({ lifted: "0px -2px", pressed: "0.99" });
+    await toDesk(page);
+    const pick = page.getByRole("button", { name: "انتخاب این مدل" }).first();
+    await pick.hover();
+    await page.waitForTimeout(300);
+    expect(await pick.locator("svg.nudge").evaluate((el) => getComputedStyle(el).translate)).toBe("-2px");
+  });
+
+  test.describe("reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+    test("no transform on hover or press: the row stays put, the button's arrow does not nudge", async ({ page }) => {
+      expect(await hoverAndPress(page)).toEqual({ lifted: "none", pressed: "none" });
+      await toDesk(page);
+      const pick = page.getByRole("button", { name: "انتخاب این مدل" }).first();
+      await pick.hover();
+      await page.waitForTimeout(300);
+      expect(await pick.evaluate((el) => getComputedStyle(el).translate)).toBe("none");
+      expect(await pick.locator("svg.nudge").evaluate((el) => getComputedStyle(el).translate)).toBe("none");
+    });
+  });
+});
+
 test("without reduced motion the desk card rises", async ({ page }) => {
   await toDesk(page);
   expect((await style(page, "article")).animation).toBe("rise");

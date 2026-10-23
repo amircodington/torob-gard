@@ -51,7 +51,9 @@ export function SkeletonPage({ children, label = "در حال بارگذاری" 
   return (
     <>
       <SiteHeader />
-      <main role="status" aria-label={label} className="page flex animate-loader-in flex-col gap-4 pt-6 pb-12">
+      {/* role="status" on an inner node, not on <main>: the landmark keeps its own role */}
+      <main className="page flex animate-loader-in flex-col gap-4 pt-6 pb-12">
+        <p role="status" className="sr-only">{label}</p>
         {children}
       </main>
     </>

@@ -5,7 +5,8 @@ export default function Loading() {
   return (
     <>
       <SkeletonBar />
-      <main role="status" aria-label="در حال آماده کردن میز تصمیم" className="page pb-32 pt-2">
+      <main className="page pb-32 pt-2">
+        <p role="status" className="sr-only">در حال آماده کردن میز تصمیم</p>
         <div className="mt-4 flex h-[208px] animate-loader-in flex-col gap-3 lg:h-[88px]">
           <Skeleton className="h-7 w-40 rounded-pill" />
           <Skeleton className="h-4 w-4/5 rounded-pill lg:w-2/5" />
