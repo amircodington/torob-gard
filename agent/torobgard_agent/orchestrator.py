@@ -196,6 +196,9 @@ def _desk_key(d: DeskBlock) -> list:
     return [d.category, d.budget_min, d.budget_max, d.priority]
 
 
+_NEED_KEYS = ("category", "budget_min", "budget_max", "priority")
+
+
 def _chunks(s: str) -> list[str]:
     return re.findall(r"\S+\s*|\s+", s)
 
@@ -243,13 +246,17 @@ async def _turn(
     if older:
         # ponytail: re-summarised every turn past 8; cache on session.context if FAST_MODEL cost shows up
         summary = (await turn.chat(llm, summary_request(older), None, config.FAST_MODEL)).content
-    profile = sctx.get("profile", {})
+    # The need the shopper picked in the web (chips the rule consult answered) joins the profile, so the
+    # agent neither re-asks it nor forgets it; the same allow-list as the model's own updates.
+    need = _profile({k: v for k, v in (context.req or {}).items() if k in _NEED_KEYS})
+    profile = {**sctx.get("profile", {}), **need}
     messages = build(recent, summary, profile, context, venue, text_in)
 
     # numbers the shopper typed (this turn or earlier) may come back only as a budget echo in `say`;
     # the profile is model-written, so it never grounds anything
     user_prices = {p for t in [text_in, *(m["content"] for m in history if m["role"] == "user")]
                    for p in prices(t)}
+    user_prices |= {need[k] for k in ("budget_min", "budget_max") if need.get(k)}  # the shopper's own band
     violations: list[Violation] = []
     answer = None
     for _attempt in range(2):

@@ -102,7 +102,7 @@ export const initialState = (): SessionState => ({
   previousPlan: null,
   summaryJustReady: false,
   tripId: null,
-  agentSessionId: null,
+  agentSessionId: newSessionId(), // one agent session for the whole chat, chips and typed turns alike
   agentOffline: false,
   epoch: 0,
 });
@@ -546,3 +546,25 @@ export const reqBudget = (req: JourneyReq): BudgetBand | null =>
 
 export const reqPriority = (req: JourneyReq) =>
   req.category ? (PRIORITIES[req.category].find((p) => p.id === req.priorityId) ?? null) : null;
+
+/** The need as the agent reads it (its context.req): ids resolved to toman and Persian labels. */
+export function agentNeed(req: JourneyReq): Record<string, string | number | null> {
+  const budget = reqBudget(req);
+  const prio = reqPriority(req);
+  return {
+    ...(req.category && { category: req.category }),
+    ...(req.goalText && { goal: req.goalText }),
+    ...(budget && { budget_min: budget.min, budget_max: budget.max, budget_label: budget.label }),
+    ...(prio && { priority: prio.id, priority_label: prio.label }),
+  };
+}
+
+function newSessionId(): string {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  // older webviews: a v4 uuid from getRandomValues
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}

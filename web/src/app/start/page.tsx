@@ -11,7 +11,7 @@ import { ShopCards } from "../../components/chat/ShopCards";
 import { Mascot } from "../../components/Mascot";
 import { JourneyShell } from "../../components/JourneyShell";
 import { consult } from "../../state/agentBridge";
-import { resetStorage, useSession, type Chip, type Msg } from "../../state/session";
+import { agentNeed, resetStorage, useSession, type Chip, type Msg } from "../../state/session";
 
 function Consult() {
   const { state, dispatch } = useSession();
@@ -37,7 +37,7 @@ function Consult() {
     const epoch = state.epoch;
     setPending({ text, status: "", epoch });
     const ctl = (turn.current = new AbortController());
-    const body = { session_id: state.agentSessionId ?? undefined, text, context: { req: state.req, anchor: null, stage: "consult" } };
+    const body = { session_id: state.agentSessionId ?? undefined, text, context: { req: agentNeed(state.req), anchor: null, stage: "consult" } };
     const actions = await consult(body, (status) => !ctl.signal.aborted && setPending({ text, status, epoch }), undefined, undefined, { signal: ctl.signal });
     if (ctl.signal.aborted) return;
     actions.forEach(dispatch);

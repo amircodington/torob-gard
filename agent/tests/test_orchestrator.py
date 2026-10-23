@@ -408,3 +408,35 @@ async def test_the_desk_opens_once_per_need(conn):
     changed = await turn(conn, FakeLLM(say({"say": "باشه", "profile_updates": {"budget_max": 8_000_000}})),
                          "تا ۸ میلیون", sid)
     assert [b.budget_max for b in _blocks(changed) if b.type == "desk"] == [8_000_000]
+
+
+NEED = {"category": "laptop", "budget_min": 180_000_000, "budget_max": 240_000_000,
+        "budget_label": "۱۸۰ تا ۲۴۰ میلیون", "priority": "weight", "priority_label": "سبکی و حمل راحت"}
+
+
+async def need_turn(conn, llm, txt, need=NEED, sid=None):
+    return [e async for e in run_turn(sid, txt, TurnContext(req=need, stage="consult"), llm=llm, db=conn)]
+
+
+async def test_the_need_picked_with_chips_reaches_the_agent_and_opens_the_desk(conn):
+    # the 2026-10-23 laptop chat: chips set laptop + 180–240M, then «من دانشجوعم…» re-asked the budget
+    ask = {"type": "ask", "question": "بودجه؟", "options": ["تا ۲۰ میلیون"]}
+    reask = {"say": "بودجه‌ت چقدره؟", "blocks": [ask]}
+    events = await need_turn(conn, FakeLLM(say(reask)), "من دانشجوعم پس نیازه که راحت بتونم حمل کنم")
+    [desk] = _blocks(events)
+    assert (desk.category, desk.budget_min, desk.budget_max, desk.priority) == (
+        "laptop", 180_000_000, 240_000_000, "weight")
+
+
+async def test_the_chosen_budget_may_be_echoed(conn):
+    echo = {"say": "باشه، لپ‌تاپ تا ۲۴۰ میلیون تومان.", "blocks": [{"type": "ask", "question": "برای چه کاری؟",
+                                                               "options": ["برنامه‌نویسی", "طراحی"]}]}
+    need = {k: v for k, v in NEED.items() if k != "priority"}
+    events = await need_turn(conn, FakeLLM(say(echo)), "یه لپ‌تاپ خوب", need)
+    assert "".join(e.text for e in events if isinstance(e, Token)) == echo["say"]
+
+
+async def test_a_need_from_the_web_is_validated_like_the_models(conn):
+    junk = {"category": "x" * 80, "budget_max": "a lot", "priority": 3}
+    events = await need_turn(conn, FakeLLM(say({"say": "باشه"})), "سلام", junk)
+    assert not _blocks(events)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialState, loadState, reducer, stagePath, type SessionState } from "./session";
+import { agentNeed, initialState, loadState, reducer, stagePath, type SessionState } from "./session";
 
 const last = (s: SessionState) => s.chat[s.chat.length - 1];
 const ALL_CATS = ["mobile", "laptop", "tablet", "tv", "headphone", "powerbank", "photo", "accessory", "other"] as const;
@@ -48,6 +48,22 @@ describe("consult reducer", () => {
       const prios = last(s).chips?.filter((c) => c.id.startsWith("prio:")) ?? [];
       expect(prios.length, cat).toBeGreaterThanOrEqual(2);
     }
+  });
+
+  it("one agent session for the whole chat: a fresh id at the start, a new one after RESET", () => {
+    const s = initialState();
+    expect(s.agentSessionId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(reducer(s, { type: "RESET" }).agentSessionId).not.toBe(s.agentSessionId);
+  });
+
+  it("agentNeed turns band and priority ids into what the agent can read", () => {
+    const req = { category: "laptop", goalText: "لپ‌تاپ", budgetId: "l2", priorityId: "weight", customBudget: null } as const;
+    expect(agentNeed(req)).toEqual({
+      category: "laptop", goal: "لپ‌تاپ", budget_min: 180_000_000, budget_max: 240_000_000,
+      budget_label: "۱۸۰ تا ۲۴۰ میلیون", priority: "weight", priority_label: "سبکی و حمل راحت",
+    });
+    expect(agentNeed({ ...req, budgetId: "l5" })).toMatchObject({ budget_min: 0, budget_max: null });
+    expect(agentNeed({ ...req, category: null, budgetId: null, priorityId: null })).toEqual({ goal: "لپ‌تاپ" });
   });
 
   it("RESET starts a new chat epoch, so a late answer from the old chat can be told apart", () => {
@@ -125,11 +141,11 @@ describe("consult reducer", () => {
 
 describe("loadState", () => {
   it("corrupted JSON falls back to the initial state", () => {
-    expect(loadState({ getItem: () => "{not json" })).toEqual(initialState());
+    expect(loadState({ getItem: () => "{not json" })).toEqual({ ...initialState(), agentSessionId: expect.any(String) });
   });
 
   it("valid JSON of the wrong shape falls back too", () => {
-    expect(loadState({ getItem: () => "{}" })).toEqual(initialState());
+    expect(loadState({ getItem: () => "{}" })).toEqual({ ...initialState(), agentSessionId: expect.any(String) });
   });
 
   it("a stored session round-trips", () => {
