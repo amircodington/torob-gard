@@ -35,6 +35,19 @@ test("landing: every section heading is visible at full opacity after load and s
   for (const block of await page.locator("[data-reveal] > *").all()) await expect.poll(() => block.evaluate(opacity)).toBe(1);
 });
 
+test.describe("reduced motion", () => {
+  test.use({ reducedMotion: "reduce" });
+  test("landing: revealed blocks are at full opacity at once", async ({ page }) => {
+    await page.goto("/");
+    const blocks = page.locator("[data-reveal] > *");
+    expect(await blocks.count()).toBeGreaterThan(20);
+    for (const block of await blocks.all()) {
+      await block.scrollIntoViewIfNeeded();
+      expect(await block.evaluate(opacity)).toBe(1); // no poll: nothing may fade in
+    }
+  });
+});
+
 test("404 shows the stuck mascot and a way home", async ({ page }) => {
   await page.goto("/nope");
   await expect(page.getByText("این صفحه پیدا نشد")).toBeVisible();

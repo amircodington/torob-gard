@@ -240,13 +240,13 @@ body {
   }
 }
 
-/* Cards lift on hover (hover devices only: Tailwind's hover: is gated by (hover: hover)). */
+/* Cards lift on hover (hover devices only; no movement under reduced motion). */
 @utility lift {
   transition:
     translate var(--duration-base) var(--ease-out),
     scale var(--duration-press) var(--ease-out);
   &:hover {
-    @media (hover: hover) {
+    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
       translate: 0 -4px;
     }
   }

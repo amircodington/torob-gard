@@ -43,7 +43,7 @@ export default async function Home() {
         <Hero />
         <section className="band bg-paper">
           <div className="page">
-            <SectionHead icon={Sparkles} title={<>یه دوست که <span className="font-extrabold">بازار رو می‌شناسه</span></>} sub="می‌گم دقیقاً کجا بری، و چرا." />
+            <SectionHead icon={Sparkles} title={<>یه دوست که <span className="font-extrabold">بازار رو می‌شناسه</span></>} sub="می‌گم کجا بری، و چرا." />
             <ul data-reveal className="mt-6 grid gap-3 md:grid-cols-2 lg:mt-8 lg:grid-cols-4 lg:gap-4">
               {VALUE_PROPS.map(({ t, d, icon: Icon }) => (
                 <li key={t} className="lift flex items-start gap-4 rounded-lg bg-surface p-5 shadow-card lg:flex-col lg:gap-3">

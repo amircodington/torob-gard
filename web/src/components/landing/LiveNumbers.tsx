@@ -23,7 +23,7 @@ export function LiveNumbers({ stats, priceDaysAgo }: { stats: Stats | null; pric
   return (
     <section data-testid="live-numbers" className="band bg-panel text-on-dark">
       <div className="page">
-        <SectionHead dark icon={ChartNoAxesColumn} title={<>بازار <span className="font-extrabold">به عدد</span></>} sub="شمارش زنده از داده‌ی ترب/استارکوچ." />
+        <SectionHead dark icon={ChartNoAxesColumn} title={<>بازار <span className="font-extrabold">به عدد</span></>} sub="شمارش از داده‌ی ترب/استارکوچ." />
         {cells ? (
           <dl data-reveal className="mt-6 grid grid-cols-2 gap-3 lg:mt-8 lg:grid-cols-4 lg:gap-4">
             {cells.map(({ n, l, icon: Icon }, i) => (

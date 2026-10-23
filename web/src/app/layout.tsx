@@ -22,8 +22,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // suppressHydrationWarning: the service worker adds data-offline to a saved copy.
     <html lang="fa" dir="rtl" className="h-full antialiased" suppressHydrationWarning>
       <head>
-        {/* Above-the-fold Dana weights (headline 300/800, body 400, buttons 700) load with the HTML, so the swap doesn't reflow the hero. */}
-        {["Light", "Regular", "Bold", "ExtraBold"].map((w) => (
+        {/* Dana weights used on every page's first screen (body 400, buttons 700, headings 800) load with the HTML, so the swap doesn't reflow it. */}
+        {["Regular", "Bold", "ExtraBold"].map((w) => (
           <link key={w} rel="preload" href={`/fonts/Dana-${w}.woff2`} as="font" type="font/woff2" crossOrigin="anonymous" />
         ))}
       </head>

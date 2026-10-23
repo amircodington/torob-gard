@@ -14,6 +14,8 @@ export function Hero() {
         <source media="(min-width: 1024px)" srcSet="/mascot/hero-pasazh-1600.webp" />
         <img
           src="/mascot/hero-pasazh-900.webp"
+          srcSet="/mascot/hero-pasazh-900.webp 900w, /mascot/hero-pasazh-1600.webp 1600w"
+          sizes="100vw"
           alt="ترب‌گرد با کوله‌پشتی وسط راهروی یه پاساژ موبایل و لپ‌تاپ"
           width={900}
           height={502}
@@ -48,6 +50,7 @@ export function Hero() {
           pose="wave"
           react={["pop", "float", "wave"]}
           loading="eager"
+          fetchPriority="low"
           className="absolute -top-6 end-2 size-28 lg:end-[50%] lg:top-auto lg:bottom-8 lg:size-56"
         />
       </div>

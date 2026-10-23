@@ -35,6 +35,7 @@ export function Mascot({
   alt,
   react,
   loading,
+  fetchPriority,
 }: {
   pose: MascotPose;
   /** Sizes and places the image (e.g. "size-36"); the art is square. */
@@ -44,6 +45,8 @@ export function Mascot({
   react?: Reaction | Reaction[];
   /** "lazy" below the fold (Global Constraint). */
   loading?: "lazy" | "eager";
+  /** "low" when the mascot sits beside a high-priority image (the hero art). */
+  fetchPriority?: "low" | "high";
 }) {
   const ref = useRef<HTMLImageElement>(null);
   const gsapReact = ([] as (Reaction | undefined)[]).concat(react).find((r) => r && r in GSAP_REACT) as keyof typeof GSAP_REACT | undefined;
@@ -68,6 +71,7 @@ export function Mascot({
       width={640}
       height={640}
       loading={loading}
+      fetchPriority={fetchPriority}
       draggable={false}
       className={`shrink-0 object-contain ${css} ${className}`}
     />
