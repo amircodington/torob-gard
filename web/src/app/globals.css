@@ -96,6 +96,14 @@
   /* The wordmark's icon: pops in and its leaves wiggle once on the first paint; hops on hover (hover devices only). */
   --animate-logo-in: logo-in var(--duration-slow) var(--ease-out) backwards;
   --animate-hop: hop 300ms var(--ease-out);
+  /* Page loader (Redesign 2): invisible for 150 ms (fill backwards holds the fade's opacity 0), so a fast load never
+     flashes it (Loader.LOADER_DELAY_MS). The radish hops over a shadow that shrinks as it rises; one 900 ms loop.
+     CSS, not GSAP: it plays while the page is loading, so it must run off the main thread. */
+  --animate-loader-in: fade var(--duration-base) var(--ease-out) 150ms backwards;
+  --animate-loader-hop: loader-hop 900ms infinite;
+  --animate-loader-shadow: loader-shadow 900ms infinite;
+  /* Skeleton sheen: constant motion, so linear; it sweeps from the reading start (the app is RTL-only). */
+  --animate-shimmer: shimmer 1.4s linear infinite;
 
   @keyframes rise {
     from {
@@ -148,6 +156,52 @@
       rotate: -3deg;
     }
   }
+  /* Up decelerates (ease-out), down accelerates (easeInQuad, easings.net) like a real hop; a squash on landing.
+     scale from the bottom edge (origin-bottom), where the art stands. */
+  @keyframes loader-hop {
+    0%,
+    100% {
+      translate: 0 0;
+      scale: 1.06 0.94;
+      animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    45% {
+      translate: 0 -18px;
+      scale: 0.97 1.03;
+      animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0);
+    }
+    85% {
+      translate: 0 0;
+      scale: 1;
+      animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+  }
+  @keyframes loader-shadow {
+    0%,
+    100% {
+      scale: 1.1 1;
+      opacity: 1;
+      animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    45% {
+      scale: 0.6;
+      opacity: 0.45;
+      animation-timing-function: cubic-bezier(0.11, 0, 0.5, 0);
+    }
+    85% {
+      scale: 1;
+      opacity: 0.9;
+      animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+    }
+  }
+  @keyframes shimmer {
+    from {
+      translate: 100% 0;
+    }
+    to {
+      translate: -100% 0;
+    }
+  }
   @keyframes hop {
     40% {
       translate: 0 -4px;
@@ -178,6 +232,9 @@
     --animate-pop-float: fade var(--duration-base) var(--ease-out) backwards;
     --animate-logo-in: none;
     --animate-hop: none;
+    --animate-loader-hop: none;
+    --animate-loader-shadow: none;
+    --animate-shimmer: none;
   }
 }
 

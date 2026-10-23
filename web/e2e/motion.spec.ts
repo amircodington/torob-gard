@@ -46,3 +46,21 @@ test("without reduced motion the desk card rises", async ({ page }) => {
   await toDesk(page);
   expect((await style(page, "article")).animation).toBe("rise");
 });
+
+// ponytail: the route loaders (app/**/loading.tsx) are not e2e-tested on their own: the dev server does not prefetch
+// the loading boundary and the catalog pages fetch server-side, so a slow route cannot be made deterministic here.
+// Loader.test covers the 150 ms delay; this covers the same Skeleton on a slow client fetch.
+test("slow data: the radar shows card skeletons after the delay, then the rows", async ({ page }) => {
+  await page.route("**/api/products/*/offers*", async (r) => {
+    await new Promise((x) => setTimeout(x, 1500));
+    await r.fallback();
+  });
+  await page.goto(`/radar/${PRODUCT}`);
+  // .last(): the route loader's copy may still be in the DOM for a moment beside the page's own.
+  const busy = page.locator('[aria-busy="true"]');
+  await expect(busy.last().locator("[data-skeleton]").first()).toBeVisible();
+  // shown after the 150 ms delay (opacity 0 until then), then fully
+  await expect.poll(() => busy.last().evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
+  await expect(page.locator('[aria-label="فروشگاه‌ها"] > li').first()).toBeVisible();
+  await expect(busy).toHaveCount(0);
+});

@@ -1,15 +1,15 @@
 import { LifeBuoy, MessagesSquare, Radar, Scale, Sparkles } from "lucide-react";
-import { SiteHeader } from "../components/SiteHeader";
-import { ClosingCta } from "../components/landing/ClosingCta";
-import { Faq } from "../components/landing/Faq";
-import { Hero } from "../components/landing/Hero";
-import { Honesty } from "../components/landing/Honesty";
-import { HowItWorks } from "../components/landing/HowItWorks";
-import { LiveNumbers } from "../components/landing/LiveNumbers";
-import { PasazhStrip } from "../components/landing/PasazhStrip";
-import { Reveal } from "../components/landing/Reveal";
-import { SectionHead } from "../components/landing/SectionHead";
-import { api } from "../lib/api";
+import { SiteHeader } from "../../components/SiteHeader";
+import { ClosingCta } from "../../components/landing/ClosingCta";
+import { Faq } from "../../components/landing/Faq";
+import { Hero } from "../../components/landing/Hero";
+import { Honesty } from "../../components/landing/Honesty";
+import { HowItWorks } from "../../components/landing/HowItWorks";
+import { LiveNumbers } from "../../components/landing/LiveNumbers";
+import { PasazhStrip } from "../../components/landing/PasazhStrip";
+import { Reveal } from "../../components/landing/Reveal";
+import { SectionHead } from "../../components/landing/SectionHead";
+import { api } from "../../lib/api";
 
 // Copy from the prototype's VALUE_PROPS (Consult.tsx).
 const VALUE_PROPS = [

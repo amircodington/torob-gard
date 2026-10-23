@@ -1,8 +1,10 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Mascot } from "../Mascot";
+import { Dots } from "../ui/Loader";
 
 // Each bubble enters once on mount (.bubble-in): the user's from the start side, the assistant's from the end.
-export function Bubble({ from, children }: { from: "assistant" | "user"; children: ReactNode }) {
+// `thinking`: the avatar is the think radish (the whole character, not the round icon tile) while a turn is in flight.
+export function Bubble({ from, children, thinking }: { from: "assistant" | "user"; children: ReactNode; thinking?: boolean }) {
   if (from === "user")
     return (
       <div
@@ -17,23 +19,19 @@ export function Bubble({ from, children }: { from: "assistant" | "user"; childre
       <div className="whitespace-pre-line rounded-lg rounded-ee-sm bg-surface px-4 py-3 text-[15px] leading-6 text-ink shadow-card">
         {children}
       </div>
-      <span className="pop-in size-9 shrink-0 overflow-hidden rounded-full">
-        <Mascot pose="icon" className="size-full" />
+      <span className={`pop-in shrink-0 ${thinking ? "size-11" : "size-9 overflow-hidden rounded-full"}`}>
+        <Mascot pose={thinking ? "think" : "icon"} className="size-full" />
       </span>
     </div>
   );
 }
 
-/** The agent's turn in flight: typing dots and its latest real status line (no fake streaming). */
+/** The agent's turn in flight: the think radish, typing dots and its latest real status line (no fake streaming). */
 export function Typing({ status }: { status: string }) {
   return (
-    <Bubble from="assistant">
+    <Bubble from="assistant" thinking>
       <span className="flex items-center gap-2.5">
-        <span aria-hidden className="flex gap-1">
-          {[0, 1, 2].map((i) => (
-            <span key={i} style={{ animationDelay: `${i * 160}ms` }} className="size-1.5 animate-typing rounded-full bg-orange opacity-40" />
-          ))}
-        </span>
+        <Dots />
         {/* keyed: each new status fades in, so a long wait reads as progress; the fallback keeps the live region from being silent */}
         <span key={status} className="animate-fade text-ink-muted">
           {status || "دارم فکر می‌کنم…"}

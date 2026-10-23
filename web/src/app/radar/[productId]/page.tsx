@@ -12,6 +12,7 @@ import { ShopRow } from "../../../components/radar/ShopRow";
 import { StoreSheet } from "../../../components/radar/StoreSheet";
 import { Toolbar, ViewSwitch } from "../../../components/radar/Toolbar";
 import { Btn } from "../../../components/ui/Btn";
+import { RowSkeletons } from "../../../components/ui/Skeleton";
 import { EmptyState } from "../../../components/ui/EmptyState";
 import { api, ApiError } from "../../../lib/api";
 import { faNum } from "../../../lib/fa";
@@ -115,11 +116,7 @@ function Radar({ id }: { id: string }) {
           <div className="mt-2 grid gap-4 md:grid-cols-2 md:items-start lg:grid-cols-[440px_minmax(0,1fr)]">
             <div className={state.radarView === "map" ? "hidden md:block" : ""}>
               {!all ? (
-                <div aria-busy="true" aria-label="در حال پیدا کردن فروشگاه‌ها" className="grid gap-3">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="h-24 rounded-lg bg-surface-tint motion-safe:animate-pulse" />
-                  ))}
-                </div>
+                <RowSkeletons />
               ) : rows.length === 0 ? (
                 <EmptyState
                   pose="idle"

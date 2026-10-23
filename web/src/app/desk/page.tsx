@@ -8,6 +8,7 @@ import { deskEmpty, staleCompareIds } from "../../components/desk/compare";
 import { JourneyShell } from "../../components/JourneyShell";
 import { Mascot } from "../../components/Mascot";
 import { Btn } from "../../components/ui/Btn";
+import { TierSkeletons } from "../../components/ui/Skeleton";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { api } from "../../lib/api";
 import { BUDGETS } from "../../config/journey";
@@ -164,11 +165,7 @@ function Desk() {
           ))}
         </div>
       ) : (
-        <div aria-busy="true" aria-label="در حال آماده کردن گزینه‌ها" className="mt-5 grid gap-4 lg:mt-8 lg:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-[420px] rounded-lg bg-surface-tint motion-safe:animate-pulse" />
-          ))}
-        </div>
+        <TierSkeletons />
       )}
 
       {tiers && tiers.length < 3 && (
