@@ -117,8 +117,8 @@ then `$C up -d` and `deploy/smoke.sh`. A restore of the full dump takes about 5 
 
 ## 6. `make push-test`
 
-`DEPLOY_HOST=user@vps make push-test` (`deploy/push-test.sh`): `git archive HEAD` over SSH into
-`DEPLOY_DIR`, `up -d --build` there with `BUILD_ID=<sha>` (the server keeps its own `.env.prod`;
+`DEPLOY_HOST=user@vps make push-test` (`deploy/push-test.sh`): `git archive HEAD` over SSH into a fresh
+`DEPLOY_DIR.new` (the old `.env.prod` copied in), swapped in for `DEPLOY_DIR` (previous kept as `DEPLOY_DIR.old`), `up -d --build` there with `BUILD_ID=<sha>` (the server keeps its own `.env.prod`;
 images come through its registry mirror), `migrate` runs as `api` starts, then `deploy/smoke.sh`
 against `https://<SERVER_NAME>`. Only committed code is shipped.
 
@@ -128,5 +128,13 @@ The prod compose ran on the Mac beside the dev stack (ports 18088/18443, self-si
 smoke passed; a spoofed `X-Forwarded-For: 9.9.9.9` reached the agent as the real peer; `/img/` served
 and cached a Torob image with a 7-day expiry; admin static, gzip and the security headers were
 present; `backup.sh` kept the newest 2 of 3 with `BACKUP_KEEP=2`; a `backup.sh` dump of the dev DB
-restored into a scratch DB with 6,476 shops and pgvector 0.8.7. Not done: a real VPS, real object
+restored into a scratch DB with 6,476 shops and pgvector 0.8.7. Sitemaps render on request (ids 0–10
+fixed, robots lists the same); `/sitemap/1.xml` served product URLs, and with api stopped a cached
+chunk still answered while an uncached one gave 500, never a stub. Not done: a real VPS, real object
 storage, certbot.
+
+## 8. Known limits
+
+- The env is not split per container: every app container (and `backup`) gets all of `.env.prod`, so api/agent/cron see the S3 keys and backup sees the Django/phone/BoxAPI secrets.
+- A failed backup only logs `backup FAILED` (`logs backup`); nothing alerts on it.
+- No Content-Security-Policy yet (see §4).

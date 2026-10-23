@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { connection } from "next/server";
 import { api } from "../lib/api";
 import { pathOf, SITE_URL } from "../lib/seo";
 
@@ -6,30 +7,30 @@ import { pathOf, SITE_URL } from "../lib/seo";
 export const revalidate = 3600;
 export const fetchCache = "force-cache";
 
-const abs = (path: string) => new URL(path, SITE_URL).toString();
+// ponytail: fixed ids, because the prod image builds without the API and generateSitemaps runs only at
+// build. 10 product chunks × 10k = 100k products with ≥ 2 offers (33,210 today); raise it past that.
+export const PRODUCT_CHUNKS = 10;
+export const SITEMAP_IDS = Array.from({ length: PRODUCT_CHUNKS + 1 }, (_, id) => id);
 
-const load = () => {
-  // A failed fetch while `next build` prerenders this route hangs the build; the prod image builds
-  // without the API (web/Dockerfile), so skip it there.
-  if (process.env.NEXT_PHASE === "phase-production-build") return Promise.reject(new Error("build"));
-  process.env.API_URL ??= "http://localhost:8000"; // ponytail: as in lib/server.ts; set API_URL in prod.
-  return api.sitemap();
-};
+const abs = (path: string) => new URL(path, SITE_URL).toString();
+// A failed fetch while `next build` prerenders this route hangs the build (web/Dockerfile has no API).
+const building = () => process.env.NEXT_PHASE === "phase-production-build";
 
 /** id 0: landing, about, pasazhs, desk categories, shops. id n ≥ 1: products with ≥ 2 offers, 10k a chunk. */
 export async function generateSitemaps() {
-  // ponytail: API down at build → only chunk 0; the next revalidation adds the product chunks.
-  const pages = await load().then((s) => s.productPages, () => 0);
-  return Array.from({ length: pages + 1 }, (_, id) => ({ id }));
+  return SITEMAP_IDS.map((id) => ({ id }));
 }
 
 export default async function sitemap(props: { id: Promise<string> }): Promise<MetadataRoute.Sitemap> {
   const id = Number(await props.id);
-  if (id > 0) return (await api.sitemapProducts(id - 1)).map((p) => ({ url: abs(pathOf.product(p)) }));
-  // ponytail: built without the API, chunk 0 starts as the two static pages; its first revalidation fills it.
-  const s = await load().catch(() => null);
+  process.env.API_URL ??= "http://localhost:8000"; // ponytail: as in lib/server.ts; set API_URL in prod.
+  // At build: render on request instead (a build-time stub would be cached for an hour after every
+  // deploy). At runtime the API's answers are cached an hour (fetchCache); a failure throws, never a stub.
+  if (building()) await connection();
+  if (id > 0) return (await api.sitemapProducts(id - 1)).map((p) => ({ url: abs(pathOf.product(p)) })); // past the end: []
+  const s = await api.sitemap();
   return [
     "/", "/about",
-    ...(s ? [...s.venues.map(pathOf.venue), ...s.categories.map(pathOf.category), ...s.shops.map(pathOf.shop)] : []),
+    ...s.venues.map(pathOf.venue), ...s.categories.map(pathOf.category), ...s.shops.map(pathOf.shop),
   ].map((path) => ({ url: abs(path) }));
 }
