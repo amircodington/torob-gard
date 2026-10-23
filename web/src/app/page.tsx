@@ -1,12 +1,14 @@
-import type { CSSProperties } from "react";
-import { LifeBuoy, MessagesSquare, Radar, Scale } from "lucide-react";
+import { LifeBuoy, MessagesSquare, Radar, Scale, Sparkles } from "lucide-react";
 import { SiteHeader } from "../components/SiteHeader";
+import { ClosingCta } from "../components/landing/ClosingCta";
 import { Faq } from "../components/landing/Faq";
 import { Hero } from "../components/landing/Hero";
 import { Honesty } from "../components/landing/Honesty";
 import { HowItWorks } from "../components/landing/HowItWorks";
 import { LiveNumbers } from "../components/landing/LiveNumbers";
 import { PasazhStrip } from "../components/landing/PasazhStrip";
+import { Reveal } from "../components/landing/Reveal";
+import { SectionHead } from "../components/landing/SectionHead";
 import { api } from "../lib/api";
 
 // Copy from the prototype's VALUE_PROPS (Consult.tsx).
@@ -36,29 +38,35 @@ export default async function Home() {
   return (
     <>
       <SiteHeader />
-      <main className="page flex flex-col gap-12 pb-12 lg:gap-20 lg:pb-20">
+      {/* Bands (Redesign 2): each a full-bleed ground that overlaps the one above with a curved top. */}
+      <main className="flex flex-col">
         <Hero />
-        <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {VALUE_PROPS.map(({ t, d, icon: Icon }, i) => (
-            <li key={t} style={{ "--i": i } as CSSProperties} className="flex animate-rise stagger items-start gap-4 rounded-lg bg-surface p-5 shadow-card lg:flex-col lg:gap-3">
-              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-tint">
-                <Icon aria-hidden className="size-5" />
-              </span>
-              <span>
-                <span className="block text-[15px] leading-6 font-extrabold">{t}</span>
-                <span className="block text-[15px] leading-6 text-ink-muted">{d}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <section className="band bg-paper">
+          <div className="page">
+            <SectionHead icon={Sparkles} title={<>یه دوست که <span className="font-extrabold">بازار رو می‌شناسه</span></>} sub="می‌گم دقیقاً کجا بری، و چرا." />
+            <ul data-reveal className="mt-6 grid gap-3 md:grid-cols-2 lg:mt-8 lg:grid-cols-4 lg:gap-4">
+              {VALUE_PROPS.map(({ t, d, icon: Icon }) => (
+                <li key={t} className="lift flex items-start gap-4 rounded-lg bg-surface p-5 shadow-card lg:flex-col lg:gap-3">
+                  <span className="grid size-11 shrink-0 place-items-center rounded-full bg-orange-tint">
+                    <Icon aria-hidden className="size-5" />
+                  </span>
+                  <span>
+                    <span className="block text-[15px] leading-6 font-extrabold">{t}</span>
+                    <span className="block text-[15px] leading-6 text-ink-muted">{d}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
         <HowItWorks />
         <LiveNumbers stats={live?.stats ?? null} priceDaysAgo={live?.priceDaysAgo ?? null} />
         <PasazhStrip venues={live?.venues ?? []} />
-        <div className="grid gap-12 lg:grid-cols-2 lg:items-start lg:gap-6">
-          <Honesty />
-          <Faq />
-        </div>
+        <Honesty />
+        <Faq />
+        <ClosingCta />
       </main>
+      <Reveal />
     </>
   );
 }

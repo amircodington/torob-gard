@@ -46,7 +46,7 @@
   --color-surface: #ffffff;
   --color-surface-tint: #f3ebe5;
   --color-ink: #161412;
-  --color-ink-muted: #7a6f67;
+  --color-ink-muted: #6b6058;
   --color-line: #efe6df;
   --color-orange: #ee8a2a;
   --color-orange-deep: #d9741a;
@@ -91,6 +91,8 @@
   /* Mascot react="pop" (entrance) and react="float" (idle bob, ~0.28 Hz, never at a vestibular-heavy amplitude). */
   --animate-pop: pop 400ms var(--ease-out) backwards;
   --animate-float: float 3.6s ease-in-out infinite;
+  /* react={["pop", "float"]}: one element has one `animation`, so the pair is a token; the bob starts after the pop. */
+  --animate-pop-float: pop 400ms var(--ease-out) backwards, float 3.6s ease-in-out 400ms infinite;
   /* The wordmark's icon: pops in and its leaves wiggle once on the first paint; hops on hover (hover devices only). */
   --animate-logo-in: logo-in var(--duration-slow) var(--ease-out) backwards;
   --animate-hop: hop 300ms var(--ease-out);
@@ -173,6 +175,7 @@
     --animate-typing: none;
     --animate-pop: fade var(--duration-base) var(--ease-out) backwards;
     --animate-float: none;
+    --animate-pop-float: fade var(--duration-base) var(--ease-out) backwards;
     --animate-logo-in: none;
     --animate-hop: none;
   }
@@ -222,6 +225,52 @@ body {
 /* Items set style={{ "--i": i }}; 8 items stagger (i 0..7), the rest appear with the 8th. */
 @utility stagger {
   animation-delay: calc(min(var(--i, 0), 7) * var(--stagger));
+}
+
+/* Landing bands (Redesign 2): full-bleed grounds that stack like sheets, each overlapping the one above
+   by its 32px top radius (the soft curved divider). Padding 44px phone / 64px lg, plus the overlap at the bottom. */
+@utility band {
+  position: relative;
+  margin-top: -2rem;
+  border-radius: 2rem 2rem 0 0;
+  padding-block: 2.75rem calc(2.75rem + 2rem);
+  box-shadow: 0 -10px 30px rgba(22, 20, 18, 0.05);
+  @variant lg {
+    padding-block: 4rem calc(4rem + 2rem);
+  }
+}
+
+/* Cards lift on hover (hover devices only: Tailwind's hover: is gated by (hover: hover)). */
+@utility lift {
+  transition:
+    translate var(--duration-base) var(--ease-out),
+    scale var(--duration-press) var(--ease-out);
+  &:hover {
+    @media (hover: hover) {
+      translate: 0 -4px;
+    }
+  }
+}
+
+/* Scroll entrances: Reveal adds .reveal-in to a [data-reveal] block as it scrolls in. The content is visible
+   without it (no JS, no IntersectionObserver, reduced motion, or already on screen at load): the class only
+   adds motion. Children rise 16px with a 60 ms stagger; pasazh bars grow from inline-start. */
+@layer components {
+  .reveal-in > * {
+    --rise: 16px;
+    animation: rise 500ms var(--ease-out) backwards;
+    animation-delay: calc(min(var(--i, 0), 7) * 60ms);
+  }
+  .reveal-in [data-bar] {
+    animation: grow 500ms var(--ease-out) backwards;
+    animation-delay: calc(min(var(--i, 0), 11) * 40ms + 120ms);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-in > *,
+    .reveal-in [data-bar] {
+      animation: none;
+    }
+  }
 }
 
 /* Entrances on mount (@starting-style, so later state changes still transition). */

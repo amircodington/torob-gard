@@ -21,6 +21,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: the service worker adds data-offline to a saved copy.
     <html lang="fa" dir="rtl" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        {/* Above-the-fold Dana weights (headline 300/800, body 400, buttons 700) load with the HTML, so the swap doesn't reflow the hero. */}
+        {["Light", "Regular", "Bold", "ExtraBold"].map((w) => (
+          <link key={w} rel="preload" href={`/fonts/Dana-${w}.woff2`} as="font" type="font/woff2" crossOrigin="anonymous" />
+        ))}
+      </head>
       <body className="min-h-full">
         <p data-testid="offline-note" role="status" className="offline-note bg-ink py-1.5 text-center text-[13px] font-bold text-on-dark">
           آفلاین — آخرین نسخه‌ی ذخیره‌شده

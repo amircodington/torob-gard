@@ -1,41 +1,39 @@
-import type { CSSProperties } from "react";
-import { ClipboardCheck, LifeBuoy, MessagesSquare, Radar, Scale } from "lucide-react";
+import { Route } from "lucide-react";
 import { faNum } from "../../lib/fa";
+import { Mascot, type MascotPose } from "../Mascot";
+import { SectionHead } from "./SectionHead";
 
-// The same icons as the top bar's steps.
-const STEPS = [
-  { t: "مشاوره", d: "چند سوال کوتاه درباره‌ی نیاز و بودجه‌ت.", icon: MessagesSquare },
-  { t: "میز تصمیم", d: "سه مدل با دلیل: اقتصادی، متعادل، امکانات بیشتر.", icon: Scale },
-  { t: "رادار فروشگاه", d: "مغازه‌هایی که این مدل رو دارن، با قیمت و تاریخش.", icon: Radar },
-  { t: "پلن B", d: "مغازه بسته بود یا جنس نداشت؟ گزینه‌ی بعدی آماده‌ست.", icon: LifeBuoy },
-  { t: "چک‌لیست", d: "طبقه، واحد و قیمت، تو یه صفحه برای راه.", icon: ClipboardCheck },
+// The same steps as the top bar; each with the mascot doing it.
+const STEPS: { t: string; d: string; pose: MascotPose }[] = [
+  { t: "مشاوره", d: "چند سوال کوتاه درباره‌ی نیاز و بودجه‌ت.", pose: "phone" },
+  { t: "میز تصمیم", d: "سه مدل با دلیل: اقتصادی، متعادل، امکانات بیشتر.", pose: "think" },
+  { t: "رادار فروشگاه", d: "مغازه‌هایی که این مدل رو دارن، با قیمت و تاریخش.", pose: "search" },
+  { t: "پلن B", d: "مغازه بسته بود یا جنس نداشت؟ گزینه‌ی بعدی آماده‌ست.", pose: "point" },
+  { t: "چک‌لیست", d: "طبقه، واحد و قیمت، تو یه صفحه برای راه.", pose: "walk" },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how" className="scroll-mt-20">
-      <h2 className="text-[22px] leading-8 font-light">
-        چطور <span className="font-extrabold">کار می‌کنه؟</span>
-      </h2>
-      {/* lg: five columns on a 2px connector through the circle centres (size-14 → 28px). */}
-      <ol className="relative mt-4 flex flex-col gap-3 lg:mt-8 lg:grid lg:grid-cols-5 lg:gap-6 lg:before:absolute lg:before:inset-x-[10%] lg:before:top-[27px] lg:before:h-0.5 lg:before:rounded-pill lg:before:bg-orange-tint">
-        {STEPS.map(({ t, d, icon: Icon }, i) => (
-          <li
-            key={t}
-            style={{ "--i": i } as CSSProperties}
-            className="relative flex animate-rise stagger items-start gap-3 rounded-lg bg-surface p-5 shadow-card lg:flex-col lg:items-center lg:bg-transparent lg:p-0 lg:text-center lg:shadow-none"
-          >
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-surface-tint lg:size-14">
-              <Icon aria-hidden className="size-5 lg:size-6" />
-            </span>
-            <span>
-              <span className="block text-[11px] leading-4 font-bold text-ink-muted tabular">مرحله‌ی {faNum(i + 1)}</span>
-              <span className="block text-[15px] leading-6 font-extrabold">{t}</span>
-              <span className="block text-[15px] leading-6 text-ink-muted">{d}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
+    <section id="how" className="band scroll-mt-16 bg-surface">
+      <div className="page">
+        <SectionHead
+          icon={Route}
+          title={<>چطور <span className="font-extrabold">کار می‌کنه؟</span></>}
+          sub="از اولین سوال تا جلوی ویترین مغازه، پنج قدم."
+        />
+        <ol data-reveal className="mt-6 grid gap-3 sm:grid-cols-2 lg:mt-8 lg:grid-cols-5 lg:gap-4">
+          {STEPS.map(({ t, d, pose }, i) => (
+            <li key={t} className="lift flex items-center gap-4 rounded-lg bg-surface-tint p-4 pe-5 lg:flex-col lg:items-start lg:gap-3 lg:p-5">
+              <Mascot pose={pose} loading="lazy" className="size-20 lg:-mt-2 lg:size-28 lg:self-center" />
+              <span className="min-w-0">
+                <span className="inline-block rounded-pill bg-panel px-2.5 text-[11px] leading-5 font-bold text-on-dark tabular">مرحله‌ی {faNum(i + 1)}</span>
+                <span className="mt-1 block text-[17px] leading-7 font-extrabold">{t}</span>
+                <span className="block text-[15px] leading-6 text-ink-muted">{d}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
     </section>
   );
 }

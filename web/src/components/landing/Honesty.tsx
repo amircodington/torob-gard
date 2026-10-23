@@ -1,4 +1,5 @@
-import { CalendarClock, CircleDashed, CircleHelp, Filter, Info, PackageSearch } from "lucide-react";
+import { CalendarClock, CircleDashed, CircleHelp, Filter, Info, PackageSearch, ShieldCheck } from "lucide-react";
+import { SectionHead } from "./SectionHead";
 
 // The six honesty rules of PLAN §2, in plain words.
 const RULES = [
@@ -12,18 +13,20 @@ const RULES = [
 
 export function Honesty() {
   return (
-    <section className="rounded-lg bg-surface p-5 shadow-card">
-      <h2 className="text-[22px] leading-8 font-light">
-        قول‌های <span className="font-extrabold">ما</span>
-      </h2>
-      <ul className="mt-3 flex flex-col gap-3">
-        {RULES.map(({ r, icon: Icon }) => (
-          <li key={r} className="flex gap-3 text-[15px] leading-6">
-            <Icon aria-hidden className="mt-0.5 size-5 shrink-0 text-ink-muted" />
-            {r}
-          </li>
-        ))}
-      </ul>
+    <section className="band bg-linear-to-b from-blush-soft to-blush">
+      <div className="page">
+        <SectionHead icon={ShieldCheck} mascot="check" title={<>قول‌های <span className="font-extrabold">ما</span></>} sub="چیزی که نمی‌دونیم رو نمی‌گیم." />
+        <ul data-reveal className="mt-6 grid gap-3 md:grid-cols-2 lg:mt-8 lg:grid-cols-3 lg:gap-4">
+          {RULES.map(({ r, icon: Icon }) => (
+            <li key={r} className="lift flex gap-3 rounded-lg bg-surface p-5 text-[15px] leading-6 shadow-card">
+              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-orange-tint">
+                <Icon aria-hidden className="size-5" />
+              </span>
+              <span className="self-center">{r}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

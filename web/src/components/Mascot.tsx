@@ -18,31 +18,45 @@ const GSAP_REACT = {
   wave: (el: Element) => gsap.to(el, { keyframes: { rotation: [0, 6, -6, 6, -6, 0] }, duration: 0.6, delay: 0.6, ease: "none", transformOrigin: "50% 100%" }),
 };
 /** CSS, from the server paint (globals.css): a slow idle bob, and a pop-in entrance. Reduced motion: none / fade. */
+// ponytail: float never pauses offscreen; it is a CSS translate on the compositor (no JS, no layout), used by the hero only. Add an IO pause if more mascots float.
 const CSS_REACT = { float: "animate-float", pop: "animate-pop" };
+type Reaction = keyof typeof GSAP_REACT | keyof typeof CSS_REACT;
+
+/** One `animation` per element, so pop + float is its own token (pop, then the bob). */
+export function cssReact(react: Reaction | Reaction[] | undefined): string {
+  const r = ([] as (Reaction | undefined)[]).concat(react);
+  if (r.includes("pop") && r.includes("float")) return "animate-pop-float";
+  return r.map((x) => (x && x in CSS_REACT ? CSS_REACT[x as keyof typeof CSS_REACT] : "")).join(" ").trim();
+}
 
 export function Mascot({
   pose,
   className = "",
   alt,
   react,
+  loading,
 }: {
   pose: MascotPose;
   /** Sizes and places the image (e.g. "size-36"); the art is square. */
   className?: string;
   alt?: string;
-  react?: keyof typeof GSAP_REACT | keyof typeof CSS_REACT;
+  /** One react, or several (e.g. ["pop", "float", "wave"]); at most one GSAP react plays. */
+  react?: Reaction | Reaction[];
+  /** "lazy" below the fold (Global Constraint). */
+  loading?: "lazy" | "eager";
 }) {
   const ref = useRef<HTMLImageElement>(null);
+  const gsapReact = ([] as (Reaction | undefined)[]).concat(react).find((r) => r && r in GSAP_REACT) as keyof typeof GSAP_REACT | undefined;
   useLayoutEffect(() => {
-    if (!react || !(react in GSAP_REACT)) return;
+    if (!gsapReact) return;
     const mm = gsap.matchMedia();
     mm.add("(prefers-reduced-motion: no-preference)", () => {
-      GSAP_REACT[react as keyof typeof GSAP_REACT](ref.current!);
+      GSAP_REACT[gsapReact](ref.current!);
     });
     return () => mm.revert();
-  }, [react]);
+  }, [gsapReact]);
 
-  const css = react && react in CSS_REACT ? CSS_REACT[react as keyof typeof CSS_REACT] : "";
+  const css = cssReact(react);
   return (
     // ponytail: plain <img> skips the next/image optimizer; the WebPs are already 640px and small.
     // eslint-disable-next-line @next/next/no-img-element
@@ -53,6 +67,7 @@ export function Mascot({
       aria-hidden={alt ? undefined : true}
       width={640}
       height={640}
+      loading={loading}
       draggable={false}
       className={`shrink-0 object-contain ${css} ${className}`}
     />

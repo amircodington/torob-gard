@@ -65,7 +65,7 @@ segments in it and two stat cards in `panel-brown` and `panel-plum`.
   `panel-plum` with a translucent white icon circle.
 - `verified` and `signal` are the only semantic colours; both are used small (pill, micro text,
   icon) and always with a word.
-- Contrast: `ink` on `paper` 15.6:1, `ink-muted` on `paper` 4.6:1, `on-orange` on `orange` 3.1:1
+- Contrast: `ink` on `paper` 15.6:1, `ink-muted` on `paper` 5.7:1 (4.6:1 on `blush`, darkened in Redesign 2), `on-orange` on `orange` 3.1:1
   (large/bold text only), `on-dark` on `panel` 17:1. Keep these when a value changes.
 
 ### Typography
