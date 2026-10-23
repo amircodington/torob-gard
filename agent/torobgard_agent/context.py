@@ -17,6 +17,7 @@ class TurnContext(BaseModel):
     req: dict[str, Any] | None = None
     anchor: dict[str, Any] | None = None  # e.g. {"venue_slug": …} or {"lat": …, "lng": …}
     stage: str | None = Field(None, max_length=40)
+    product_id: str | None = Field(None, max_length=64)  # the product page's chat: the product on screen
 
     @field_validator("req", "anchor")
     @classmethod
@@ -57,10 +58,28 @@ async def venue_summary(conn: AsyncConnection, anchor: dict | None) -> dict | No
     return row and {"slug": slug, "name": f"<data>{row[0]}</data>", "shop_count": row[1], "floors": row[2]}
 
 
+async def product_result(conn: AsyncConnection, product_id: str | None):
+    """The product on screen as a tool result: its ids and prices ground the answer like a search's would."""
+    from .tools.price import price_check
+    from .tools.registry import ToolResult, _ids
+
+    q = text("SELECT persian_title, brand_name, specs FROM catalog_product WHERE id = :p")
+    row = product_id and (await conn.execute(q, {"p": product_id})).first()
+    if not row:
+        return None
+    prices = await price_check(product_id, None, None, db=conn)
+    data = {"product_id": product_id, "title": row[0], "brand": row[1],
+            "specs": [{"key": s.get("key"), "value": s.get("value")} for s in row[2][:12]],
+            **{k: prices[k] for k in ("min", "median", "max", "newest_price_age_days")},
+            "offer_count": len(prices["offer_ids"])}
+    return ToolResult("product", data, _ids(data), {"product_id": product_id})
+
+
 def build(history: list[dict], summary: str | None, profile: dict, ctx: TurnContext, venue: dict | None,
-          user_text: str) -> list[dict]:
+          user_text: str, product: dict | None = None) -> list[dict]:
     """System prompt (never touched by user text), one context note, recent turns, then the new message."""
-    note = {"profile": profile, **ctx.model_dump(exclude_none=True), "venue": venue, "summary": summary}
+    note = {"profile": profile, **ctx.model_dump(exclude_none=True), "venue": venue, "product": product,
+            "summary": summary}
     note = {k: v for k, v in note.items() if v}
     msgs = [{"role": "system", "content": SYSTEM}]
     if note:

@@ -122,3 +122,21 @@ test("history: a logged-in user reopens a saved chat and the next turn goes to i
   await expect(page.getByText("باشه، تا ۲ میلیون.")).toBeVisible();
   expect(bodies[0]).toMatchObject({ text: "تا ۲ میلیون", session_id: SID });
 });
+
+test("product page: ask about this product in a sheet; the agent gets the product, its answer and chips show", async ({ page }) => {
+  const bodies = await agent(page, [
+    sse(["token", { text: "کمترین قیمتش رو تو رادار ببین. مشابه ارزون‌تر هم می‌خوای؟" }],
+      ["block", { type: "ask", question: "مشابه ارزون‌تر هم می‌خوای؟", options: ["آره"] }], done),
+    sse(["token", { text: "این دو تا ارزون‌ترن." }], done),
+  ]);
+  await page.goto(`/product/${PRODUCT}`);
+  await page.getByRole("button", { name: "درباره‌ی این محصول بپرس" }).click();
+  const sheet = page.getByRole("dialog");
+  await sheet.getByRole("button", { name: "کجا ارزون‌تر پیداش می‌کنم؟" }).click();
+  await expect(sheet.getByText("کمترین قیمتش رو تو رادار ببین.", { exact: false })).toBeVisible();
+  await sheet.getByRole("button", { name: "آره" }).click();
+  await expect(sheet.getByText("این دو تا ارزون‌ترن.")).toBeVisible();
+  expect(bodies[0]).toMatchObject({ text: "کجا ارزون‌تر پیداش می‌کنم؟", context: { stage: "product", product_id: PRODUCT } });
+  expect(bodies[1]).toMatchObject({ text: "آره", session_id: "11111111-1111-1111-1111-111111111111" });
+  await expect(page).toHaveURL(new RegExp(`/product/${PRODUCT}$`)); // never leaves for the desk
+});

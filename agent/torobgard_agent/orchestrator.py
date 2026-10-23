@@ -13,7 +13,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection
 
 from . import config
-from .context import TurnContext, build, load_session, split, summary_request, venue_summary
+from .context import TurnContext, build, load_session, product_result, split, summary_request, venue_summary
 from .contract import Answer, AskBlock, Block, DeskBlock
 from .db import engine
 from .grounder import Violation, cited_ids, ground, prices
@@ -241,6 +241,9 @@ async def _turn(
     async with _tx(db) as conn:
         sctx, history = await load_session(conn, sid)
         venue = await venue_summary(conn, context.anchor)
+        product = await product_result(conn, context.product_id)
+    if product:
+        turn.results.append(product)
     older, recent = split(history)
     summary = None
     if older:
@@ -250,7 +253,8 @@ async def _turn(
     # agent neither re-asks it nor forgets it; the same allow-list as the model's own updates.
     need = _profile({k: v for k, v in (context.req or {}).items() if k in _NEED_KEYS})
     profile = {**sctx.get("profile", {}), **need}
-    messages = build(recent, summary, profile, context, venue, text_in)
+    messages = build(recent, summary, profile, context, venue, text_in,
+                     json.loads(serialise(product)) if product else None)
 
     # numbers the shopper typed (this turn or earlier) may come back only as a budget echo in `say`;
     # the profile is model-written, so it never grounds anything

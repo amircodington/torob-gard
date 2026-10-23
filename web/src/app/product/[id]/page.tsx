@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { Banknote, ChevronRight, ListChecks, Radar, Store } from "lucide-react";
 import { SiteHeader } from "../../../components/SiteHeader";
+import { ProductChat } from "../../../components/chat/ProductChat";
 import { Crumbs, JsonLd, ROW_LINK, Section, Thumb } from "../../../components/catalog/parts";
 import { placeLine } from "../../../components/radar/ShopRow";
 import { btnClass } from "../../../components/ui/Btn";
@@ -71,10 +72,13 @@ export default async function ProductPage(p: Props) {
             {rows?.[0] ? <FreshBadge updatedMinAgo={rows[0].offer.updatedMinAgo} prefix="کمترین قیمت: " /> : <span className="text-[12px] font-semibold text-ink-muted">زمان قیمت‌ها ثبت نشده</span>}
           </p>
           <p className="mt-1 text-[12px] leading-5 text-ink-muted">از {faNum(product.offerCount)} پیشنهاد؛ قیمت‌های پرت کنار گذاشته شده‌اند.</p>
-          <Link href={`/radar/${encodeURIComponent(product.id)}`} className={`${btnClass()} mt-4 w-full md:w-auto`}>
-            <Radar aria-hidden className="hover-spin size-5 shrink-0" />
-            پیدا کردن فروشگاه
-          </Link>
+          <div className="mt-4 flex flex-col gap-2 md:flex-row">
+            <Link href={`/radar/${encodeURIComponent(product.id)}`} className={`${btnClass()} w-full md:w-auto`}>
+              <Radar aria-hidden className="hover-spin size-5 shrink-0" />
+              پیدا کردن فروشگاه
+            </Link>
+            <ProductChat productId={product.id} title={product.title} />
+          </div>
         </section>
 
         <div className="grid gap-4 md:grid-cols-2 md:items-start">

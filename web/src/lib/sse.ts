@@ -11,7 +11,7 @@ export type AgentEvent =
 export interface ChatBody {
   session_id?: string;
   text: string;
-  context: { req: unknown; anchor: unknown; stage: string };
+  context: { req: unknown; anchor: unknown; stage: string; product_id?: string };
 }
 
 /** Text chunks → events. Only `event:` and single-line `data:` fields; the agent sends nothing else. */

@@ -4,7 +4,17 @@ import { useState } from "react";
 import { SendHorizontal } from "lucide-react";
 
 /** `disabled` (a turn in flight): typing goes on, sending waits; the draft is kept. */
-export function Composer({ onSend, disabled = false }: { onSend: (text: string) => void; disabled?: boolean }) {
+export function Composer({
+  onSend,
+  disabled = false,
+  placeholder = "چی می‌خوای بخری؟",
+  label = "نیاز خرید تو",
+}: {
+  onSend: (text: string) => void;
+  disabled?: boolean;
+  placeholder?: string;
+  label?: string;
+}) {
   const [draft, setDraft] = useState("");
   const send = () => {
     if (disabled || !draft.trim()) return;
@@ -30,8 +40,8 @@ export function Composer({ onSend, disabled = false }: { onSend: (text: string) 
         }}
         rows={1}
         enterKeyHint="send"
-        placeholder="چی می‌خوای بخری؟"
-        aria-label="نیاز خرید تو"
+        placeholder={placeholder}
+        aria-label={label}
         // 16px keeps iOS from zooming the page on focus.
         className="max-h-28 min-h-11 flex-1 resize-none bg-transparent py-2.5 text-[16px] leading-6 text-on-dark outline-none placeholder:text-white/50"
       />

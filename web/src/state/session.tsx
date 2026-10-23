@@ -559,7 +559,7 @@ export function agentNeed(req: JourneyReq): Record<string, string | number | nul
   };
 }
 
-function newSessionId(): string {
+export function newSessionId(): string {
   if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
   // older webviews: a v4 uuid from getRandomValues
   const b = crypto.getRandomValues(new Uint8Array(16));
