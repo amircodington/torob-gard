@@ -13,7 +13,7 @@ import { pathOf } from "../../lib/seo";
 import { param } from "../../lib/server";
 
 // Result pages are endless URL space and thin content: keep them out of the index.
-export const metadata: Metadata = { title: "جستجو", robots: { index: false, follow: true } };
+export const metadata: Metadata = { title: "جستجو", description: "مدل یا مغازه‌ی بازار الکترونیک مرکز تهران رو با اسمش پیدا کن.", alternates: { canonical: "/search" }, robots: { index: false, follow: true } };
 
 type Props = { searchParams: Promise<{ q?: string | string[] }> };
 const minAgo = (iso: string) => Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60_000));

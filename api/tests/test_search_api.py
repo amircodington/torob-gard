@@ -46,3 +46,17 @@ def test_sitemap_lists(client, world):
     # ≥ 2 offers only
     assert client.get("/api/sitemap/products", {"page": 0}).json() == ["p1", "p2"]
     assert client.get("/api/sitemap/products", {"page": 1}).json() == []
+
+
+def test_short_query_is_empty(client, world):
+    for q in ("ا", "آ", "1", " ع "):
+        assert client.get("/api/search", {"q": q}).json() == {"products": [], "shops": []}
+
+
+def test_long_query_is_capped_and_limit_clamped(client, world):
+    # Everything past 100 characters is dropped: the junk tail never reaches the tsquery.
+    q = "آیفون" + " " * 200 + "ب" * 50
+    assert client.get("/api/search", {"q": q}).json()["products"][0]["id"] == "p1"
+    for limit in (0, -5, 1):
+        assert len(client.get("/api/search", {"q": "گوشی", "limit": limit}).json()["products"]) == 1
+    assert len(client.get("/api/search", {"q": "گوشی", "limit": 9999}).json()["products"]) == 2

@@ -211,8 +211,10 @@ def _tsquery(q: str) -> str | None:
 def search(request, q: str = "", limit: int = 20):
     """Keyword search, no LLM: products by search_tsv, shops by name or pasazh name (trigram)."""
     limit = max(1, min(limit, 50))
+    q = q.strip()[:100]
     ts, folded = _tsquery(q), _fold(q)
-    if not ts:
+    # One letter would prefix-match half the catalog and every venue; need two.
+    if not ts or len(folded) < 2:
         return {"products": [], "shops": []}
     query = SearchQuery(ts, config="simple", search_type="raw")
     products = (Product.objects.filter(search_tsv=query, min_price__isnull=False)
