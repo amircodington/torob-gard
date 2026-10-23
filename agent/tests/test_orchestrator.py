@@ -363,3 +363,48 @@ def test_chat_reads_the_signed_user_cookie(monkeypatch):
     finally:
         asyncio.run(users("DELETE FROM people_appuser WHERE id = :u"))
     assert seen == [u, None, None, None, None, None]
+
+
+FULL = {"category": "headphone", "budget_max": 5_000_000, "priority": "anc"}
+
+
+def _blocks(events):
+    return [e.block for e in events if isinstance(e, BlockEvent)]
+
+
+async def test_a_full_need_opens_the_desk_even_when_the_model_searched(conn):
+    # the 2026-10-23 headphone turn: the model searched and sent shop cards instead of the desk
+    searched = {"say": "دو تا گزینه پیدا شد.", "blocks": [], "profile_updates": FULL}
+    events = await turn(conn, FakeLLM(say(searched)), "هدفون بی‌سیم با نویز کنسلینگ تا ۵ میلیون")
+    [desk] = _blocks(events)
+    assert desk.type == "desk"
+    assert (desk.category, desk.budget_max, desk.priority) == ("headphone", 5_000_000, "anc")
+    assert "".join(e.text for e in events if isinstance(e, Token)) == orchestrator.DESK_SAY
+
+
+async def test_the_desk_rule_maps_everyday_category_words(conn):
+    words = {**FULL, "category": "هدفون"}
+    [desk] = _blocks(await turn(conn, FakeLLM(say({"say": "باشه", "profile_updates": words})), "هدفون"))
+    assert desk.category == "headphone"
+
+
+@pytest.mark.parametrize("text_in, updates", [
+    ("هدفون Sony WH-1000XM5 تا ۵ میلیون نویزگیر", FULL),  # a named model: search, not the desk
+    ("هدفون تا ۵ میلیون", {"category": "headphone", "budget_max": 5_000_000}),  # no priority yet
+    ("هدفون نویزگیر", {"category": "headphone", "priority": "anc"}),  # no budget yet
+    ("هدفون تا ۵ میلیون", {**FULL, "priority": "camera"}),  # a priority the category has not got
+])
+async def test_the_desk_rule_needs_a_full_need_and_no_model(conn, text_in, updates):
+    events = await turn(conn, FakeLLM(say({"say": "باشه", "profile_updates": updates})), text_in)
+    assert not any(b.type == "desk" for b in _blocks(events))
+
+
+async def test_the_desk_opens_once_per_need(conn):
+    sid = uuid4()
+    first = say({"say": "باشه", "profile_updates": FULL})
+    await turn(conn, FakeLLM(first), "هدفون نویزگیر تا ۵ میلیون", sid)
+    again = await turn(conn, FakeLLM(say({"say": "کجا بخرمش؟ این دو تا مغازه."})), "کجا بخرم؟", sid)
+    assert not any(b.type == "desk" for b in _blocks(again))
+    changed = await turn(conn, FakeLLM(say({"say": "باشه", "profile_updates": {"budget_max": 8_000_000}})),
+                         "تا ۸ میلیون", sid)
+    assert [b.budget_max for b in _blocks(changed) if b.type == "desk"] == [8_000_000]

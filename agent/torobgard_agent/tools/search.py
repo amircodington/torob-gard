@@ -31,6 +31,17 @@ DESK_CATEGORIES: dict[str, list[str]] = {
     "photo": ["دوربین عکاسی و فیلمبرداری"],
     "headphone": ["هدفون، هدست و هندزفری"],
 }
+# ponytail: copy of api/catalog/desk_config.py DESK_PRIORITIES; keep in sync
+DESK_PRIORITIES: dict[str, list[str]] = {
+    "mobile": ["camera", "battery", "both"],
+    "laptop": ["weight", "power", "both2"],
+    "accessory": ["price", "brand"],
+    "tablet": ["screen", "battery", "storage"],
+    "tv": ["size", "quality"],
+    "powerbank": ["capacity", "fast", "light"],
+    "photo": ["resolution", "speed", "light"],
+    "headphone": ["playtime", "anc", "price"],
+}
 # desk ids and their everyday Persian names, keyed by _compact(); the model often sends these
 _DESK_WORDS = {"mobile": "mobile", "موبایل": "mobile", "گوشی": "mobile", "laptop": "laptop",
                "لپتاپ": "laptop", "accessory": "accessory", "accessories": "accessory",

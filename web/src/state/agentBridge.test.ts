@@ -26,6 +26,12 @@ describe("bridge", () => {
     expect(s.req.customBudget).toMatchObject({ min: 0, max: 30_000_000 });
   });
 
+  it("desk for a new category keeps its own priority", () => {
+    const s = bridge({ event: "block", data: { type: "desk", category: "headphone", budget_min: null, budget_max: 5_000_000, priority: "anc" } })
+      .reduce(reducer, initialState());
+    expect(s.req).toMatchObject({ category: "headphone", priorityId: "anc" });
+  });
+
   it("shop_cards → a message with up to 3 offers", () => {
     const [a] = bridge({ event: "block", data: { type: "shop_cards", shop_ids: ["s1"], offer_ids: ["o1", "o2", "o3", "o4"], why: { s1: "ارزون‌ترین" } } });
     const s = reducer(initialState(), a);

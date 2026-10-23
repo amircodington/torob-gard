@@ -14,11 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncConnection
 
 from . import config
 from .context import TurnContext, build, load_session, split, summary_request, venue_summary
-from .contract import Answer, AskBlock, Block
+from .contract import Answer, AskBlock, Block, DeskBlock
 from .db import engine
 from .grounder import Violation, cited_ids, ground, prices
 from .llm import ChatResult, LLMClient, ToolCall
 from .tools.registry import TOOLS, ToolResult, run_tool, serialise
+from .tools.search import _DESK_WORDS, DESK_PRIORITIES, _compact
 
 log = logging.getLogger(__name__)
 
@@ -173,6 +174,28 @@ def _profile(updates: dict) -> dict:
     return {k: v for k, v in updates.items() if ok(k, v)}
 
 
+DESK_SAY = "باشه، نیازت کامله؛ سه گزینه با دلیل برات آوردم."
+# ponytail: a model is «named» when the shopper typed Latin letters («A55», «iPhone») or «مدل»;
+# a Persian-only model name («ایفون ۱۳») still reaches the desk — add a catalog lookup if it shows up
+_MODEL_NAMED = re.compile(r"[A-Za-z]|مدل")
+
+
+def _desk_for(profile: dict) -> DeskBlock | None:
+    """The desk the consult profile asks for: a desk category, one of its priorities and a budget."""
+    cat = profile.get("category") or ""
+    cat = cat if cat in DESK_PRIORITIES else _DESK_WORDS.get(_compact(cat))
+    if not cat or profile.get("priority") not in DESK_PRIORITIES[cat]:
+        return None
+    if profile.get("budget_min") is None and profile.get("budget_max") is None:
+        return None
+    return DeskBlock(category=cat, budget_min=profile.get("budget_min"),
+                     budget_max=profile.get("budget_max"), priority=profile["priority"])
+
+
+def _desk_key(d: DeskBlock) -> list:
+    return [d.category, d.budget_min, d.budget_max, d.priority]
+
+
 def _chunks(s: str) -> list[str]:
     return re.findall(r"\S+\s*|\s+", s)
 
@@ -252,6 +275,17 @@ async def _turn(
     receipts = cited_ids(answer)
     answer.profile_updates = _profile(answer.profile_updates)
     profile = {**profile, **answer.profile_updates}
+    # A full need with no model named opens the desk in code: the model often searched instead (R13).
+    # Once per need: a later «کجا بخرم؟» with the same need is the model's to answer.
+    consulting = context.stage in (None, "consult") and not _MODEL_NAMED.search(text_in)
+    desk = _desk_for(profile) if consulting else None
+    own = next((b for b in answer.blocks if isinstance(b, DeskBlock)), None)
+    if (desk and _desk_key(desk) != sctx.get("desk_for") and not own
+            and not any(b.type in ("price_check", "route") for b in answer.blocks)):
+        answer = Answer(say=DESK_SAY, blocks=[desk], profile_updates=answer.profile_updates)
+        receipts = cited_ids(answer)
+        own = desk
+    desk_for = _desk_key(own) if own else sctx.get("desk_for")
     latency = int((monotonic() - t0) * 1000)
     log.info("turn %s: %d+%d tokens, $%.5f, %d ms", sid, turn.tokens_in, turn.tokens_out, turn.cost, latency)
 
@@ -264,8 +298,8 @@ async def _turn(
             # a logged-in turn claims an unowned session (/me shows and deletes it); never re-owns one
             " user_id = coalesce(conversation_session.user_id, EXCLUDED.user_id)"),
             {"s": sid, "m": config.AGENT_MODEL, "u": user_id,
-             "c": json.dumps({**sctx, **context.model_dump(exclude_none=True), "profile": profile},
-                             ensure_ascii=False)})
+             "c": json.dumps({**sctx, **context.model_dump(exclude_none=True), "profile": profile,
+                              "desk_for": desk_for}, ensure_ascii=False)})
         # ponytail: two concurrent turns in one session collide on (session, seq); the web sends one at a time
         seq = (await conn.execute(text("SELECT coalesce(max(seq), 0) FROM conversation_message"
                                        " WHERE session_id = :s"), {"s": sid})).scalar()
