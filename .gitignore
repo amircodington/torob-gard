@@ -18,3 +18,6 @@ web/playwright-report/
 docs/evidence/redesign/t*/
 staticfiles/
 .env.prod
+
+# The demo video and its subtitles (web/demo): large, re-recordable.
+demo-out/
