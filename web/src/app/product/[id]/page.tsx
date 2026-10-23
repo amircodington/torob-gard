@@ -14,9 +14,9 @@ import { faNum, faPriceFull } from "../../../lib/fa";
 import { jsonLdProduct, metaFor, pathOf } from "../../../lib/seo";
 import { or404, param } from "../../../lib/server";
 
-export const revalidate = 3600;
-export const fetchCache = "force-cache";
-export const generateStaticParams = async () => [];
+// Rendered per request: ISR here (revalidate + fetchCache "force-cache") deadlocks Next 16.4's fetch-cache
+// lock on a first visit and the page never answers. The API answers in ~10 ms.
+export const dynamic = "force-dynamic";
 
 type Props = { params: Promise<{ id: string }> };
 const load = async ({ params }: Props) => {

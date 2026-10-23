@@ -3,12 +3,11 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { api } from "../../lib/api";
 import type { OfferRow } from "../../lib/types";
-import { useSession } from "../../state/session";
 import { ShopRow } from "../radar/ShopRow";
 
-/** The agent's shop_cards block: up to three radar rows inline; a tap opens that shop on the radar. */
-export function ShopCards({ offerIds, why }: { offerIds: string[]; why: Record<string, string> }) {
-  const { dispatch } = useSession();
+/** The agent's shop_cards block: up to three radar rows inline; a tap does what the caller says (the journey
+ *  chat opens that shop on the radar; the product page, outside the journey's session, goes to the radar). */
+export function ShopCards({ offerIds, why, onOpen }: { offerIds: string[]; why: Record<string, string>; onOpen: (row: OfferRow) => void }) {
   const [rows, setRows] = useState<OfferRow[]>([]);
   const key = offerIds.join(",");
 
@@ -31,10 +30,7 @@ export function ShopCards({ offerIds, why }: { offerIds: string[]; why: Record<s
           <ShopRow
             row={row}
             now={now}
-            onOpen={() => {
-              dispatch({ type: "SELECT_PRODUCT", id: row.offer.productId, advance: true });
-              dispatch({ type: "OPEN_STORE", id: row.store.id });
-            }}
+            onOpen={() => onOpen(row)}
           />
           {why[row.store.id] && <p className="mt-1 px-2 text-[13px] leading-5 text-ink-muted">{why[row.store.id]}</p>}
         </li>

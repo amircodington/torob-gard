@@ -111,7 +111,15 @@ function Consult() {
         {(pending ? [...state.chat, { id: -1, from: "user", text: pending.text } as Msg] : state.chat).map((m, i, list) => (
           <div key={i} className="flex flex-col gap-2">
             {m.text && <Bubble from={m.from}>{m.text}</Bubble>}
-            {m.shopCards && <ShopCards {...m.shopCards} />}
+            {m.shopCards && (
+              <ShopCards
+                {...m.shopCards}
+                onOpen={(row) => {
+                  dispatch({ type: "SELECT_PRODUCT", id: row.offer.productId, advance: true });
+                  dispatch({ type: "OPEN_STORE", id: row.store.id });
+                }}
+              />
+            )}
             {m.chips && (
               <Chips
                 chips={m.chips}

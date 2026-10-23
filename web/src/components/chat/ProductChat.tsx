@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { MessageCircleQuestion } from "lucide-react";
 import { consult } from "../../state/agentBridge";
@@ -17,6 +18,7 @@ const STARTERS = ["کجا ارزون‌تر پیداش می‌کنم؟", "نقط
 /** «درباره‌ی این محصول بپرس»: the agent with this product in its context; it can still search the rest.
  *  Its own agent session (saved to a logged-in user's history like any chat), not the consult's. */
 export function ProductChat({ productId, title }: { productId: string; title: string }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [s, dispatch] = useReducer(productChat, null, () => productChatStart(newSessionId()));
   const [pending, setPending] = useState<{ text: string; status: string } | null>(null);
@@ -66,7 +68,7 @@ export function ProductChat({ productId, title }: { productId: string; title: st
               {m.text && <Bubble from={m.from}>{m.text}</Bubble>}
               {"shopCards" in m && m.shopCards && (
                 <div className="rounded-lg bg-paper p-2 text-ink">
-                  <ShopCards {...m.shopCards} />
+                  <ShopCards {...m.shopCards} onOpen={(row) => router.push(`/radar/${row.offer.productId}`)} />
                 </div>
               )}
               {"chips" in m && m.chips && (

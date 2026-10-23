@@ -58,7 +58,7 @@ test("shop cards in chat open the radar sheet; the price check marks the quote",
   await sheet.getByRole("button", { name: "این قیمت منصفانه‌ست؟" }).click();
   await sheet.getByRole("textbox", { name: /قیمتی که فروشنده گفت/ }).fill("۱۵۰۰۰۰");
   await sheet.getByRole("button", { name: "بررسی" }).click();
-  const result = sheet.getByRole("status");
+  const result = sheet.getByRole("status").filter({ hasText: "میانه" }); // the seller follow-up has its own
   await expect(result).toContainText("۲۵٪ بالاتر از میانه");
   await expect(result).toContainText("ممکن است تغییر کرده باشد"); // a 2020 price is stale
 });
@@ -139,6 +139,20 @@ test("product page: ask about this product in a sheet; the agent gets the produc
   expect(bodies[0]).toMatchObject({ text: "کجا ارزون‌تر پیداش می‌کنم؟", context: { stage: "product", product_id: PRODUCT } });
   expect(bodies[1]).toMatchObject({ text: "آره", session_id: "11111111-1111-1111-1111-111111111111" });
   await expect(page).toHaveURL(new RegExp(`/product/${PRODUCT}$`)); // never leaves for the desk
+});
+
+test("product page: shop cards in the product chat show, and a tap goes to that model's radar (no journey session there)", async ({ page }) => {
+  await agent(page, [sse(["token", { text: "این دو تا مغازه دارنش." }],
+    ["block", { type: "shop_cards", offer_ids: ["offer_a0b75a1573f71b8b3da482a4", "offer_7bc214ff86b7794b2ce58c4e"], why: {} }], done)]);
+  await page.goto(`/product/${PRODUCT}`);
+  await page.getByRole("button", { name: "درباره‌ی این محصول بپرس" }).click();
+  const sheet = page.getByRole("dialog");
+  await sheet.getByRole("button", { name: "کجا ارزون‌تر پیداش می‌کنم؟" }).click();
+  const cards = sheet.getByRole("list", { name: "فروشگاه‌های پیشنهادی" }).getByRole("listitem");
+  await expect(cards).toHaveCount(2);
+  await expect(page.getByText("یه مشکلی پیش اومد")).toHaveCount(0);
+  await cards.first().getByRole("button").first().click();
+  await page.waitForURL(new RegExp(`/radar/${PRODUCT}`));
 });
 
 test("product page: the sellers' notes summed up on demand, labelled as the sellers' claims", async ({ page }) => {
