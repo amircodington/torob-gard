@@ -17,7 +17,7 @@ test("pwa: manifest is installable and the service worker takes control", async 
 
   await page.goto("/");
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute("href", "/manifest.webmanifest");
-  expect(await page.evaluate(() => navigator.serviceWorker.ready.then((r) => r.active?.scriptURL))).toMatch(/\/sw\.js$/);
+  expect(await page.evaluate(() => navigator.serviceWorker.ready.then((r) => r.active?.scriptURL))).toMatch(/\/sw\.js\?v=\w+$/);
   // Chrome's own installability check (what Lighthouse's PWA audit used).
   const cdp = await page.context().newCDPSession(page);
   const { installabilityErrors } = await cdp.send("Page.getInstallabilityErrors");
@@ -85,5 +85,54 @@ test("offline: only the last 3 trips are kept", async ({ browser, request }) => 
     return (await c.keys()).map((r) => new URL(r.url).pathname);
   });
   expect(kept.sort()).toEqual(ids.slice(1).flatMap((id) => [`/trip/${id}`, `/trip/${id}/walk`]).sort());
+  await ctx.close();
+});
+
+test("sw: never caches the API; a new build swaps the shell; clear-trips empties saved trips", async ({ browser, request }) => {
+  const id = await makeTrip(request);
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await controlled(page);
+  await page.goto(`/trip/${id}`);
+  await page.evaluate(() => fetch("/api/stats").then((r) => r.json()));
+  const names = () => page.evaluate(() => caches.keys());
+  const before = await names();
+  expect(before.some((k) => k.startsWith("api"))).toBe(false);
+  for (const c of before) {
+    const urls: string[] = await page.evaluate(async (n) => (await (await caches.open(n)).keys()).map((r) => new URL(r.url).pathname), c);
+    expect(urls.filter((u) => u.startsWith("/api/"))).toEqual([]);
+  }
+
+  // A new build registers /sw.js?v=<new id>: new shell precached, old shell dropped, saved trips kept.
+  const oldShell = before.find((k) => k.startsWith("shell-"))!;
+  await page.evaluate(async () => {
+    await navigator.serviceWorker.register("/sw.js?v=next-build");
+    await new Promise<void>((r) => navigator.serviceWorker.addEventListener("controllerchange", () => r(), { once: true }));
+  });
+  await expect.poll(names).toContain("shell-next-build");
+  await expect.poll(names).not.toContain(oldShell);
+  expect(await names()).toContain("trips-v1");
+  // Old build's chunks that the saved trip needs survive the swap: offline, it still renders styled.
+  await ctx.setOffline(true);
+  await page.goto(`/trip/${id}`);
+  await expect(page.getByRole("heading", { name: "چک‌لیست قبل از حرکت" })).toBeVisible();
+  expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe("rgb(251, 247, 243)");
+  await ctx.setOffline(false);
+
+  await page.evaluate(async () => (await navigator.serviceWorker.getRegistration())!.active!.postMessage({ type: "clear-trips" }));
+  await expect.poll(names).not.toContain("trips-v1");
+  await ctx.close();
+});
+
+test("offline: a 5xx trip page serves the saved copy, marked offline", async ({ browser, request }) => {
+  const id = await makeTrip(request);
+  const ctx = await browser.newContext();
+  const page = await ctx.newPage();
+  await controlled(page);
+  await page.goto(`/trip/${id}`);
+  await ctx.route(`**/trip/${id}`, (r) => r.fulfill({ status: 502, body: "bad gateway" }));
+  await page.goto(`/trip/${id}`);
+  await expect(page.getByRole("heading", { name: "چک‌لیست قبل از حرکت" })).toBeVisible();
+  await expect(page.getByTestId("offline-note")).toBeVisible();
   await ctx.close();
 });
