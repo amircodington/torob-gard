@@ -55,7 +55,7 @@ export function TopBar() {
                 }}
                 // relative: paints above the pill. Below lg a 44px digit; at lg a pill with the stage icon and label.
                 // The active step keeps its own orange until the pill is placed (SSR, before hydration).
-                className={`tabular relative flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-pill text-[15px] font-bold transition-[background-color,color,scale] duration-220 ease-out focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40 aria-disabled:opacity-40 motion-safe:active:scale-[0.97] lg:px-4 ${
+                className={`tabular relative flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-pill text-[15px] font-bold transition-[background-color,color,scale] duration-220 ease-out focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-40 aria-disabled:opacity-40 motion-safe:active:scale-[0.97] active:duration-(--duration-press) lg:px-4 ${
                   active ? "bg-orange text-on-orange group-data-ready/steps:bg-transparent" : "text-ink"
                 }`}
               >

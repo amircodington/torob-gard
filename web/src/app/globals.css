@@ -211,9 +211,10 @@
       translate: -100% 0;
     }
   }
+  /* full-width cards set [--pop-to:1.02]: 6% of a 360px card is a jump, not a pop */
   @keyframes chip-pop {
     50% {
-      scale: 1.06;
+      scale: var(--pop-to, 1.06);
     }
   }
   @keyframes wiggle {

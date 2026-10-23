@@ -76,7 +76,8 @@ export function Sheet({
   }, [open]);
 
   // Open: rises from the bottom (phone) or slides in from the inline-start edge (lg); reduced motion → fades.
-  // The content follows the panel in: its blocks rise 8px, 40 ms apart (all within 300 ms); a keyboard open skips it.
+  // The content follows the panel in: its blocks rise 8px (180 ms), the last starting by 120 ms, so all are in by 300 ms.
+  // Blocks with their own animate-rise are left to it (no double rise); a keyboard open skips the stagger.
   useLayoutEffect(() => {
     if (!open) return;
     closing.current = false; // callers that keep the Sheet mounted reopen it after a close
@@ -91,8 +92,9 @@ export function Sheet({
       gsap.from(scrim.current, { opacity: 0, duration: DUR.sheet, ease: "tg.drawer" });
       const b = body.current;
       if (!b || byKeyboard()) return;
-      const items = b.children.length === 1 ? b.firstElementChild!.children : b.children; // one wrapper (StoreSheet): its blocks
-      gsap.from(items, { y: 8, opacity: 0, duration: DUR.base, ease: "tg.out", delay: 0.08, stagger: staggerStep(items.length) });
+      const blocks = b.children.length === 1 ? b.firstElementChild!.children : b.children; // one wrapper (StoreSheet): its blocks
+      const items = [...blocks].filter((el) => !el.matches('[class*="animate-rise"]'));
+      if (items.length) gsap.from(items, { y: 8, opacity: 0, duration: DUR.fast, ease: "tg.out", stagger: staggerStep(items.length, 0.12) });
     });
     return () => mm.revert();
   }, [open, dock]);

@@ -37,7 +37,7 @@ export function Hero() {
           <div className={`${RISE} mt-7 grid w-full grid-cols-2 gap-3 [--i:2] lg:mt-9 lg:flex lg:w-auto`}>
             <Link href="/start" className={`${btnClass()} min-h-13! whitespace-nowrap max-[359px]:px-3! lg:px-7! lg:text-[17px]!`}>
               شروع کن
-              <ArrowRight aria-hidden className="size-5 flip-rtl" />
+              <ArrowRight aria-hidden className="nudge size-5 flip-rtl" />
             </Link>
             <Link href="/start?seed=phone-camera" className={`${btnClass("ghost")} min-h-13! whitespace-nowrap bg-surface! max-[359px]:px-3! lg:px-7! lg:text-[17px]!`}>
               <Sparkles aria-hidden className="size-5" />

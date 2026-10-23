@@ -95,6 +95,7 @@ export function TierCard({
     <article
       style={{ "--i": index } as CSSProperties}
       // Balanced lifts at lg by growing upward (-mt + pt), not by translate, so its price box stays on the shared row.
+      // ponytail: the one non-clickable card that hover-lifts (it is the choice itself); info cards elsewhere do not.
       className={`lift grid animate-rise stagger content-start gap-3 rounded-lg bg-surface p-5 shadow-card md:max-lg:grid-cols-2 md:max-lg:gap-x-5 lg:row-span-5 lg:grid-rows-subgrid ${
         balanced || selected ? "ring-2 ring-orange" : ""
       } ${balanced ? "lg:-mt-2 lg:pt-7" : ""}`}

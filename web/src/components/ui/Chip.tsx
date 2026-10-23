@@ -42,7 +42,7 @@ export function Chip({ label, selected, onClick, icon: Icon }: { label: string; 
         onClick();
       }}
       // relative: paints above the group's absolutely positioned pill. Press: 0.97, no movement under reduced motion.
-      className={`${cls} relative min-h-11 py-1 focus-visible:outline-2 focus-visible:outline-focus motion-safe:active:scale-[0.97] ${selected && pressed ? "animate-chip-pop in-data-[input=keyboard]:animate-none" : ""}`}
+      className={`${cls} relative min-h-11 py-1 focus-visible:outline-2 focus-visible:outline-focus motion-safe:active:scale-[0.97] active:duration-(--duration-press) ${selected && pressed ? "animate-chip-pop in-data-[input=keyboard]:animate-none" : ""}`}
     >
       {icon}
       {label}

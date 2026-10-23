@@ -17,7 +17,7 @@ export function ClosingCta() {
           <p className="mt-1 text-[15px] leading-6 lg:text-[17px] lg:leading-7">چند سوال کوتاه، بعد می‌بینی کدوم مغازه‌ها این مدل رو با قیمت ثبت‌شده دارن.</p>
           <Link href="/start" className={`${btnClass()} mt-5 min-h-13! px-7! text-[17px]!`}>
             شروع کن
-            <ArrowRight aria-hidden className="size-5 flip-rtl" />
+            <ArrowRight aria-hidden className="nudge size-5 flip-rtl" />
           </Link>
         </div>
       </div>

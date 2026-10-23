@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 const PRODUCT = "product_a112c972266b57d0f7eddeab";
 const style = (page: Page, sel: string) =>
@@ -43,45 +43,63 @@ test.describe("reduced motion", () => {
 });
 
 // Hover and press (Task 4 micro-interactions). A mouse device: hover lifts only where (hover: hover) matches.
+// No fixed waits: motion is polled to its end value. Under reduced motion the hover shadow (kept there) is the signal
+// that the hover took effect; the press has no such signal, so the test waits for :active and then reads both the
+// scale and the element's running transitions (reading computed style flushes them, so a started scale shows up).
 const ROW = '[aria-label="فروشگاه‌ها"] > li button';
-async function hoverAndPress(page: Page) {
+const css = (l: Locator, prop: "translate" | "scale" | "boxShadow") => () => l.evaluate((el, p) => getComputedStyle(el)[p], prop);
+const LIFT_SHADOW = "rgba(238, 138, 42, 0.16)";
+
+async function openRow(page: Page) {
   await page.goto(`/radar/${PRODUCT}`);
   const row = page.locator(ROW).first();
   await row.waitFor();
-  await page.waitForTimeout(400); // the list's entrance is over
-  await row.hover();
-  await page.waitForTimeout(350); // past the 240 ms lift
-  const lifted = await row.evaluate((el) => getComputedStyle(el).translate);
-  await page.mouse.down();
-  await page.waitForTimeout(200); // past the 120 ms press
-  const pressed = await row.evaluate((el) => getComputedStyle(el).scale);
-  await page.mouse.move(0, 0); // release off the row: no click, no sheet
+  return row;
+}
+async function releaseOff(page: Page) {
+  await page.mouse.move(0, 0); // off the row: no click, no sheet
   await page.mouse.up();
-  return { lifted, pressed };
 }
 
 test.describe("hover and press on a mouse device", () => {
   test.use({ isMobile: false, hasTouch: false });
 
   test("a shop row lifts 2px on hover and presses to 0.99; a forward arrow nudges toward the reading direction", async ({ page }) => {
-    expect(await hoverAndPress(page)).toEqual({ lifted: "0px -2px", pressed: "0.99" });
+    const row = await openRow(page);
+    await row.hover();
+    await expect.poll(css(row, "translate")).toBe("0px -2px");
+    await page.mouse.down();
+    await expect.poll(css(row, "scale")).toBe("0.99");
+    await releaseOff(page);
+
     await toDesk(page);
     const pick = page.getByRole("button", { name: "انتخاب این مدل" }).first();
     await pick.hover();
-    await page.waitForTimeout(300);
-    expect(await pick.locator("svg.nudge").evaluate((el) => getComputedStyle(el).translate)).toBe("-2px");
+    await expect.poll(css(pick.locator("svg.nudge"), "translate")).toBe("-2px");
   });
 
   test.describe("reduced motion", () => {
     test.use({ reducedMotion: "reduce" });
     test("no transform on hover or press: the row stays put, the button's arrow does not nudge", async ({ page }) => {
-      expect(await hoverAndPress(page)).toEqual({ lifted: "none", pressed: "none" });
+      const row = await openRow(page);
+      await row.hover();
+      await expect.poll(css(row, "boxShadow")).toContain(LIFT_SHADOW); // hovered, transitions settled
+      expect(await css(row, "translate")()).toBe("none");
+      await page.mouse.down();
+      await expect.poll(() => row.evaluate((el) => el.matches(":active"))).toBe(true);
+      const pressed = await row.evaluate((el) => ({
+        scale: getComputedStyle(el).scale,
+        moving: el.getAnimations().map((a) => (a as CSSTransition).transitionProperty).filter((p) => p === "scale" || p === "translate"),
+      }));
+      expect(pressed).toEqual({ scale: "none", moving: [] });
+      await releaseOff(page);
+
       await toDesk(page);
       const pick = page.getByRole("button", { name: "انتخاب این مدل" }).first();
       await pick.hover();
-      await page.waitForTimeout(300);
-      expect(await pick.evaluate((el) => getComputedStyle(el).translate)).toBe("none");
-      expect(await pick.locator("svg.nudge").evaluate((el) => getComputedStyle(el).translate)).toBe("none");
+      await expect.poll(css(pick, "boxShadow")).toContain(LIFT_SHADOW);
+      expect(await css(pick, "translate")()).toBe("none");
+      expect(await css(pick.locator("svg.nudge"), "translate")()).toBe("none");
     });
   });
 });

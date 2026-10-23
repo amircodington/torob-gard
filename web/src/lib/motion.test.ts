@@ -28,4 +28,5 @@ it("staggers 40 ms apart, the whole group within 300 ms", () => {
   expect(staggerStep(5)).toBe(0.04);
   expect(staggerStep(20) * 19).toBeCloseTo(0.3);
   expect(staggerStep(20)).toBeLessThan(0.04);
+  expect(staggerStep(9, 0.12) * 8).toBeCloseTo(0.12); // the sheet: last start 120 ms + 180 ms = done by 300 ms
 });

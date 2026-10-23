@@ -72,6 +72,7 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
   const { open, reason, leave } = usePlanBParam();
   const close = useRef<HTMLButtonElement>(null);
   const [saveFailed, setSaveFailed] = useState(false);
+  const [picked, setPicked] = useState(false); // arms the option pop: only a press pops, never a stored priority on mount
   const { planB, failures, req, previousPlan } = state;
   const failedIds = failures.map((f) => f.storeId);
   const failedKey = failedIds.join(",");
@@ -85,6 +86,7 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
   // A keyboard action (byKeyboard) gets no animation either: the rows just swap.
   const choose = (priority: RecoveryPriority) => {
     if (priority === planB.priority) return;
+    setPicked(true);
     registerMotion();
     const rowsNow = list.current?.querySelectorAll("li");
     flip.current = rowsNow?.length && !reduced() && !byKeyboard() ? Flip.getState(rowsNow) : null;
@@ -244,7 +246,7 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
                         type="button"
                         aria-pressed={active}
                         onClick={() => choose(p)}
-                        className={`flex min-h-11 items-start gap-3 rounded-lg p-4 text-start shadow-card lift press [--press:0.98] focus-visible:outline-2 focus-visible:outline-focus ${active ? "animate-chip-pop bg-orange text-on-orange in-data-[input=keyboard]:animate-none" : "bg-surface"}`}
+                        className={`flex min-h-11 items-start gap-3 rounded-lg p-4 text-start shadow-card lift press [--press:0.98] focus-visible:outline-2 focus-visible:outline-focus ${active ? "bg-orange text-on-orange" : "bg-surface"} ${active && picked ? "animate-chip-pop [--pop-to:1.02] in-data-[input=keyboard]:animate-none" : ""}`}
                       >
                         <Icon aria-hidden className={`hover-hop mt-0.5 size-5 shrink-0 ${active ? "" : "text-orange"}`} />
                         <span className="min-w-0">

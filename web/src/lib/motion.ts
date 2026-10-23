@@ -18,8 +18,8 @@ export function registerMotion(): void {
   CustomEase.create("tg.drawer", ".32,.72,0,1");
 }
 
-/** Seconds between items of a JS-staggered group of `n`: 40 ms, tightened so the last one starts by 300 ms (Task 4). */
-export const staggerStep = (n: number) => Math.min(0.04, 0.3 / Math.max(1, n - 1));
+/** Seconds between items of a JS-staggered group of `n`: 40 ms, tightened so the last one starts within `budget` s (Task 4). */
+export const staggerStep = (n: number, budget = 0.3) => Math.min(0.04, budget / Math.max(1, n - 1));
 
 export const reduced = () => typeof window !== "undefined" && window.matchMedia(REDUCED).matches;
 
