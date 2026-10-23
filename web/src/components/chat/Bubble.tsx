@@ -19,8 +19,9 @@ export function Bubble({ from, children, thinking }: { from: "assistant" | "user
       <div className="whitespace-pre-line rounded-lg rounded-ee-sm bg-surface px-4 py-3 text-[15px] leading-6 text-ink shadow-card">
         {children}
       </div>
-      <span className={`pop-in shrink-0 ${thinking ? "size-11" : "size-9 overflow-hidden rounded-full"}`}>
-        <Mascot pose={thinking ? "think" : "icon"} className="size-full" />
+      {/* one 40 px box for both, so the bubble's edge stays put when the answer replaces the typing bubble */}
+      <span className={`pop-in size-10 shrink-0 ${thinking ? "" : "overflow-hidden rounded-full"}`}>
+        <Mascot pose={thinking ? "think" : "icon"} className="size-10" />
       </span>
     </div>
   );

@@ -14,7 +14,7 @@ export function ClosingCta() {
           <h2 className="text-[26px] leading-9 font-light lg:text-[34px] lg:leading-12">
             آماده‌ی <span className="font-extrabold">خرید؟</span>
           </h2>
-          <p className="mt-1 text-[15px] leading-6 lg:text-[17px] lg:leading-7">چند سوال کوتاه، بعد می‌بینی کدوم مغازه‌ها این مدل رو با قیمت ثبت‌شده دارن.</p>
+          <p className="mt-1 text-[15px] leading-6 lg:text-[17px] lg:leading-7">چند سوال کوتاه، بعد می‌بینی کدوم مغازه‌ها برای این مدل قیمت ثبت کردن.</p>
           <Link href="/start" className={`${btnClass()} mt-5 min-h-13! px-7! text-[17px]!`}>
             شروع کن
             <ArrowRight aria-hidden className="nudge size-5 flip-rtl" />

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { mascotSrc } from "./Mascot";
+import { mascotSmall } from "./Mascot";
 
 // The icon's entrance plays on the first paint of a visit only; every journey page remounts the header.
 let introPlayed = false;
@@ -22,7 +22,7 @@ export function Wordmark() {
       <span className="block origin-bottom group-hover:animate-hop">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={mascotSrc("icon")}
+          src={mascotSmall("icon").src}
           alt=""
           aria-hidden
           width={32}

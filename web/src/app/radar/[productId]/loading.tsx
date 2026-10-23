@@ -8,7 +8,6 @@ export default function Loading() {
       <SkeletonBar />
       {/* RowSkeletons carries its own animate-loader-in; the rest fades in with this wrapper (one delay, not two). */}
       <main className="page pb-32 pt-2">
-        <p role="status" className="sr-only">در حال پیدا کردن فروشگاه‌ها</p>
         <div className="animate-loader-in">
           <div className="mt-4 flex h-20 flex-col gap-3 lg:h-14">
             <Skeleton className="h-6 w-36 rounded-pill" />

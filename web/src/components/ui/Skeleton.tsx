@@ -3,11 +3,17 @@ import { CARD } from "../catalog/parts";
 import { SiteHeader } from "../SiteHeader";
 import { Wordmark } from "../Wordmark";
 
-/** A placeholder block; size and radius from className. The sheen is a translated overlay (compositor only), gone under reduced motion. */
-export function Skeleton({ className = "" }: { className?: string }) {
+/** One sweep across its `relative overflow-hidden` parent (render it last, so it paints over the positioned bars): a translated white overlay (compositor only), gone under reduced motion.
+ *  On a white card it shows only over the tinted bars, so a card runs one animation, not one per bar, at one speed. */
+function Sheen() {
+  return <span aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-linear-to-l from-transparent via-white/70 to-transparent motion-reduce:hidden" />;
+}
+
+/** A placeholder block; size and radius from className. `sheen` for a bar that stands alone (not in a card with its own). */
+export function Skeleton({ className = "", sheen }: { className?: string; sheen?: boolean }) {
   return (
     <div aria-hidden data-skeleton className={`relative overflow-hidden rounded-sm bg-surface-tint ${className}`}>
-      <span className="absolute inset-0 animate-shimmer bg-linear-to-l from-transparent via-white/70 to-transparent motion-reduce:hidden" />
+      {sheen && <Sheen />}
     </div>
   );
 }
@@ -32,7 +38,7 @@ function Row({ thumb, lines }: { thumb?: string; lines: string[] }) {
 /** A Section card (catalog/parts) of rows. Line heights are the real rows' (leading-5/6). */
 export function SkeletonCard({ rows = 4, thumb, lines = ["h-6", "h-5"] }: { rows?: number; thumb?: string; lines?: string[] }) {
   return (
-    <div className={CARD}>
+    <div className={`${CARD} relative overflow-hidden`}>
       <div className="flex h-7 items-center">
         <Skeleton className="h-[60%] w-36 rounded-pill" />
       </div>
@@ -41,6 +47,7 @@ export function SkeletonCard({ rows = 4, thumb, lines = ["h-6", "h-5"] }: { rows
           <Row key={i} thumb={thumb} lines={lines} />
         ))}
       </div>
+      <Sheen />
     </div>
   );
 }
@@ -67,7 +74,7 @@ export function SkeletonBar() {
     <header className="sticky top-0 z-40 bg-paper/80 backdrop-blur-md">
       <div className="page flex items-center gap-2 py-1.5">
         <Wordmark />
-        <Skeleton className="ms-auto h-12 w-[186px] rounded-pill" />
+        <Skeleton sheen className="ms-auto h-12 w-[186px] rounded-pill" />
       </div>
     </header>
   );
@@ -77,50 +84,59 @@ export function SkeletonBar() {
 export function SkeletonTitle({ className = "w-3/5" }: { className?: string }) {
   return (
     <div className="flex h-10 items-center">
-      <Skeleton className={`h-[60%] max-w-md rounded-pill ${className}`} />
+      <Skeleton sheen className={`h-[60%] max-w-md rounded-pill ${className}`} />
     </div>
   );
 }
 
-/** The desk's three tier cards at their measured heights (phone ~500 px, lg subgrid ~630 px): pill, title, specs, price box, note, actions. */
-export function TierSkeletons() {
+/** The desk's three tier cards at their measured heights (phone ~500 px, lg subgrid ~630 px): pill, title, specs, price box, note, actions.
+ *  Carries the loader's one sr-only live status (`label`), a sibling of the busy grid so aria-busy does not mute it. */
+export function TierSkeletons({ label = "در حال آماده کردن گزینه‌ها" }: { label?: string }) {
   return (
-    <div aria-busy="true" aria-label="در حال آماده کردن گزینه‌ها" className="mt-5 grid animate-loader-in gap-4 lg:mt-8 lg:grid-cols-3">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="flex h-[500px] flex-col gap-3 rounded-lg bg-surface p-5 shadow-card lg:h-[630px]">
-          <Skeleton className="h-8 w-24 rounded-pill" />
-          <Skeleton className="mt-2 h-5 w-4/5 rounded-pill" />
-          <Skeleton className="h-5 w-3/5 rounded-pill" />
-          <Skeleton className="mt-2 h-3.5 w-2/5 rounded-pill" />
-          <Skeleton className="h-3.5 w-1/2 rounded-pill" />
-          <Skeleton className="mt-2 h-22 rounded-md" />
-          <Skeleton className="h-3.5 w-11/12 rounded-pill" />
-          <div className="mt-auto flex gap-2">
-            <Skeleton className="h-12 flex-1 rounded-pill" />
-            <Skeleton className="h-12 w-28 rounded-pill" />
+    <>
+      <p role="status" className="sr-only">{label}</p>
+      <div aria-busy="true" className="mt-5 grid animate-loader-in gap-4 lg:mt-8 lg:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="relative flex h-[500px] flex-col gap-3 overflow-hidden rounded-lg bg-surface p-5 shadow-card lg:h-[630px]">
+            <Skeleton className="h-8 w-24 rounded-pill" />
+            <Skeleton className="mt-2 h-5 w-4/5 rounded-pill" />
+            <Skeleton className="h-5 w-3/5 rounded-pill" />
+            <Skeleton className="mt-2 h-3.5 w-2/5 rounded-pill" />
+            <Skeleton className="h-3.5 w-1/2 rounded-pill" />
+            <Skeleton className="mt-2 h-22 rounded-md" />
+            <Skeleton className="h-3.5 w-11/12 rounded-pill" />
+            <div className="mt-auto flex gap-2">
+              <Skeleton className="h-12 flex-1 rounded-pill" />
+              <Skeleton className="h-12 w-28 rounded-pill" />
+            </div>
+            <Sheen />
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }
 
-/** The radar's shop rows at their measured heights (phone ~176 px with wrapped lines, lg 157 px): icon, name, place, price. */
-export function RowSkeletons() {
+/** The radar's shop rows at their measured heights (phone ~176 px with wrapped lines, lg 157 px): icon, name, place, price. Its own live status, as TierSkeletons. */
+export function RowSkeletons({ label = "در حال پیدا کردن فروشگاه‌ها" }: { label?: string }) {
   return (
-    <div aria-busy="true" aria-label="در حال پیدا کردن فروشگاه‌ها" className="grid animate-loader-in gap-3">
-      {[0, 1, 2, 3].map((i) => (
-        <div key={i} className="flex h-[176px] gap-3 rounded-lg bg-surface p-4 shadow-card lg:h-[157px]">
-          <Skeleton className="size-11 rounded-full" />
-          <div className="flex flex-1 flex-col gap-2.5 pt-1">
-            <Skeleton className="h-4.5 w-2/5 rounded-pill" />
-            <Skeleton className="h-3.5 w-4/5 rounded-pill" />
-            <Skeleton className="h-3.5 w-3/5 rounded-pill" />
-            <Skeleton className="h-3.5 w-1/3 rounded-pill" />
+    <>
+      <p role="status" className="sr-only">{label}</p>
+      <div aria-busy="true" className="grid animate-loader-in gap-3">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="relative flex h-[176px] gap-3 overflow-hidden rounded-lg bg-surface p-4 shadow-card lg:h-[157px]">
+            <Skeleton className="size-11 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2.5 pt-1">
+              <Skeleton className="h-4.5 w-2/5 rounded-pill" />
+              <Skeleton className="h-3.5 w-4/5 rounded-pill" />
+              <Skeleton className="h-3.5 w-3/5 rounded-pill" />
+              <Skeleton className="h-3.5 w-1/3 rounded-pill" />
+            </div>
+            <Skeleton className="h-5 w-14 rounded-pill" />
+            <Sheen />
           </div>
-          <Skeleton className="h-5 w-14 rounded-pill" />
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }

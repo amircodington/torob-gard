@@ -119,6 +119,7 @@ function Radar({ id }: { id: string }) {
                 <RowSkeletons />
               ) : rows.length === 0 ? (
                 <EmptyState
+                  compact
                   pose="search"
                   title="هیچ فروشگاهی با این فیلترها جور در نمی‌آد"
                   body="مدلت دست‌نخورده؛ فقط محدوده رو بازتر کن."

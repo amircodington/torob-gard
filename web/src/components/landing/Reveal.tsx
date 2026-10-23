@@ -21,7 +21,7 @@ export function Reveal() {
         Array.from(target.children).forEach((c, i) => (c as HTMLElement).style.setProperty("--i", String(i)));
         target.classList.add("reveal-in");
       }
-    });
+    }, { rootMargin: "0px 0px 10% 0px" }); // armed just before a block enters, so its top edge never shows then blinks out
     document.querySelectorAll("[data-reveal]").forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, []);

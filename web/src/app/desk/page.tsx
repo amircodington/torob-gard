@@ -91,6 +91,7 @@ function Desk() {
   if (empty === "budget")
     return (
       <EmptyState
+        compact
         pose="search"
         title="تو این بودجه مدلی با دست‌کم دو فروشنده پیدا نکردم"
         body="نیازهات حفظ شدن؛ بودجه رو باز کن یا نیازها رو عوض کن."
@@ -108,6 +109,7 @@ function Desk() {
   if (empty === "other")
     return (
       <EmptyState
+        compact
         pose="think"
         title="برای این دسته هنوز میز تصمیم نداریم"
         body="داده‌ی ترب‌گرد فعلاً روی موبایل، لپ‌تاپ و لوازم جانبی گوشیه. نیازهات حفظ شدن؛ با یکی از این دسته‌ها بدون از دست دادن جلسه ادامه بده."

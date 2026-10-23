@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { afterEach, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { Loader, LOADER_DELAY_MS } from "./Loader";
-import { Skeleton } from "./Skeleton";
+import { RowSkeletons, Skeleton, TierSkeletons } from "./Skeleton";
 
 const css = readFileSync("src/app/globals.css", "utf8");
 const reducedBlock = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
@@ -29,9 +29,19 @@ it("says what is happening, in Persian, with a decorative hopping mascot", () =>
   expect(img.className).toContain("animate-loader-hop");
 });
 
-it("a skeleton block is hidden from assistive tech and shimmers", () => {
+it("a skeleton bar is hidden from assistive tech; the sheen runs once per card, not per bar", () => {
   const { container } = render(<Skeleton className="h-4 w-20" />);
   const el = container.firstElementChild!;
   expect(el.getAttribute("aria-hidden")).toBe("true");
-  expect(el.innerHTML).toContain("animate-shimmer");
+  expect(el.innerHTML).not.toContain("animate-shimmer");
+  cleanup();
+  expect(render(<Skeleton sheen className="h-4 w-20" />).container.innerHTML).toContain("animate-shimmer");
+  cleanup();
+  for (const [node, cards] of [[<TierSkeletons key="t" />, 3], [<RowSkeletons key="r" />, 4]] as const) {
+    const { container: c } = render(node);
+    expect(c.querySelectorAll(".animate-shimmer")).toHaveLength(cards);
+    expect(screen.getAllByRole("status")).toHaveLength(1); // the loader's one live status, not an aria-label on a div
+    expect(c.querySelector("[aria-label]")).toBeNull();
+    cleanup();
+  }
 });

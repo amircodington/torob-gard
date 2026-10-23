@@ -11,7 +11,12 @@ const PRECACHE = [
   "/manifest.webmanifest",
   ...["Light", "Regular", "Medium", "DemiBold", "Bold", "ExtraBold"].map((w) => `/fonts/Dana-${w}.woff2`),
   "/icons/icon-192.png",
-  ...["icon", "mascot-idle", "mascot-point", "mascot-stuck", "mascot-wave"].map((p) => `/mascot/torob-gard-${p}.webp`),
+  // The mascot files offline pages pick (Mascot srcset): the wordmark tile; trip pages' 48–96 px poses always take
+  // the 320 file; /offline's 176 px stuck takes 320 or 640 by DPR, and global-error the 640.
+  // ponytail: checklist's "no shop chosen" search (144 px) is not precached; offline it shows an empty box.
+  ...["icon-96", "mascot-point-320", "mascot-walk-320", "mascot-check-320", "mascot-celebrate-320", "mascot-stuck-320", "mascot-stuck"].map(
+    (p) => `/mascot/torob-gard-${p}.webp`,
+  ),
 ];
 const KEEP_TRIPS = 3;
 const SLOW_MS = 4000; // a trip page slower than this falls back to its saved copy

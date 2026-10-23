@@ -91,10 +91,10 @@
   /* The agent's typing dots: they loop only while a turn is in flight (10–19 s), never at rest. */
   --animate-typing: typing 1.2s ease-in-out infinite;
   /* Mascot react="pop" (entrance) and react="float" (idle bob, ~0.28 Hz, never at a vestibular-heavy amplitude). */
-  --animate-pop: pop 400ms var(--ease-out) backwards;
+  --animate-pop: pop var(--duration-pop) var(--ease-out) backwards;
   --animate-float: float 3.6s ease-in-out infinite;
   /* react={["pop", "float"]}: one element has one `animation`, so the pair is a token; the bob starts after the pop. */
-  --animate-pop-float: pop 400ms var(--ease-out) backwards, float 3.6s ease-in-out 400ms infinite;
+  --animate-pop-float: pop var(--duration-pop) var(--ease-out) backwards, float 3.6s ease-in-out var(--duration-pop) infinite;
   /* The wordmark's icon: pops in and its leaves wiggle once on the first paint; hops on hover (hover devices only). */
   --animate-logo-in: logo-in var(--duration-slow) var(--ease-out) backwards;
   --animate-hop: hop 300ms var(--ease-out);
@@ -274,7 +274,10 @@
   --duration-base: 240ms;
   --duration-sheet: 320ms;
   --duration-slow: 600ms;
+  --duration-pop: 400ms; /* every pop entrance: the mascot's animate-pop and the chat avatar's .pop-in */
+  --duration-reveal: 500ms; /* scroll entrances (.reveal-in): longer than a rise, the block travels 16px */
   --stagger: 40ms; /* desk cards set 60ms on their list */
+  --stagger-reveal: 60ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -464,16 +467,16 @@ body {
 
 /* Scroll entrances: Reveal adds .reveal-in to a [data-reveal] block as it scrolls in. The content is visible
    without it (no JS, no IntersectionObserver, reduced motion, or already on screen at load): the class only
-   adds motion. Children rise 16px with a 60 ms stagger; pasazh bars grow from inline-start. */
+   adds motion. Children rise 16px with a --stagger-reveal stagger; pasazh bars grow from inline-start. */
 @layer components {
   .reveal-in > * {
     --rise: 16px;
-    animation: rise 500ms var(--ease-out) backwards;
-    animation-delay: calc(min(var(--i, 0), 7) * 60ms);
+    animation: rise var(--duration-reveal) var(--ease-out) backwards;
+    animation-delay: calc(min(var(--i, 0), 7) * var(--stagger-reveal));
   }
   .reveal-in [data-bar] {
-    animation: grow 500ms var(--ease-out) backwards;
-    animation-delay: calc(min(var(--i, 0), 11) * 40ms + 120ms);
+    animation: grow var(--duration-reveal) var(--ease-out) backwards;
+    animation-delay: calc(min(var(--i, 0), 11) * var(--stagger) + 120ms);
   }
   @media (prefers-reduced-motion: reduce) {
     .reveal-in > *,
@@ -508,8 +511,8 @@ body {
   /* The assistant avatar pops with each new bubble. */
   .pop-in {
     transition:
-      opacity var(--duration-fast) var(--ease-out),
-      scale var(--duration-fast) var(--ease-out);
+      opacity var(--duration-pop) var(--ease-out),
+      scale var(--duration-pop) var(--ease-out);
     @starting-style {
       opacity: 0;
       scale: var(--pop, 0.9);

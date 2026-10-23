@@ -13,7 +13,7 @@ it("easings match", () => {
 });
 
 it("durations match DUR", () => {
-  expect(Object.keys(DUR)).toEqual(["press", "fast", "base", "sheet", "slow"]);
+  expect(Object.keys(DUR)).toEqual(["press", "fast", "base", "sheet", "slow", "pop", "reveal"]);
   for (const [k, s] of Object.entries(DUR)) expect(css).toContain(`--duration-${k}: ${Math.round(s * 1000)}ms`);
 });
 

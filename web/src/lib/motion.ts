@@ -3,7 +3,7 @@ import { CustomEase } from "gsap/CustomEase";
 import { Flip } from "gsap/Flip";
 
 /** Seconds; the same values as the --duration-* tokens in globals.css (motion.test.ts keeps them equal). */
-export const DUR = { press: 0.12, fast: 0.18, base: 0.24, sheet: 0.32, slow: 0.6 } as const;
+export const DUR = { press: 0.12, fast: 0.18, base: 0.24, sheet: 0.32, slow: 0.6, pop: 0.4, reveal: 0.5 } as const;
 export const REDUCED = "(prefers-reduced-motion: reduce)";
 
 let registered = false;

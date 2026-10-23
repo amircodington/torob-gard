@@ -59,14 +59,14 @@ segments in it and two stat cards in `panel-brown` and `panel-plum`.
   icon sits in a `surface-tint` circle; a status pill in `panel` (or `orange` for a live state)
   sits top-left.
 - `orange` is the only active colour. One screen may have several orange elements, but they all
-  mean the same thing: "this is selected or current". Text on orange is white, 15px bold or larger.
+  mean the same thing: "this is selected or current". Text on orange is white, 15px bold or larger (~2.5:1, see Contrast).
 - `panel` is for the sheet, status pills and the composer bar. Inside the sheet, inactive
   segments are `panel-2`, the active one is `orange`, stat cards are `panel-brown` and
   `panel-plum` with a translucent white icon circle.
 - `verified` and `signal` are the only semantic colours; both are used small (pill, micro text,
   icon) and always with a word.
-- Contrast: `ink` on `paper` 15.6:1, `ink-muted` on `paper` 5.7:1 (4.6:1 on `blush`, darkened in Redesign 2), `on-orange` on `orange` 3.1:1
-  (large/bold text only), `on-dark` on `panel` 17:1. Keep these when a value changes.
+- Contrast: `ink` on `paper` 15.6:1, `ink-muted` on `paper` 5.7:1 (4.6:1 on `blush`, darkened in Redesign 2), `on-orange` on `orange` ~2.5:1
+  (#fff on #ee8a2a: below AA, so large/bold text only, 15px bold or larger; decision 8's accepted trade-off for the one orange), `on-dark` on `panel` 17:1. Keep these when a value changes.
 
 ### Typography
 
@@ -99,14 +99,14 @@ Mark: the mascot `icon` pose. Map pins keep the `orange` circle with the unit nu
 
 **ترب‌گرد** is a 3D radish (decision 13) with a backpack and a brass compass: a small explorer who
 knows the bazaar. Eleven poses plus the icon, one job each (`web/public/mascot/`, transparent
-640×640 WebP, `<Mascot pose>` in `web/src/components/Mascot.tsx`):
+640×640 WebP plus a 320 px copy (`-320`, the icon tile `-96`) that `srcset` picks for small uses, `<Mascot pose>` in `web/src/components/Mascot.tsx`):
 
 | Pose | Means | Where | Motion (once; reduced motion: none or a fade) |
 |---|---|---|---|
 | wave | hello | landing hero, `/me` header, "your data is deleted" | wave after the hero rise; `/me` waves once |
 | idle | standing by | product/catalog image fallback | none |
 | think | weighing options | decision desk header, the agent's "thinking" avatar, landing FAQ, "no desk for this category yet" | desk header hops |
-| point | go here | trip checklist header, Plan B, landing step «پلن B» | hop |
+| point | go here | trip checklist header (the route to walk), Plan B, landing step «پلن B» | hop |
 | search | looking / no results | page loader, search no-results, radar "no shops" and "no filter match", desk "nothing in this budget", checklist "no shop chosen", landing step «رادار» | loader hop; empty states pop in |
 | stuck | something broke | 404, offline, error and global error, "server unreachable" and "model not found" states | one shake |
 | celebrate | it worked | trip saved / logged in after the SMS code (`SaveTrip`) | pop + one 8-dot burst (600 ms) |
@@ -117,8 +117,9 @@ knows the bazaar. Eleven poses plus the icon, one job each (`web/public/mascot/`
 | icon | the brand | app icon, favicon, wordmark, chat avatar | wordmark logo-in |
 
 Rules: the mascot sits on `paper`, `surface` or inside a `surface-tint` circle, never on orange or on
-the black sheet; at most one large mascot per screen, any others small (≤ 64 px) beside a heading
-or a status; decorative (`alt=""`) unless it carries meaning; it never blocks content or taps, and
+the black sheet; at most one hero-size mascot (≥ 144 px) per screen, any others secondary (≤ 112 px)
+beside a heading, a step or a status; the landing is the exception, one per section (hero, steps,
+FAQ, closing band) and the `idle` image fallback, which takes the product image's box; an empty state inside a page uses `<EmptyState compact>` (80 px); decorative (`alt=""`) unless it carries meaning; it never blocks content or taps, and
 its caption never claims more than happened (a shared trip says «وارد شدی!», not «ذخیره شد»). It
 never speaks in a speech bubble of its own (the assistant voice is the chat). Ship as WebP ≤ 60 KB (the PNGs in the prototype are 1.4 MB each).
 
