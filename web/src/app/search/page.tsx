@@ -4,6 +4,7 @@ import { ChevronRight, Search } from "lucide-react";
 import type { CSSProperties } from "react";
 import { SiteHeader } from "../../components/SiteHeader";
 import { ROW_LINK, Section, Thumb } from "../../components/catalog/parts";
+import { floorUnit } from "../../components/radar/ShopRow";
 import { btnClass } from "../../components/ui/Btn";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { FreshBadge } from "../../components/ui/FreshBadge";
@@ -78,7 +79,7 @@ export default async function SearchPage({ searchParams }: Props) {
                     <span className="min-w-0 flex-1">
                       <span className="block text-[15px] font-bold leading-6 break-words">{s.name}</span>
                       <span className="block text-[12px] text-ink-muted">
-                        {s.venueName ? faNum(s.venueName) : "پاساژ ثبت نشده"} · {s.floor != null ? `طبقه ${faNum(s.floor)}` : "طبقه نامشخص"}
+                        {s.venueName ? faNum(s.venueName) : "پاساژ ثبت نشده"} · {floorUnit({ ...s, mall: s.venueName })}
                       </span>
                     </span>
                     <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-muted flip-rtl" />

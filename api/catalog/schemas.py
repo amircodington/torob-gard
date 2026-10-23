@@ -158,6 +158,7 @@ class ShopHitOut(Schema):
     venue_slug: str | None
     floor: str | None
     unit: str | None
+    parse_confidence: float
 
 
 class SearchOut(Schema):

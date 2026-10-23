@@ -7,10 +7,30 @@ import { api } from "../../lib/api";
 import { faFreshness, faNum, faPriceFull } from "../../lib/fa";
 import { toAsciiDigits } from "../../lib/persian";
 import { clearSavedTrips } from "../../lib/sw";
+import { resetStorage } from "../../state/session";
 import type { Me, NeedsProfile } from "../../lib/types";
 import { Btn, btnClass } from "../ui/Btn";
 import { Chip } from "../ui/Chip";
 import { EmptyState } from "../ui/EmptyState";
+
+/** On a shared phone the next person must not chat on this account's agent session or trips. */
+async function forgetDevice() {
+  await clearSavedTrips();
+  resetStorage();
+}
+
+export async function logOut() {
+  try {
+    await api.logout();
+  } finally {
+    await forgetDevice(); // even when the request fails
+  }
+}
+
+export async function deleteData() {
+  await api.deleteMe();
+  await forgetDevice();
+}
 
 const CARD = "rounded-lg bg-surface p-5 shadow-card";
 const FIELD = "tabular mt-1 min-h-11 w-full rounded-md bg-surface-tint px-3 text-[16px] text-ink outline-none focus-visible:outline-2 focus-visible:outline-focus";
@@ -48,11 +68,8 @@ export function MePage() {
     );
 
   const items = me.memory.filter((m) => m.state === "liked" || m.state === "bought");
-  const out = async () => {
-    await api.logout();
-    await clearSavedTrips();
-    setMe(null);
-  };
+  // ponytail: a failed logout shows no error; the page stays logged in, this device is forgotten
+  const out = () => logOut().then(() => setMe(null), () => undefined);
   return (
     <>
       <h1 className="mb-3 text-[34px] leading-[48px] font-light">
@@ -191,8 +208,7 @@ function DeleteData({ onDeleted }: { onDeleted: () => void }) {
     return <Btn variant="ghost" icon={Trash2} onClick={() => setConfirm(true)}>حذف داده‌هام</Btn>;
   const go = async () => {
     try {
-      await api.deleteMe();
-      await clearSavedTrips();
+      await deleteData();
       onDeleted();
     } catch {
       setError(true);

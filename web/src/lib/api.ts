@@ -168,7 +168,7 @@ export const api = {
     const r = await request<Raw>(`/search?q=${encodeURIComponent(q)}`);
     return {
       products: r.products.map((p: Raw) => ({ id: p.id, title: p.title, brand: p.brand, imageUrl: p.image_url, minPrice: p.min_price, offerCount: p.offer_count, priceAt: p.price_at })),
-      shops: r.shops.map((s: Raw) => ({ id: s.id, name: s.name, venueName: s.venue_name, venueSlug: s.venue_slug, floor: s.floor, unit: s.unit })),
+      shops: r.shops.map((s: Raw) => ({ id: s.id, name: s.name, venueName: s.venue_name, venueSlug: s.venue_slug, floor: s.floor, unit: s.unit, parseConfidence: s.parse_confidence })),
     };
   },
   sitemap: async (): Promise<SitemapData> => {

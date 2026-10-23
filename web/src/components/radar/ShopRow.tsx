@@ -7,18 +7,22 @@ import { StockBadge } from "../ui/StockBadge";
 
 const floorName = (f: string) => (f === "0" ? "همکف" : faNum(f.replace(/^-/, "منفی ")));
 
-/** «پاساژ · طبقه · واحد»; a missing part is named, never dropped; a guessed parse says «احتمالاً» (honesty rule 4). */
-export function placeLine(s: Store): string {
+/** «طبقه · واحد»; a missing part is named, never dropped; a guessed parse says «احتمالاً» (honesty rule 4). */
+export function floorUnit(s: Pick<Store, "mall" | "floor" | "unit" | "parseConfidence">): string {
   const maybe = s.parseConfidence < 0.8 ? "احتمالاً " : "";
   const floor = s.floor != null ? `طبقه ${floorName(s.floor)}` : null;
   const unit = s.unit != null ? `واحد ${faNum(s.unit)}` : null;
   const known = floor ?? unit; // the hedge goes once, on the first part we parsed
   const hedge = (part: string | null) => (part && part === known ? maybe + part : part);
   return [
-    faNum(s.mall ?? (s.locationLabel || s.address)),
     hedge(floor) ?? "طبقه ثبت نشده",
     hedge(unit) ?? (s.mall ? "شماره‌ی واحد ثبت نشده — از اطلاعات پاساژ بپرس" : "شماره‌ی واحد ثبت نشده"),
   ].join(" · ");
+}
+
+/** «پاساژ · طبقه · واحد». */
+export function placeLine(s: Store): string {
+  return `${faNum(s.mall ?? (s.locationLabel || s.address))} · ${floorUnit(s)}`;
 }
 
 export function distanceLabel(m: number | null): string {

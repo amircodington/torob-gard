@@ -237,7 +237,7 @@ def search(request, q: str = "", limit: int = 20):
                       "offer_count": p.offer_count, "price_at": p.price_at} for p in products],
         "shops": [{"id": s.id, "name": s.name, "venue_name": s.venue.name if s.venue else None,
                    "venue_slug": s.venue.slug if s.venue else None, "floor": s.floor,
-                   "unit": s.unit} for s in shops],
+                   "unit": s.unit, "parse_confidence": s.parse_confidence} for s in shops],
     }
 
 

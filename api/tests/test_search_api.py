@@ -29,6 +29,11 @@ def test_shops_found_by_venue_name(client, world):
         assert [s["id"] for s in client.get("/api/search", {"q": q}).json()["shops"]] == ["s1"]
 
 
+def test_shop_hits_carry_parse_confidence_for_the_floor_hedge(client, world):
+    (hit,) = client.get("/api/search", {"q": "موبایل نوین"}).json()["shops"]
+    assert hit["parse_confidence"] == 0
+
+
 def test_alef_madda_and_digits_give_same_first_product(client, world):
     a = client.get("/api/search", {"q": "آیفون ۱۳"}).json()["products"]
     b = client.get("/api/search", {"q": "ایفون 13"}).json()["products"]

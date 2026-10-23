@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { SiteHeader } from "../../../components/SiteHeader";
 import { CARD, JsonLd, ROW_LINK, Section } from "../../../components/catalog/parts";
 import { DistrictMap } from "../../../components/map/DistrictMap";
+import { floorUnit } from "../../../components/radar/ShopRow";
 import { api } from "../../../lib/api";
 import { faNum } from "../../../lib/fa";
 import { jsonLdVenue, metaFor, pathOf } from "../../../lib/seo";
@@ -83,7 +84,8 @@ export default async function PasazhPage(p: Props) {
                         <span className="min-w-0 flex-1">
                           <span className="block text-[15px] font-bold leading-6 break-words">{s.name}</span>
                           <span className="block text-[12px] leading-5 text-ink-muted">
-                            {s.unit ? `${s.parseConfidence < 0.8 ? "احتمالاً " : ""}واحد ${faNum(s.unit)}` : "شماره‌ی واحد ثبت نشده"}
+                            {/* a guessed parse may sit under the wrong heading, so its row restates the floor, hedged */}
+                            {s.parseConfidence < 0.8 ? floorUnit(s) : s.unit ? `واحد ${faNum(s.unit)}` : "شماره‌ی واحد ثبت نشده"}
                           </span>
                         </span>
                         <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-muted flip-rtl" />

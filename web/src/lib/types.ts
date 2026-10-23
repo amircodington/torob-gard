@@ -225,7 +225,7 @@ export interface ShopDetail extends Store {
 
 export type ProductCard = CategoryPage["popularProducts"][number];
 
-export interface ShopHit { id: string; name: string; venueName: string | null; venueSlug: string | null; floor: string | null; unit: string | null }
+export interface ShopHit { id: string; name: string; venueName: string | null; venueSlug: string | null; floor: string | null; unit: string | null; parseConfidence: number }
 
 export interface SitemapData { venues: string[]; categories: string[]; shops: string[]; productPages: number }
 
