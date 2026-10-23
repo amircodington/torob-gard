@@ -139,3 +139,35 @@ storage, certbot.
 - The env is not split per container: every app container (and `backup`) gets all of `.env.prod`, so api/agent/cron see the S3 keys and backup sees the Django/phone/BoxAPI secrets.
 - A failed backup only logs `backup FAILED` (`logs backup`); nothing alerts on it.
 - No Content-Security-Policy yet (see §4).
+
+## Liara (Deployar): three apps, no nginx, no compose
+
+Deployar deploys `main` from GitHub: each folder with a Dockerfile is one app on one private network,
+`torob-gard-api`, `torob-gard-agent`, `torob-gard-web`, plus a Liara Postgres (16 with PostGIS and pgvector)
+and a Liara Redis. Each app's form is its folder's `.env.example` (`api/`, `agent/`, `web/`).
+
+- Each Dockerfile's `CMD` is the production one: api migrates, collects static and runs gunicorn on `$PORT`
+  (8000), agent runs uvicorn on `$PORT` (8001), web runs the Next standalone server on `$PORT` (3000).
+- web proxies `/api/*` and `/agent/*` itself (`web/src/app/{api,agent}/[...path]`), reading `API_URL` and
+  `AGENT_URL` at run time (default `http://torob-gard-api:8000`, `http://torob-gard-agent:8001`). The agent's
+  SSE streams through unbuffered. If Liara gives the apps another internal port, set those two.
+- Images load straight from `image.torob.com` (`NEXT_PUBLIC_IMG_BASE` empty); the 7-day nginx cache (R-P7) is
+  VPS-only.
+- `/admin/` is not under web's domain: open it on `https://torob-gard-api.liara.run/admin/` (WhiteNoise serves
+  its static files).
+- Client address: Liara's ingress appends to `X-Forwarded-For` and web passes it through, so api and agent take
+  the entry one from the right (`TRUSTED_PROXY_HOPS=1`). If every visitor shares one rate-limit bucket on Liara,
+  there is one more proxy layer: set `TRUSTED_PROXY_HOPS=2` on api and agent.
+- Not run on Liara: the nightly `cron` jobs (`anonymise_sessions`, `price_stats`) and the `backup` container.
+  Neither is needed for the demo; Liara backs up its databases itself. Run a job by hand from the api app's
+  console: `python manage.py price_stats`.
+- Phone login needs `KAVENEGAR_KEY` (no SMS sender outside DEBUG); without it the rest works and «ذخیره‌ی سفر»
+  says SMS is unavailable.
+
+Data: give the Liara Postgres a public address, then from this Mac (dev stack up):
+
+```sh
+deploy/seed-liara.sh   # asks for the DATABASE_URL at a hidden prompt; dump → restore → embedding-model UPDATE
+```
+
+The dump is about 1.1 GB, so the restore takes a while on a home connection.

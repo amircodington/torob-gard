@@ -8,10 +8,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ponytail: dev-only default key; set DJANGO_SECRET_KEY before any real deploy
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-insecure-key")
 DEBUG = os.environ.get("DEBUG", "1") == "1"
-# prod: the domain plus "api" (web SSR calls http://api:8000); nginx drops unknown hosts first
+# prod: public host + the private name web calls (compose "api"; Liara "torob-gard-api,.liara.run")
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
-# nginx terminates TLS and sets X-Forwarded-Proto, so admin CSRF origin checks see https
+# admin over https from these origins, comma-separated (e.g. https://torob-gard-api.liara.run)
+CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+# the proxy in front (nginx or Liara's) terminates TLS and sets X-Forwarded-Proto: CSRF sees https
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# proxies in front appending to X-Forwarded-For (nginx overwrites, Liara's ingress appends: 1)
+PROXY_HOPS = max(1, int(os.environ.get("TRUSTED_PROXY_HOPS", "1")))
 
 INSTALLED_APPS = [
     "unfold",
@@ -31,6 +35,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # /static/ without nginx (Liara)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -71,7 +76,7 @@ LANGUAGE_CODE = "fa"
 TIME_ZONE = "Asia/Tehran"
 USE_TZ = True
 STATIC_URL = "static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"  # collectstatic in prod; nginx serves /static/
+STATIC_ROOT = BASE_DIR / "staticfiles"  # collectstatic at start; WhiteNoise or nginx serves it
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")

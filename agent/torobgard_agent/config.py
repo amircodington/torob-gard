@@ -14,3 +14,5 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 # evals only: the agent model's temperature during `make eval` ("" = model default); FAST_MODEL rejects it
 _eval_t = os.environ.get("EVAL_TEMPERATURE", "0")
 EVAL_TEMPERATURE = float(_eval_t) if _eval_t else None
+# proxies in front that append to X-Forwarded-For (nginx overwrites it, Liara's ingress appends: both 1)
+PROXY_HOPS = max(1, int(os.environ.get("TRUSTED_PROXY_HOPS", "1")))

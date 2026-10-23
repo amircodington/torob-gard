@@ -266,7 +266,7 @@ def test_sessionless_requests_are_limited_by_the_forwarded_client(monkeypatch):
     monkeypatch.setattr(api, "explain", fake_explain)
     monkeypatch.setattr(api, "price_check", fake_price)
     c = TestClient(app)
-    me = {"X-Forwarded-For": "5.6.7.8, 10.0.0.2"}  # first hop is the shopper; Next adds itself after
+    me = {"X-Forwarded-For": "1.1.1.1, 5.6.7.8"}  # the proxy appended the shopper; a sent first hop is moot
     for _ in range(api.TURNS):
         assert c.post("/agent/chat", json={"text": "سلام"}, headers=me).status_code == 200
     assert c.post("/agent/chat", json={"text": "سلام"}, headers=me).status_code == 429
@@ -274,7 +274,8 @@ def test_sessionless_requests_are_limited_by_the_forwarded_client(monkeypatch):
     pc = {"product_id": "product_1", "quoted_price": 900}
     assert c.post("/agent/price_check", json=pc, headers=me).status_code == 429
     assert "rl:agent:5.6.7.8" in r.n
-    other = {"X-Forwarded-For": "9.9.9.9"}
+    assert "rl:agent:1.1.1.1" not in r.n
+    other = {"X-Forwarded-For": "5.6.7.8, 9.9.9.9"}  # a forged first hop does not borrow 5.6.7.8's bucket
     assert c.post("/agent/chat", json={"text": "سلام"}, headers=other).status_code == 200
     assert c.post("/agent/chat", json={"text": "سلام"}).status_code == 200  # no proxy: the client host
     sid = str(uuid4())  # a fresh session id does not reset the client's limit (R-P6)

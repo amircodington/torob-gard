@@ -71,8 +71,11 @@ def _me(request) -> AppUser:
 
 
 def _client(request) -> str:
-    first = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-    return first or request.META.get("REMOTE_ADDR", "anon")
+    """The client: the X-Forwarded-For entry our proxy added (from the right), else the peer."""
+    hops = [h.strip() for h in request.headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    if hops:
+        return hops[-min(settings.PROXY_HOPS, len(hops))]
+    return request.META.get("REMOTE_ADDR", "anon")
 
 
 def _phone(raw: str) -> str:

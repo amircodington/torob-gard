@@ -85,6 +85,10 @@ def test_report_limit_holds_for_a_cookieless_client(client, pair):
     other = client.post("/api/reports", body, content_type="application/json",
                         HTTP_X_FORWARDED_FOR="9.9.9.9")
     assert other.status_code == 200
+    # a forged first hop does not get past it: the proxy's own (rightmost) entry is the client
+    forged = client.post("/api/reports", body, content_type="application/json",
+                         HTTP_X_FORWARDED_FOR="1.2.3.4, 5.6.7.8")
+    assert forged.status_code == 429
 
 
 def test_device_anchor_is_rounded_landmark_kept(client, pair):

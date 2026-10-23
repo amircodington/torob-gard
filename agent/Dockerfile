@@ -5,5 +5,8 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv PATH=/opt/venv/bin:$PATH
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
-CMD uvicorn torobgard_agent.main:app --host 0.0.0.0 --port 8001 --reload
 COPY . .
+# Production: Liara runs this. Dev compose overrides it with --reload.
+ENV PYTHONUNBUFFERED=1
+EXPOSE 8001
+CMD exec uvicorn torobgard_agent.main:app --host 0.0.0.0 --port ${PORT:-8001} --workers ${AGENT_WORKERS:-2}

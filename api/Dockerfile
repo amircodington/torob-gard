@@ -8,5 +8,9 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv PATH=/opt/venv/bin:$PATH
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen
-CMD python manage.py runserver 0.0.0.0:8000
 COPY . .
+# Production: Liara (and any single-container host) runs this. Dev compose overrides it with runserver.
+ENV PYTHONUNBUFFERED=1
+EXPOSE 8000
+CMD python manage.py migrate --noinput && python manage.py collectstatic --noinput -v0 \
+    && exec gunicorn torobgard.wsgi -b 0.0.0.0:${PORT:-8000} -w ${API_WORKERS:-3} --access-logfile -

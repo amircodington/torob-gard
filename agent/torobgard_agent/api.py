@@ -14,6 +14,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 from sqlalchemy import text
 
+from . import config
 from .context import TurnContext
 from .db import engine
 from .explain import ExplainIn, explain
@@ -47,11 +48,12 @@ async def allow(r: Redis, key: str) -> bool:
 
 
 def _client(request: Request) -> str:
-    """The shopper's address: the first X-Forwarded-For hop, else the socket peer."""
-    # ponytail: Next 16's dev rewrite passes an incoming X-Forwarded-For through but adds none, so dev
-    # falls back to the proxy's address (one bucket); prod nginx must set it to $remote_addr (P3 deploy)
-    first = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-    return first or (request.client.host if request.client else "anon")
+    """The shopper's address: the X-Forwarded-For entry our own proxy added, else the socket peer.
+    Counted from the right (config.PROXY_HOPS proxies append): a client can prepend, never replace it."""
+    hops = [h.strip() for h in request.headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    if hops:
+        return hops[-min(config.PROXY_HOPS, len(hops))]
+    return request.client.host if request.client else "anon"
 
 
 async def _uid(request: Request) -> UUID | None:
