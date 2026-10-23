@@ -76,6 +76,20 @@ def _out(t: Trip) -> dict:
     }
 
 
+# ponytail: mirrors LANDMARKS in web/src/lib/geo.ts; keep the two lists in step
+LANDMARKS = {(35.6907, 51.413), (35.692, 51.431), (35.6935, 51.418), (35.695, 51.4071)}
+
+
+def _anchor(a: dict) -> dict:
+    """R-P9, no location history: a landmark stays exact, any other point is kept to ~100 m."""
+    lat, lng = a.get("lat"), a.get("lng")
+    if not all(isinstance(x, int | float) for x in (lat, lng)):
+        return {}
+    if (lat, lng) in LANDMARKS:
+        return {"lat": lat, "lng": lng}
+    return {"lat": round(lat, 3), "lng": round(lng, 3)}
+
+
 def _get(trip_id: str) -> Trip:
     try:
         UUID(trip_id)
@@ -108,7 +122,7 @@ def create_trip(request, body: TripIn):
     shop = get_object_or_404(Shop, id=body.chosen_shop_id) if body.chosen_shop_id else None
     t = Trip.objects.create(
         product=product, chosen_shop=shop, req=body.req, failures=body.failures,
-        anchor=body.anchor, owner_key=request.session.session_key,
+        anchor=_anchor(body.anchor), owner_key=request.session.session_key,
         user_id=(u := current_user(request)) and u.id,
     )
     return _out(t)
@@ -121,7 +135,7 @@ def get_trip(request, trip_id: str):
 
 @router.patch("/trips/{trip_id}", response=TripOut)
 def patch_trip(request, trip_id: str, body: TripPatch):
-    # ponytail: no ownership check until /me in P3
+    # ponytail: trips are editable by anyone with the link (privacy page says so); owner check later
     t = _get(trip_id)
     if body.chosen_shop_id:
         t.chosen_shop = get_object_or_404(Shop, id=body.chosen_shop_id)

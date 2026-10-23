@@ -8,6 +8,7 @@ from django.utils import timezone
 from catalog.models import ShopReport
 from conversation.models import ItemMemory, Message, Session
 from people import otp
+from people.api import uid_token
 from people.models import AppUser, NeedsProfile
 from tests.test_trips import pair  # noqa: F401
 from trips.models import Trip
@@ -124,3 +125,25 @@ def test_anonymise_sessions_after_90_days(db):
     old.refresh_from_db()
     new.refresh_from_db()
     assert old.user_id is None and new.user_id == uid
+
+
+def test_login_sets_a_signed_user_cookie_for_the_agent(client, sent, db):
+    r = login(client, sent)
+    u = AppUser.objects.get()
+    c = r.cookies["tg_uid"]
+    assert c["httponly"] and c["samesite"] == "Lax" and c.value.startswith(f"{u.id}.")
+    uid, exp, sig = c.value.split(".")
+    assert c.value == uid_token(u.id, int(exp))
+    assert client.post("/api/auth/logout").cookies["tg_uid"]["max-age"] == 0
+
+
+def test_delete_covers_agent_sessions_started_after_login(client, sent, pair):  # noqa: F811
+    login(client, sent)
+    u = AppUser.objects.get()
+    later = Session.objects.create(model="m", user_id=u.id)  # the agent linked it via tg_uid
+    ItemMemory.objects.create(user_id=later.id, product_id="p1", state="liked")
+    assert [m["state"] for m in client.get("/api/me").json()["memory"]] == ["liked"]
+    r = client.delete("/api/me")
+    assert r.status_code == 204 and r.cookies["tg_uid"]["max-age"] == 0
+    assert not ItemMemory.objects.exists()
+    assert not Session.objects.filter(user_id=u.id).exists()

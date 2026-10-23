@@ -64,3 +64,14 @@ def test_report_rate_limit(client, pair):
     codes = [post(client, "/api/reports", body).status_code for _ in range(21)]
     assert codes[:20] == [200] * 20
     assert codes[20] == 429
+
+
+def test_device_anchor_is_rounded_landmark_kept(client, pair):
+    """R-P9, no location history: device positions kept to ~100 m, landmarks exact."""
+    dev = post(client, "/api/trips", {"product_id": "p1",
+               "anchor": {"lat": 35.6912345, "lng": 51.4123456, "acc": 5}}).json()
+    assert dev["anchor"] == {"lat": 35.691, "lng": 51.412}
+    saadi = {"lat": 35.6907, "lng": 51.413}
+    kept = post(client, "/api/trips", {"product_id": "p1", "anchor": saadi}).json()
+    assert kept["anchor"] == saadi
+    assert post(client, "/api/trips", {"product_id": "p1", "anchor": {}}).json()["anchor"] == {}

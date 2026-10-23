@@ -179,10 +179,10 @@ def _chunks(s: str) -> list[str]:
 
 async def run_turn(
     session_id: UUID | None, text_in: str, context: TurnContext, *,
-    llm: LLMClient | None = None, db: AsyncConnection | None = None,
+    llm: LLMClient | None = None, db: AsyncConnection | None = None, user_id: UUID | None = None,
 ) -> AsyncIterator[Event]:
     """_turn's events, plus a STILL status whenever nothing came for HEARTBEAT_S (a slow LLM call)."""
-    gen = _turn(session_id, text_in, context, llm=llm, db=db)
+    gen = _turn(session_id, text_in, context, llm=llm, db=db, user_id=user_id)
     nxt = asyncio.ensure_future(gen.__anext__())
     try:
         while True:
@@ -206,7 +206,7 @@ async def run_turn(
 
 async def _turn(
     session_id: UUID | None, text_in: str, context: TurnContext, *,
-    llm: LLMClient | None = None, db: AsyncConnection | None = None,
+    llm: LLMClient | None = None, db: AsyncConnection | None = None, user_id: UUID | None = None,
 ) -> AsyncIterator[Event]:
     """One agent turn: context → LLM ⇄ tools → Answer → ground (retry once) → persist → events."""
     t0, llm, sid = monotonic(), llm or LLMClient(), session_id or uuid4()
@@ -258,9 +258,12 @@ async def _turn(
     message_id = uuid4()
     async with _tx(db) as conn:
         await conn.execute(text(
-            "INSERT INTO conversation_session (id, context, model) VALUES (:s, CAST(:c AS jsonb), :m)"
-            " ON CONFLICT (id) DO UPDATE SET context = EXCLUDED.context"),
-            {"s": sid, "m": config.AGENT_MODEL,
+            "INSERT INTO conversation_session (id, context, model, user_id)"
+            " VALUES (:s, CAST(:c AS jsonb), :m, :u) ON CONFLICT (id) DO UPDATE SET"
+            " context = EXCLUDED.context,"
+            # a logged-in turn claims an unowned session (/me shows and deletes it); never re-owns one
+            " user_id = coalesce(conversation_session.user_id, EXCLUDED.user_id)"),
+            {"s": sid, "m": config.AGENT_MODEL, "u": user_id,
              "c": json.dumps({**sctx, **context.model_dump(exclude_none=True), "profile": profile},
                              ensure_ascii=False)})
         # ponytail: two concurrent turns in one session collide on (session, seq); the web sends one at a time

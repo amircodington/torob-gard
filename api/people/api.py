@@ -1,6 +1,10 @@
+import hashlib
+import hmac
+import time
 from typing import Annotated
 from uuid import UUID
 
+from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse
 from django.utils import timezone
@@ -34,6 +38,23 @@ class ProfileIn(Schema):
     avoided_brands: Tags | None = None
     style_tags: Tags | None = None
     notes: str | None = Field(None, max_length=2000)
+
+
+UID_COOKIE = "tg_uid"
+
+
+def uid_token(uid, exp: int) -> str:
+    """`uid.exp.sig`: the agent (same origin via Next) reads it to link new sessions to the user.
+    Mirrors agent/torobgard_agent/api.py `_uid`."""
+    msg = f"{uid}.{exp}"
+    sig = hmac.new(settings.SECRET_KEY.encode(), f"tg_uid:{msg}".encode(), hashlib.sha256)
+    return f"{msg}.{sig.hexdigest()}"
+
+
+def _signed_out() -> HttpResponse:
+    res = HttpResponse(status=204)
+    res.delete_cookie(UID_COOKIE, samesite="Lax")
+    return res
 
 
 def current_user(request) -> AppUser | None:
@@ -96,8 +117,8 @@ def _merge(u: AppUser, guest_key: str | None, agent_session: UUID | None) -> Non
     """The guest's trips (session key) and agent session (memory, profile) join the account."""
     if guest_key:
         Trip.objects.filter(owner_key=guest_key, user_id=None).update(user_id=u.id)
-    # ponytail: claims any unowned agent session by its (unguessable uuid4) id; sessions started
-    # after login stay unlinked until the agent learns the user id (agent auth, later)
+    # claims an unowned agent session by its (unguessable uuid4) id; sessions started after login
+    # are linked by the agent itself from the tg_uid cookie
     s = Session.objects.filter(id=agent_session, user_id=None).first() if agent_session else None
     if not s:
         return
@@ -120,7 +141,7 @@ def otp_request(request, body: PhoneIn):
 
 
 @router.post("/auth/otp/verify")
-def otp_verify(request, body: VerifyIn) -> dict:
+def otp_verify(request, response: HttpResponse, body: VerifyIn) -> dict:
     phone = _phone(body.phone)
     code = to_ascii_digits(body.code).strip()
     if not code.isdigit() or len(code) != 5:
@@ -142,13 +163,16 @@ def otp_verify(request, body: VerifyIn) -> dict:
         _merge(u, guest_key, body.agent_session_id)
     request.session.cycle_key()  # a new session key at login (session fixation)
     request.session["uid"] = str(u.id)
+    age = settings.SESSION_COOKIE_AGE
+    response.set_cookie(UID_COOKIE, uid_token(u.id, int(time.time()) + age), max_age=age,
+                        httponly=True, samesite="Lax", secure=settings.SESSION_COOKIE_SECURE)
     return _payload(u)
 
 
 @router.post("/auth/logout")
 def logout(request):
     request.session.flush()
-    return HttpResponse(status=204)
+    return _signed_out()
 
 
 @router.get("/me")
@@ -185,4 +209,4 @@ def delete_me(request):
         ShopReport.objects.filter(user_id=u.id).update(user_id=None)
         u.delete()  # NeedsProfile cascades
     request.session.flush()
-    return HttpResponse(status=204)
+    return _signed_out()

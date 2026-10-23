@@ -1,4 +1,6 @@
 import logging
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -113,3 +115,27 @@ def test_no_sms_sender_outside_debug(settings):
     assert otp.sender() is None
     settings.KAVENEGAR_KEY, settings.KAVENEGAR_TEMPLATE = "k", "t"
     assert isinstance(otp.sender(), otp.KavenegarSender)
+
+
+def test_parallel_guesses_compare_at_most_five_times(sent, db, monkeypatch):
+    otp.issue(PHONE, "c")
+    code, compares = sent[-1], []
+    real = otp.hmac.compare_digest
+
+    def slow(a, b):  # widen the race window: every guess is in flight at once
+        compares.append(1)
+        time.sleep(0.05)
+        return real(a, b)
+
+    monkeypatch.setattr(otp.hmac, "compare_digest", slow)
+    guesses = [f"{(int(code) + i) % 100000:05d}" for i in range(1, 21)]
+    with ThreadPoolExecutor(20) as ex:
+        results = list(ex.map(lambda g: otp.check(PHONE, g), guesses))
+    assert len(compares) <= 5
+    assert results.count("locked") >= 15 and "ok" not in results
+    assert otp.check(PHONE, code) == "locked"
+
+
+def test_codes_are_stored_hashed(sent, db):
+    otp.issue(PHONE, "c")
+    assert otp.redis().get(f"otp:c:{otp.phone_hash(PHONE)}") != sent[-1]

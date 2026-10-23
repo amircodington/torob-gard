@@ -1,3 +1,4 @@
+import base64
 import os
 from pathlib import Path
 from urllib.parse import urlparse
@@ -80,13 +81,15 @@ KAVENEGAR_KEY = os.environ.get("KAVENEGAR_KEY", "")
 KAVENEGAR_TEMPLATE = os.environ.get("KAVENEGAR_TEMPLATE", "")
 if not DEBUG and not (PHONE_PEPPER and PHONE_KEY):
     raise RuntimeError("set PHONE_PEPPER and PHONE_KEY")
+if PHONE_KEY and len(base64.b64decode(PHONE_KEY)) != 32:
+    raise RuntimeError("PHONE_KEY must be base64 of 32 bytes")
 
 # people.otp's dev sender prints the code (never the phone) to the console in DEBUG
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
-    "loggers": {"people": {"handlers": ["console"], "level": "INFO"}},
+    "loggers": {"people": {"handlers": ["console"], "level": "INFO", "propagate": False}},
 }
 
 UNFOLD = {"SITE_TITLE": "ترب‌گرد", "SITE_HEADER": "ترب‌گرد"}

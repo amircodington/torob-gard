@@ -311,3 +311,40 @@ async def test_model_profile_updates_are_allow_listed_and_bounded(conn):
     ctx = (await conn.execute(text("SELECT context FROM conversation_session WHERE id = :s"),
                               {"s": events[-1].session_id})).scalar()
     assert ctx["profile"] == {"category": "mobile", "budget_max": 30_000_000}
+
+
+async def test_a_logged_in_turn_links_its_session_to_the_user(conn):
+    sid, u, other = uuid4(), uuid4(), uuid4()
+    llm = FakeLLM(say({"say": "سلام"}), say({"say": "سلام"}))
+    [e async for e in run_turn(sid, "سلام", TurnContext(), llm=llm, db=conn, user_id=u)]
+    [e async for e in run_turn(sid, "سلام", TurnContext(), llm=llm, db=conn, user_id=other)]
+    owner = (await conn.execute(text("SELECT user_id FROM conversation_session WHERE id = :s"),
+                                {"s": sid})).scalar()
+    assert owner == u  # never re-owned by a later cookie
+
+
+def test_chat_reads_the_signed_user_cookie(monkeypatch):
+    import hashlib
+    import hmac
+    import time
+    monkeypatch.setenv("DJANGO_SECRET_KEY", "k")
+    seen = []
+
+    async def fake_turn(session_id, txt, ctx, **kw):
+        seen.append(kw.get("user_id"))
+        yield Done(uuid4(), [], uuid4())
+
+    async def yes(*a):
+        return True
+    monkeypatch.setattr(api, "run_turn", fake_turn)
+    monkeypatch.setattr(api, "allow", yes)
+    u = uuid4()
+
+    def token(exp, key="k"):
+        msg = f"{u}.{exp}"
+        return f"{msg}.{hmac.new(key.encode(), f'tg_uid:{msg}'.encode(), hashlib.sha256).hexdigest()}"
+    future = int(time.time()) + 600
+    for cookie in [token(future), token(future, "wrong"), token(int(time.time()) - 1), "junk"]:
+        c = TestClient(app, cookies={"tg_uid": cookie})
+        assert c.post("/agent/chat", json={"text": "سلام"}).status_code == 200
+    assert seen == [u, None, None, None]

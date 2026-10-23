@@ -84,7 +84,7 @@ def issue(phone: str, client: str) -> bool:
     if _count(r, f"otp:ip:{client}", 3600) > CLIENT_SENDS_PER_HOUR:  # one client, many phones
         return False
     code = f"{secrets.randbelow(10**5):05d}"
-    r.set(f"otp:c:{h}", code, ex=CODE_TTL)
+    r.set(f"otp:c:{h}", _code_hash(code), ex=CODE_TTL)
     s = sender()
     if s is None:
         raise SendError("no SMS sender configured")
@@ -92,19 +92,30 @@ def issue(phone: str, client: str) -> bool:
     return True
 
 
+def _code_hash(code: str) -> str:
+    """Redis holds this, not the code: a dump reveals no live codes."""
+    key = settings.PHONE_PEPPER.encode()
+    return hmac.new(key, f"otp:{code}".encode(), hashlib.sha256).hexdigest()
+
+
 def check(phone: str, code: str) -> str:
-    """"ok" (code used up), "bad", or "locked" (5 wrong codes → 15 min, the right one included)."""
+    """"ok" (code used up), "bad", or "locked" (5 attempts → 15 min, the right code included).
+
+    Counts first (one atomic INCR per attempt), compares second: parallel guesses cannot get more
+    than 5 compares between them.
+    """
     h, r = phone_hash(phone), redis()
-    if r.exists(f"otp:lock:{h}"):
+    n = _count(r, f"otp:f:{h}", LOCK_S)
+    if n > MAX_WRONG or r.exists(f"otp:lock:{h}"):
+        r.set(f"otp:lock:{h}", 1, ex=LOCK_S, nx=True)
         return "locked"
     stored = r.get(f"otp:c:{h}")
-    if stored and hmac.compare_digest(stored, code):
+    if stored and hmac.compare_digest(stored, _code_hash(code)):
         r.delete(f"otp:c:{h}", f"otp:f:{h}")
         return "ok"
-    # ponytail: incr-then-check, not atomic with the read; parallel guesses can exceed 5 by a few
-    if _count(r, f"otp:f:{h}", LOCK_S) >= MAX_WRONG:
+    if n == MAX_WRONG:
         r.set(f"otp:lock:{h}", 1, ex=LOCK_S)
-        r.delete(f"otp:c:{h}", f"otp:f:{h}")
+        r.delete(f"otp:c:{h}")
         return "locked"
     return "bad"
 

@@ -1,6 +1,9 @@
+import hashlib
+import hmac
 import json
 import logging
 import os
+import time
 from functools import cache
 from uuid import UUID
 
@@ -48,10 +51,23 @@ def _client(request: Request) -> str:
     return first or (request.client.host if request.client else "anon")
 
 
-async def _limit(client: str, session_id: UUID | None = None) -> None:
-    """Per client always, and per session too: a fresh session id per request does not reset it."""
+def _uid(request: Request) -> UUID | None:
+    """The logged-in user from Django's `tg_uid` cookie (`uid.exp.sig`, api/people/api.py uid_token)."""
+    key = os.environ.get("DJANGO_SECRET_KEY", "")
+    parts = request.cookies.get("tg_uid", "").split(".")
+    if not key or len(parts) != 3:
+        return None
+    uid, exp, sig = parts
+    good = hmac.new(key.encode(), f"tg_uid:{uid}.{exp}".encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(sig, good) or int(exp) < time.time():
+        return None
+    return UUID(uid)
+
+
+async def _limit(client: str, session_id: UUID | None = None, user_id: UUID | None = None) -> None:
+    """Per client always, per session and per user too: a fresh session id does not reset it."""
     try:
-        ok = all([await allow(redis(), k) for k in (client, session_id) if k])
+        ok = all([await allow(redis(), k) for k in (client, session_id, user_id) if k])
     except RedisError:
         log.exception("rate limit unavailable; letting the request through")
         return
@@ -65,11 +81,12 @@ def _sse(event: str, data) -> str:
 
 @router.post("/agent/chat")
 async def chat(body: ChatIn, request: Request):
-    await _limit(_client(request), body.session_id)
+    uid = _uid(request)
+    await _limit(_client(request), body.session_id, uid)
 
     async def events():
         try:
-            async for e in run_turn(body.session_id, body.text, body.context):
+            async for e in run_turn(body.session_id, body.text, body.context, user_id=uid):
                 if isinstance(e, Status):
                     yield _sse("status", {"text": e.text})
                 elif isinstance(e, Token):
