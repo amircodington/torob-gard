@@ -1,5 +1,5 @@
 /* Typed client for the Django API; snake_case → camelCase happens here and only here. */
-import type { Anchor, CategoryPage, DeskTier, FailureRecord, OfferRow, Product, ShopDetail, Stats, Store, Trip, Venue, VenueDetail } from "./types";
+import type { Anchor, CategoryPage, DeskTier, FailureRecord, OfferRow, Product, ProductCard, ShopDetail, ShopHit, SitemapData, Stats, Store, Trip, Venue, VenueDetail } from "./types";
 
 // Relative: a Next.js rewrite to the Django server lands in Task 6. Server components set API_URL.
 const API = "/api";
@@ -151,6 +151,18 @@ export const api = {
       popularProducts: c.popular_products.map((p: Raw) => ({ id: p.id, title: p.title, brand: p.brand, imageUrl: p.image_url, minPrice: p.min_price, offerCount: p.offer_count, priceAt: p.price_at })),
     };
   },
+  search: async (q: string): Promise<{ products: ProductCard[]; shops: ShopHit[] }> => {
+    const r = await request<Raw>(`/search?q=${encodeURIComponent(q)}`);
+    return {
+      products: r.products.map((p: Raw) => ({ id: p.id, title: p.title, brand: p.brand, imageUrl: p.image_url, minPrice: p.min_price, offerCount: p.offer_count, priceAt: p.price_at })),
+      shops: r.shops.map((s: Raw) => ({ id: s.id, name: s.name, venueName: s.venue_name, venueSlug: s.venue_slug, floor: s.floor, unit: s.unit })),
+    };
+  },
+  sitemap: async (): Promise<SitemapData> => {
+    const r = await request<Raw>("/sitemap");
+    return { venues: r.venues, categories: r.categories, shops: r.shops, productPages: r.product_pages };
+  },
+  sitemapProducts: (page: number) => request<string[]>(`/sitemap/products?page=${page}`),
   product: async (id: string): Promise<Product> => mapProduct(await request<Raw>(`/products/${encodeURIComponent(id)}`)),
   offerRows: async (productId: string, anchor?: Anchor): Promise<OfferRow[]> => {
     const q = anchor ? `?lat=${anchor.lat}&lng=${anchor.lng}` : "";

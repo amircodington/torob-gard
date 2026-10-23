@@ -75,7 +75,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 ## P3 Public + harden — gate: deployed, backups restore, k6 at 50 sessions
 
 - [x] P3.1 Pasazh, shop, product, category pages + SEO — Mohammad
-- [ ] P3.2 Search, sitemap, robots — Mohammad
+- [x] P3.2 Search, sitemap, robots — Mohammad
 - [ ] P3.3 PWA + offline trips — Mohammad
 - [ ] P3.4 Phone login + `/me` — Mohammad
 - [ ] P3.5 Production deploy + backups — Mohammad

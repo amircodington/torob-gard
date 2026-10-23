@@ -68,3 +68,15 @@ test("a shop, product, pasazh or category that no longer exists is the 404 page"
     await expect(page.getByText("این صفحه پیدا نشد")).toBeVisible();
   }
 });
+
+test("search: spelling variants, honest empty state, noindex; robots lists sitemaps", async ({ page, request }) => {
+  await page.goto(`/search?q=${encodeURIComponent("ایفون ۱۳")}`);
+  await expect(page.getByTestId("search-products").getByRole("link").first()).toHaveAttribute("href", /^\/product\//);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+  await page.goto(`/search?q=${encodeURIComponent("علاءالدین")}`);
+  await expect(page.getByTestId("search-shops").getByRole("link").first()).toHaveAttribute("href", /^\/shop\//);
+  await noSideScroll(page);
+  await page.goto("/search?q=zzqqxx");
+  await expect(page.getByRole("heading", { name: /پیدا نشد/ })).toBeVisible();
+  expect(await (await request.get("/robots.txt")).text()).toMatch(/Sitemap: .*\/sitemap\/0\.xml/);
+});

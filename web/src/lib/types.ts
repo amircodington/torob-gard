@@ -193,6 +193,12 @@ export interface ShopDetail extends Store {
   offers: ShopOffer[];
 }
 
+export type ProductCard = CategoryPage["popularProducts"][number];
+
+export interface ShopHit { id: string; name: string; venueName: string | null; venueSlug: string | null; floor: string | null; unit: string | null }
+
+export interface SitemapData { venues: string[]; categories: string[]; shops: string[]; productPages: number }
+
 export interface CategoryPage {
   slug: string;
   name: string;

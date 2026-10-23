@@ -23,6 +23,9 @@ export function SiteHeader() {
           <Link href="/#how" className="inline-flex min-h-11 items-center rounded-pill px-3 text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus">
             چطور کار می‌کنه
           </Link>
+          <Link href="/search" className="inline-flex min-h-11 items-center rounded-pill px-3 text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus">
+            جستجو
+          </Link>
           <Link href="/about" className="inline-flex min-h-11 items-center rounded-pill px-3 text-ink-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus">
             درباره
           </Link>

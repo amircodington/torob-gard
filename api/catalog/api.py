@@ -1,10 +1,14 @@
-from django.db.models import Count, Max, OuterRef, Q, Subquery
+import re
+
+from django.contrib.postgres.search import SearchQuery, SearchRank, TrigramSimilarity
+from django.db.models import Count, F, Func, Max, OuterRef, Q, Subquery, TextField, Value
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from ninja import Router
 
 from ingest.prices import category_quantiles
-from torobgard.persian import to_fa_digits
+from ingest.venues import venue_key
+from torobgard.persian import normalize, to_fa_digits
 
 from . import desk_config
 from .desk import explain_tiers, pick_tiers
@@ -17,7 +21,9 @@ from .schemas import (
     OfferByIdOut,
     OfferRowOut,
     ProductOut,
+    SearchOut,
     ShopDetailOut,
+    SitemapOut,
     StatsOut,
     VenueDetailOut,
     VenueOut,
@@ -155,6 +161,13 @@ def shop(request, shop_id: str):
     }
 
 
+def _cheapest_at():
+    """Date of a product's cheapest fair offer: the age of the price shown (PLAN §2 rule 1)."""
+    return Subquery(Offer.objects.filter(product=OuterRef("pk"), is_outlier=False)
+                    .order_by("price_toman", "-last_price_changed_at")
+                    .values("last_price_changed_at")[:1])
+
+
 def _category_by_slug(slug: str) -> Category:
     # ponytail: no slug column; ~3.4k names scanned per ISR-cached page. Add one if it profiles hot.
     for c in Category.objects.order_by("-product_count").only("id", "name", "name_norm"):
@@ -169,11 +182,8 @@ def category(request, slug: str):
     fair = Q(shops__offers__is_outlier=False, shops__offers__product__category=c)
     venues = (Venue.objects.annotate(n=Count("shops", filter=fair, distinct=True))
               .filter(n__gt=0).order_by("-n", "name")[:6])
-    cheapest = (Offer.objects.filter(product=OuterRef("pk"), is_outlier=False)
-                .order_by("price_toman", "-last_price_changed_at")
-                .values("last_price_changed_at")[:1])
     products = (Product.objects.filter(category=c, min_price__isnull=False)
-                .annotate(price_at=Subquery(cheapest)).order_by("-offer_count", "min_price")[:12])
+                .annotate(price_at=_cheapest_at()).order_by("-offer_count", "min_price")[:12])
     return {
         "slug": slug, "name": c.name, "price_quantiles": category_quantiles(c.name),
         "top_venues": [{"name": v.name, "slug": v.slug, "count": v.n} for v in venues],
@@ -182,3 +192,72 @@ def category(request, slug: str):
                               "offer_count": p.offer_count, "price_at": p.price_at}
                              for p in products],
     }
+
+
+def _fold(text: str) -> str:
+    """Search-path only: «آیفون»/«ایفون» meet. Stored title_norm and search_tsv keep the آ."""
+    return normalize(text).translate(str.maketrans("آأإ", "ااا"))
+
+
+def _tsquery(q: str) -> str | None:
+    # Every word is a prefix; a leading alef also tries alef-madda, because the stored tsv keeps آ.
+    # ponytail: medial آ («قرآن») is not matched from a plain-alef query.
+    words = re.findall(r"\w+", _fold(q))[:8]
+    parts = [f"({w}:*" + (f" | آ{w[1:]}:*" if w[0] == "ا" else "") + ")" for w in words]
+    return " & ".join(parts) or None
+
+
+@router.get("/search", response=SearchOut)
+def search(request, q: str = "", limit: int = 20):
+    """Keyword search, no LLM: products by search_tsv, shops by name or pasazh name (trigram)."""
+    limit = max(1, min(limit, 50))
+    ts, folded = _tsquery(q), _fold(q)
+    if not ts:
+        return {"products": [], "shops": []}
+    query = SearchQuery(ts, config="simple", search_type="raw")
+    products = (Product.objects.filter(search_tsv=query, min_price__isnull=False)
+                .annotate(rank=SearchRank("search_tsv", query), price_at=_cheapest_at())
+                # ponytail: unpriced products are left out; a hit without a price helps nobody here.
+                .order_by("-rank", "-offer_count", "id")[:limit])
+    # Venue names are stored as ingest's venue_key («علالدین2»), so the query goes through it too.
+    vkey = venue_key(q) or None
+    shops = (Shop.objects.select_related("venue")
+             .annotate(name_f=Func(F("name_norm"), Value("آأإ"), Value("ااا"),
+                                   function="translate", output_field=TextField()))
+             # ponytail: trigram on an expression skips the GIN index; fine at ~6k shops.
+             .annotate(sim=TrigramSimilarity("name_f", folded))
+             .filter(Q(sim__gt=0.3) | Q(name_f__contains=folded)
+                     | (Q(venue__name_norm__contains=vkey) if vkey else Q()))
+             .order_by("-sim", "-offer_count", "id")[:limit])
+    return {
+        "products": [{"id": p.id, "title": p.persian_title, "brand": p.brand_name,
+                      "image_url": (p.image_urls or [None])[0], "min_price": p.min_price,
+                      "offer_count": p.offer_count, "price_at": p.price_at} for p in products],
+        "shops": [{"id": s.id, "name": s.name, "venue_name": s.venue.name if s.venue else None,
+                   "venue_slug": s.venue.slug if s.venue else None, "floor": s.floor,
+                   "unit": s.unit} for s in shops],
+    }
+
+
+SITEMAP_CHUNK = 10_000
+_sitemap_products = Product.objects.filter(offer_count__gte=2).order_by("id")
+
+
+@router.get("/sitemap", response=SitemapOut)
+def sitemap(request):
+    desk = {n for names in desk_config.DESK_CATEGORIES.values() for n in names}
+    return {
+        "venues": list(Venue.objects.order_by("slug").values_list("slug", flat=True)),
+        "categories": [persian_slug(n) for n in
+                       Category.objects.filter(name__in=desk).order_by("name")
+                       .values_list("name_norm", flat=True)],
+        "shops": list(Shop.objects.order_by("id").values_list("id", flat=True)),
+        "product_pages": -(-_sitemap_products.count() // SITEMAP_CHUNK),
+    }
+
+
+@router.get("/sitemap/products", response=list[str])
+def sitemap_products(request, page: int = 0):
+    page = max(0, page)
+    lo = page * SITEMAP_CHUNK
+    return list(_sitemap_products.values_list("id", flat=True)[lo:lo + SITEMAP_CHUNK])

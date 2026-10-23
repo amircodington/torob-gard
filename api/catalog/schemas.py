@@ -149,3 +149,24 @@ class CategoryOut(Schema):
     price_quantiles: dict[str, int]
     top_venues: list[NamedCountOut]
     popular_products: list[ProductCardOut]
+
+
+class ShopHitOut(Schema):
+    id: str
+    name: str
+    venue_name: str | None
+    venue_slug: str | None
+    floor: str | None
+    unit: str | None
+
+
+class SearchOut(Schema):
+    products: list[ProductCardOut]
+    shops: list[ShopHitOut]
+
+
+class SitemapOut(Schema):
+    venues: list[str]
+    categories: list[str]
+    shops: list[str]
+    product_pages: int
