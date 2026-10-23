@@ -1,5 +1,5 @@
 # ponytail: api runs only in Docker (host has no GDAL); web runs on the host with pnpm. No CI yet, pre-push runs check.
-.PHONY: dev down check e2e eval test-api test-agent agent-testdb ingest psql hooks push-test
+.PHONY: dev down check e2e eval test-api test-agent agent-testdb ingest psql hooks push-test load
 
 .env:
 	cp .env.example .env
@@ -61,3 +61,7 @@ psql: .env
 # Ship HEAD to the VPS and smoke it (docs/DEPLOY.md). DEPLOY_HOST=user@vps make push-test
 push-test:
 	deploy/push-test.sh
+
+# k6 load/cost script (docs/evidence/P3/load.md). BASE_URL=https://host AGENT_TURNS=1 make load; SMOKE=1 for 30 s. Agent turns cost money.
+load:
+	docker run --rm -v $(CURDIR)/deploy/k6:/k6:ro -e BASE_URL -e AGENT_TURNS -e SMOKE grafana/k6 run /k6/journey.js
