@@ -129,3 +129,26 @@ describe("reopenChat", () => {
     expect(s.req).toMatchObject({ category: "laptop", priorityId: "weight" });
   });
 });
+
+const last = (s: ReturnType<typeof initialState>) => s.chat[s.chat.length - 1];
+
+describe("the need the agent understood", () => {
+  it("done carries it into the session, so a later fallback keeps the category and reads the budget", () => {
+    const done = { event: "done", data: { message_id: "m", receipt_ids: [], session_id: "s", need: { category: "headphone" } } } as AgentEvent;
+    let s = bridge(done).reduce(reducer, initialState());
+    expect(s.req.category).toBe("headphone");
+    s = reducer(s, { type: "CHAT_TEXT", text: "۵ میلیون تومن تا ۷ تومن" }); // the agent timed out: the rule consult answers
+    expect(s.req.customBudget).toMatchObject({ min: 5_000_000, max: 7_000_000 });
+    expect(last(s).chips?.some((c) => c.id.startsWith("prio:"))).toBe(true);
+  });
+});
+
+it("an ask after a say joins it as one bubble with the chips (not a second bubble)", () => {
+  const s = [
+    { type: "AGENT_TOKEN", text: "حتماً! بودجه‌ت حدوداً چقدره؟" },
+    { type: "AGENT_MSG", msg: { from: "assistant", text: "کدوم بازه نزدیک‌تره؟", chips: [{ id: "agent:تا ۲", label: "تا ۲" }] } },
+  ].reduce((st, a) => reducer(st, a as Parameters<typeof reducer>[1]), reducer(initialState(), { type: "CHAT_USER", text: "هدفون" }));
+  expect(s.chat.slice(-1)[0]).toMatchObject({ from: "assistant", text: "حتماً! بودجه‌ت حدوداً چقدره؟\nکدوم بازه نزدیک‌تره؟" });
+  expect(s.chat.slice(-1)[0].chips).toHaveLength(1);
+  expect(s.chat).toHaveLength(3);
+});

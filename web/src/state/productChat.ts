@@ -25,9 +25,11 @@ export function productChat(s: ProductChatState, a: Action): ProductChatState {
         ? { ...s, msgs: [...s.msgs.slice(0, -1), { ...last, text: last.text + a.text }] }
         : push({ from: "assistant", text: a.text });
     case "AGENT_MSG":
-      // an ask whose question the say already holds hands its chips to that message (as in the consult)
-      if (a.msg.chips && a.msg.text && last?.from === "assistant" && !last.chips && last.text.includes(a.msg.text))
-        return { ...s, msgs: [...s.msgs.slice(0, -1), { ...last, chips: a.msg.chips }] };
+      // an ask joins the say before it, as in the consult: one bubble with the chips
+      if (a.msg.chips && a.msg.text && last?.from === "assistant" && !last.chips && !last.shopCards) {
+        const text = last.text.includes(a.msg.text) ? last.text : `${last.text}\n${a.msg.text}`;
+        return { ...s, msgs: [...s.msgs.slice(0, -1), { ...last, text, chips: a.msg.chips }] };
+      }
       return push(a.msg);
     case "AGENT_DONE":
       return { ...s, sessionId: a.sessionId ?? s.sessionId };

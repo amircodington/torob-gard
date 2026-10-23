@@ -31,7 +31,11 @@ function deskReq(b: Record<string, unknown>): Partial<JourneyReq> {
 
 export function bridge(e: AgentEvent): Action[] {
   if (e.event === "token") return [{ type: "AGENT_TOKEN", text: e.data.text }];
-  if (e.event === "done") return [{ type: "AGENT_DONE", sessionId: e.data.session_id ?? null }];
+  if (e.event === "done") {
+    // what the agent understood joins the session: the side panel shows it and a later rule fallback keeps it
+    const need = e.data.need && Object.keys(e.data.need).length ? deskReq(e.data.need) : null;
+    return [...(need ? [{ type: "SET_REQ", req: need } as Action] : []), { type: "AGENT_DONE", sessionId: e.data.session_id ?? null }];
+  }
   if (e.event !== "block") return [];
   const b = e.data;
   switch (b.type) {

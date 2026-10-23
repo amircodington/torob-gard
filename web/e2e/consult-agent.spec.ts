@@ -162,3 +162,19 @@ test("product page: no notes card for a product whose sellers wrote nothing", as
   await expect(page.getByRole("heading", { name: "مشخصات" })).toBeVisible();
   await expect(page.getByTestId("seller-notes")).toHaveCount(0);
 });
+
+test("the 2026-10-23 headphone chat: the agent's need survives a failed turn; the fallback goes on to priority", async ({ page }) => {
+  let calls = 0;
+  await page.route("**/agent/chat", (r) => (++calls === 1
+    ? r.fulfill({ status: 200, contentType: "text/event-stream", body: sse(
+      ["token", { text: "حتماً! بودجه‌ت برای هدفون حدوداً چقدره؟" }],
+      ["block", { type: "ask", question: "کدوم بازه به بودجه‌ت نزدیک‌تره؟", options: ["تا ۲ میلیون", "۲ تا ۱۰ میلیون"] }],
+      ["done", { message_id: "m", receipt_ids: [], session_id: "11111111-1111-1111-1111-111111111111", need: { category: "headphone" } }]) })
+    : r.abort()));
+  await page.goto("/start");
+  await say(page, "میخوام هدفون بگیرم");
+  await expect(page.getByText("کدوم بازه به بودجه‌ت نزدیک‌تره؟")).toBeVisible();
+  await say(page, "۵ میلیون تومن تا ۷ تومن");
+  await expect(page.getByRole("button", { name: "موبایل" })).toHaveCount(1); // only the welcome's, not asked again
+  await expect(page.getByRole("button", { name: /نویز/ }).first()).toBeVisible(); // headphone priorities
+});

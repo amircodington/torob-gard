@@ -82,9 +82,12 @@ def is_quota_error(e: Exception) -> bool:
 class LLMClient:
     def __init__(self, client: AsyncOpenAI | None = None, supports_tools: bool | None = None,
                  temperature: float | None = None, second_client: AsyncOpenAI | None = None):
-        self.primary = client or AsyncOpenAI(base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY)
+        self.primary = client or AsyncOpenAI(
+            base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY, timeout=config.LLM_TIMEOUT_S,
+            max_retries=1)
         self.second = second_client or (
-            AsyncOpenAI(base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY_SECOND)
+            AsyncOpenAI(base_url=config.BOXAPI_BASE_URL, api_key=config.BOXAPI_KEY_SECOND,
+                        timeout=config.LLM_TIMEOUT_S, max_retries=1)
             if config.BOXAPI_KEY_SECOND else None
         )
         self.supports_tools = config.BOXAPI_TOOLS if supports_tools is None else supports_tools

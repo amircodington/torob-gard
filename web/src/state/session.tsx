@@ -161,7 +161,9 @@ function detectCategory(text: string): Category | null {
 
 /** «۱۵ تا ۲۵», «15-25 میلیون» → a band in toman; anything else → null. */
 export function parseBudget(text: string): BudgetBand | null {
-  const m = toAsciiDigits(text.trim()).match(/^(\d+(?:\.\d+)?)\s*(?:تا|-|–)\s*(\d+(?:\.\d+)?)\s*(?:میلیون)?\s*(?:تومان|تومن)?$/);
+  // the unit may follow either number: «۱۵ تا ۲۵»، «۱۵-۲۵ میلیون»، «۵ میلیون تومن تا ۷ تومن»
+  const unit = String.raw`\s*(?:میلیون)?\s*(?:تومان|تومن)?\s*`;
+  const m = toAsciiDigits(text.trim()).match(new RegExp(String.raw`^(\d+(?:\.\d+)?)${unit}(?:تا|-|–)\s*(\d+(?:\.\d+)?)${unit}$`));
   if (!m) return null;
   const [lo, hi] = [Number(m[1]), Number(m[2])].sort((a, b) => a - b);
   return { id: "custom", label: `${toFaDigits(String(lo))} تا ${toFaDigits(String(hi))} میلیون`, min: lo * 1_000_000, max: hi * 1_000_000 };
@@ -413,10 +415,12 @@ export function reducer(s: SessionState, a: Action): SessionState {
       return { ...s, chat: [...s.chat.slice(0, -1), { ...last, text: last.text + a.text }] };
     }
     case "AGENT_MSG": {
-      // An ask whose question the say already holds hands its chips to that message.
+      // An ask joins the say before it: one bubble, its question added unless the say already holds it.
       const last = s.chat[s.chat.length - 1];
-      if (a.msg.chips && a.msg.text && last?.from === "assistant" && !last.chips && last.text.includes(a.msg.text))
-        return { ...s, chat: [...s.chat.slice(0, -1), { ...last, chips: a.msg.chips }] };
+      if (a.msg.chips && a.msg.text && last?.from === "assistant" && !last.chips && !last.shopCards) {
+        const text = last.text.includes(a.msg.text) ? last.text : `${last.text}\n${a.msg.text}`;
+        return { ...s, chat: [...s.chat.slice(0, -1), { ...last, text, chips: a.msg.chips }] };
+      }
       return { ...s, chat: push(s.chat, a.msg) };
     }
     case "SET_REQ":

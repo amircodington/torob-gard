@@ -105,13 +105,13 @@ async def chat(body: ChatIn, request: Request):
                     yield _sse("block", e.block.model_dump())
                 elif isinstance(e, Done):
                     yield _sse("done", {"message_id": e.message_id, "receipt_ids": e.receipt_ids,
-                                        "session_id": e.session_id})
+                                        "session_id": e.session_id, "need": e.need})
         except Exception:  # the web falls back to the P1 reducer on this event
             log.exception("agent turn failed")
             yield _sse("error", {"message": "agent unavailable"})
 
     return StreamingResponse(events(), media_type="text/event-stream",
-                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+                             headers={"Cache-Control": "no-cache, no-transform", "X-Accel-Buffering": "no"})
 
 
 class PriceCheckIn(BaseModel):

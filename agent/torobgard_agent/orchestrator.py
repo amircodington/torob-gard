@@ -63,6 +63,7 @@ class Done:
     message_id: UUID
     receipt_ids: list[str]
     session_id: UUID
+    need: dict = field(default_factory=dict)  # what the agent understood, in the desk's ids (_need_out)
 
 
 Event = Status | Token | BlockEvent | Done
@@ -197,6 +198,18 @@ def _desk_key(d: DeskBlock) -> list:
 
 
 _NEED_KEYS = ("category", "budget_min", "budget_max", "priority")
+
+
+def _need_out(profile: dict) -> dict:
+    """The profile for the web (its side panel, its rule fallback): desk ids only, nothing it cannot read."""
+    cat = profile.get("category") or ""
+    cat = cat if cat in DESK_PRIORITIES else _DESK_WORDS.get(_compact(cat))
+    out = {k: profile[k] for k in ("budget_min", "budget_max") if profile.get(k) is not None}
+    if cat:
+        out["category"] = cat
+        if profile.get("priority") in DESK_PRIORITIES[cat]:
+            out["priority"] = profile["priority"]
+    return out
 
 
 def _chunks(s: str) -> list[str]:
@@ -339,4 +352,4 @@ async def _turn(
         yield Token(chunk)
     for b in answer.blocks:
         yield BlockEvent(b)
-    yield Done(message_id, receipts, sid)
+    yield Done(message_id, receipts, sid, _need_out(profile))

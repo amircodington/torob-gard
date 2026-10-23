@@ -11,7 +11,7 @@ from torobgard_agent import api, config, orchestrator
 from torobgard_agent.context import SYSTEM, TurnContext
 from torobgard_agent.contract import Answer, AskBlock
 from torobgard_agent.db import make_engine
-from torobgard_agent.llm import ChatResult, ToolCall
+from torobgard_agent.llm import ChatResult, LLMClient, ToolCall
 from torobgard_agent.main import app
 from torobgard_agent.orchestrator import FALLBACK, BlockEvent, Done, Status, Token, run_turn
 from torobgard_agent.tools.registry import ToolResult, serialise
@@ -218,7 +218,9 @@ def test_chat_sse(monkeypatch):
     monkeypatch.setattr(api, "allow", yes)
     r = TestClient(app).post("/agent/chat", json={"text": "سلام", "context": {"stage": "consult"}})
     assert r.headers["content-type"].startswith("text/event-stream")
-    assert r.headers["x-accel-buffering"] == "no" and r.headers["cache-control"] == "no-cache"
+    # no-transform: a gzip proxy (Next's rewrite for a browser) held the whole stream back, so slow turns
+    # looked stalled and fell back to the rule consult (the 2026-10-23 headphone chat)
+    assert r.headers["x-accel-buffering"] == "no" and r.headers["cache-control"] == "no-cache, no-transform"
     events = [e.split("\n") for e in r.text.strip().split("\n\n")]
     assert [e[0] for e in events] == ["event: status", "event: token", "event: block", "event: done"]
     assert json.loads(events[2][1][6:])["type"] == "ask"
@@ -440,3 +442,19 @@ async def test_a_need_from_the_web_is_validated_like_the_models(conn):
     junk = {"category": "x" * 80, "budget_max": "a lot", "priority": 3}
     events = await need_turn(conn, FakeLLM(say({"say": "باشه"})), "سلام", junk)
     assert not _blocks(events)
+
+
+async def test_done_carries_the_need_the_agent_understood(conn):
+    # the 2026-10-23 headphone chat: the web never learned «هدفون», so its fallback asked the category again
+    events = await turn(conn, FakeLLM(say({"say": "بودجه‌ت؟", "profile_updates": {"category": "هدفون"}})),
+                        "میخوام هدفون بگیرم")
+    assert events[-1].need == {"category": "headphone"}
+    full = await turn(conn, FakeLLM(say({"say": "باشه", "profile_updates": {**FULL, "priority": "bogus"}})),
+                      "هدفون تا ۵ میلیون")
+    # an unknown priority stays out
+    assert full[-1].need == {"category": "headphone", "budget_max": 5_000_000}
+
+
+def test_llm_calls_give_up_on_a_hung_provider():
+    assert LLMClient().primary.timeout == config.LLM_TIMEOUT_S <= 20
+    assert LLMClient().primary.max_retries == 1
