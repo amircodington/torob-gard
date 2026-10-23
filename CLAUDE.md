@@ -20,7 +20,7 @@ Persian, phone-first companion for in-person shopping in downtown Tehran's elect
 - Ponytail on: smallest complete change; every deliberate shortcut gets a `ponytail:` comment.
 - UI: `emil-design-eng` per screen, `apple-design` for the sheet and gestures, `mobile-native`
   before a gate, `break-ui` on cards and rows, `animate` / `gsap-*` for the four motion moments.
-- Look = decision 8 + mascot (decision 11): light only, orange `#ee8a2a` active, black sheet, Vazirmatn.
+- Look = decision 8 + decision 13: light only, orange `#ee8a2a` active, black sheet, Dana, the 3D radish mascot.
   The prototype's red/cream/mint colours are not used.
 - Honesty rules in `PLAN.md §2` apply to every screen and every agent answer.
 - No runtime loads from outside Iran (fonts self-hosted) except BoxAPI and Torob images.

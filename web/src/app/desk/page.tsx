@@ -142,7 +142,6 @@ function Desk() {
             خودم «بهترین» رو انتخاب نمی‌کنم؛ بر اساس چیزهایی که گفتی، هر استراتژی یک مصالحه‌ی متفاوته.
           </p>
         </div>
-        {/* ponytail: the mascot WebPs carry an opaque grey ground, so they sit cropped in a circle until transparent exports land. */}
         <Mascot pose="idle" react="hop" className="size-20 lg:col-start-3 lg:row-start-1" />
         <ReqChips req={req} onEdit={edit} className="col-span-2 lg:col-span-1 lg:col-start-2 lg:row-start-1" />
       </div>

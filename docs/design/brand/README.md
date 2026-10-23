@@ -70,10 +70,11 @@ segments in it and two stat cards in `panel-brown` and `panel-plum`.
 
 ### Typography
 
-- **Vazirmatn** for everything (Google Fonts here; self-hosted as Vazirmatn or IRANYekan in
-  production). The reference's character comes from weight contrast: thin 300 with one bold 800
-  phrase inside («امروز **کجا برم؟**», «کابل **۱۶×۵ مشهد**»). Persian has no italic, so this
-  replaces the reference's italics.
+- **Dana** for everything (decision 13; self-hosted woff2, one file per weight 300/400/500/600/700/800
+  in `web/public/fonts/`, `font-display: swap`; Persian digits built in). Headlines still get their
+  character from weight contrast: thin 300 with one bold 800 phrase inside («امروز **کجا برم؟**»).
+  Persian has no italic, so this replaces the reference's italics. The wordmark is the exception
+  (one weight, below).
 - Big numbers everywhere: `stat` (30px/700) on the sheet, `price` (22px/700) in cards,
   `price-compact` (17px/800) in rows. All tabular.
 - Body is 15px/24px; nothing on a phone is smaller than `micro` (11px/600), and micro is only a
@@ -82,8 +83,14 @@ segments in it and two stat cards in `panel-brown` and `panel-plum`.
 
 ### The wordmark and the mark
 
-Wordmark: «ترب‌گرد» in Vazirmatn, «ترب‌» at 300 and «گرد» at 800, `ink` on `paper`, or
-white on `orange`. No outline, no gradient.
+Wordmark: the icon tile (`torob-gard-icon`, 32 px, 10 px radius) beside «ترب‌گرد» in Dana
+ExtraBold 800, 18 px, `ink` on `paper`. One weight, no thin/bold split, no orange accent (orange
+means "active", decision 8). No outline, no gradient. Component: `web/src/components/Wordmark.tsx`.
+
+Logo motion (CSS, `globals.css`): on the first paint of a visit the tile pops in (`scale .8→1`,
+`rotate -8°→0`, opacity) and sways once from its base (the leaves wiggle: `+5°`, `-3°`, rest),
+600 ms `--ease-out`; client-side page changes do not replay it. On hover (hover devices only) the
+tile hops (`y -4px`, `rotate -6°`, back) in 300 ms. Reduced motion: static.
 
 Mark: the mascot `icon` pose. Map pins keep the `orange` circle with the unit number «۶۲۲» in
 `stat` weight, so "a place" and "the brand" never get confused.

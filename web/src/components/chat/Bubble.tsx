@@ -17,8 +17,8 @@ export function Bubble({ from, children }: { from: "assistant" | "user"; childre
       <div className="whitespace-pre-line rounded-lg rounded-ee-sm bg-surface px-4 py-3 text-[15px] leading-6 text-ink shadow-card">
         {children}
       </div>
-      <span className="pop-in grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-tint">
-        <Mascot pose="icon" className="h-7 w-7" />
+      <span className="pop-in size-9 shrink-0 overflow-hidden rounded-full">
+        <Mascot pose="icon" className="size-full" />
       </span>
     </div>
   );

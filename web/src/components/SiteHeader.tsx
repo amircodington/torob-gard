@@ -1,17 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { btnClass } from "./ui/Btn";
-
-/** The wordmark, always a way home. */
-export function Wordmark() {
-  return (
-    // aria-label: the two weight spans would otherwise be read as «ترب‌ گرد»
-    <Link href="/" aria-label="ترب‌گرد" className="inline-flex min-h-11 items-center rounded-pill text-[17px] leading-none focus-visible:outline-2 focus-visible:outline-focus">
-      <span className="font-light">ترب‌</span>
-      <span className="font-extrabold">گرد</span>
-    </Link>
-  );
-}
+import { Wordmark } from "./Wordmark";
 
 /** Header for the landing, about, privacy and error pages; same material as the journey TopBar. */
 export function SiteHeader() {

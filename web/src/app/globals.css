@@ -1,9 +1,40 @@
 @import "tailwindcss";
 
+/* Dana (decision 13), self-hosted; one file per weight. */
 @font-face {
-  font-family: "Vazirmatn";
-  src: url("/fonts/Vazirmatn[wght].woff2") format("woff2");
-  font-weight: 100 900;
+  font-family: "Dana";
+  src: url("/fonts/Dana-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Dana";
+  src: url("/fonts/Dana-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Dana";
+  src: url("/fonts/Dana-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Dana";
+  src: url("/fonts/Dana-DemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Dana";
+  src: url("/fonts/Dana-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Dana";
+  src: url("/fonts/Dana-ExtraBold.woff2") format("woff2");
+  font-weight: 800;
   font-display: swap;
 }
 
@@ -40,7 +71,7 @@
   --shadow-pin: 0 8px 20px rgba(238, 138, 42, 0.4);
   --shadow-sheet: 0 -12px 40px rgba(0, 0, 0, 0.25);
 
-  --font-sans: "Vazirmatn", system-ui, sans-serif;
+  --font-sans: "Dana", system-ui, sans-serif;
 
   /* Motion system (decision 12; brand README "Motion"). lib/motion.ts mirrors these for GSAP. */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -57,6 +88,12 @@
   --animate-grow: grow 400ms var(--ease-out) both;
   /* The agent's typing dots: they loop only while a turn is in flight (10–19 s), never at rest. */
   --animate-typing: typing 1.2s ease-in-out infinite;
+  /* Mascot react="pop" (entrance) and react="float" (idle bob, ~0.28 Hz, never at a vestibular-heavy amplitude). */
+  --animate-pop: pop 400ms var(--ease-out) backwards;
+  --animate-float: float 3.6s ease-in-out infinite;
+  /* The wordmark's icon: pops in and its leaves wiggle once on the first paint; hops on hover (hover devices only). */
+  --animate-logo-in: logo-in var(--duration-slow) var(--ease-out) backwards;
+  --animate-hop: hop 300ms var(--ease-out);
 
   @keyframes rise {
     from {
@@ -79,6 +116,42 @@
       opacity: 0;
     }
   }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: 0.9;
+    }
+  }
+  @keyframes float {
+    50% {
+      translate: 0 -6px;
+    }
+  }
+  /* ponytail: the icon is one bitmap, so "the leaves wiggle" is the whole tile swaying from its base; a split leaf layer would need new art. */
+  @keyframes logo-in {
+    0% {
+      opacity: 0;
+      scale: 0.8;
+      rotate: -8deg;
+    }
+    55% {
+      opacity: 1;
+      scale: 1;
+      rotate: 0deg;
+    }
+    72% {
+      rotate: 5deg;
+    }
+    86% {
+      rotate: -3deg;
+    }
+  }
+  @keyframes hop {
+    40% {
+      translate: 0 -4px;
+      rotate: -6deg;
+    }
+  }
 }
 
 :root {
@@ -98,6 +171,10 @@
     --pop: 1;
     --tray: 0;
     --animate-typing: none;
+    --animate-pop: fade var(--duration-base) var(--ease-out) backwards;
+    --animate-float: none;
+    --animate-logo-in: none;
+    --animate-hop: none;
   }
 }
 

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { ClipboardCheck, MessagesSquare, Radar, RotateCcw, Scale, type LucideIcon } from "lucide-react";
 import { toFaDigits } from "../lib/persian";
 import { resetStorage, STAGE_ORDER, stagePath, useSession, type Stage } from "../state/session";
-import { Wordmark } from "./SiteHeader";
+import { Wordmark } from "./Wordmark";
 import { useSlidingPill } from "./ui/ChipGroup";
 
 const STEPS: Record<Stage, { label: string; icon: LucideIcon }> = {

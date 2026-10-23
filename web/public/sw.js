@@ -9,7 +9,7 @@ const STATIC = "static";
 const PRECACHE = [
   "/offline",
   "/manifest.webmanifest",
-  "/fonts/Vazirmatn[wght].woff2",
+  ...["Light", "Regular", "Medium", "DemiBold", "Bold", "ExtraBold"].map((w) => `/fonts/Dana-${w}.woff2`),
   "/icons/icon-192.png",
   ...["icon", "mascot-idle", "mascot-point", "mascot-stuck", "mascot-wave"].map((p) => `/mascot/torob-gard-${p}.webp`),
 ];

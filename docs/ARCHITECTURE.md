@@ -110,7 +110,7 @@ against an internal `ToolCall` type so both paths look the same.
 src/app/            routes: / (ask), /chat/[id], /venue/[slug], /shop/[id], /product/[id], /trip/[id], /me
 src/components/     chat/ (Composer, Stream, Blocks), cards/ (ShopCard, ProductCard, PriceBar), route/ (FloorList, UnitBadge), interview/ (ImageCards, Budget)
 src/lib/            api.ts (typed client), sse.ts, persian.ts (digits, normalize), tokens (Tailwind @theme)
-public/fonts/       IRANYekan / Vazirmatn self-hosted
+public/fonts/       Dana self-hosted (300–800)
 ```
 
 Rendering: shop/product/venue pages are SSR + cached (SEO); chat is client-side with SSE. Blocks
