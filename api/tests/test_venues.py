@@ -47,3 +47,36 @@ def test_rebuild_moves_shops_and_prunes_stale_venues():
     assert Shop.objects.get(id="s1").venue is None
     counts = dict(Venue.objects.values_list("name", "shop_count"))
     assert counts == {"پاساژ امجد": 1, "پاساژ بوشهری": 1}
+
+
+def test_venue_key_drops_punctuation_and_harakat():
+    # live twins from the dev DB: «کیان» split 74/4/1, «علالدین(1)» stole the clean slug
+    assert venue_key("پاساژ کیان٬") == venue_key("پاساژ کیان)") == venue_key("پاساژ کیان")
+    assert venue_key("پاساژ علالدین(1)") == venue_key("پاساژ علالدین 1")
+    assert venue_key("پاساژ اُپال") == venue_key("پاساژ اپال")
+    assert venue_key("پاساژ کاشانی.") == venue_key("پاساژ کاشانی")
+
+
+@pytest.mark.django_db
+def test_punctuation_twins_merge_and_slugs_survive_a_fresh_rebuild():
+    addrs = ["پاساژ کیان، طبقه ۱", "پاساژ کیان٬ طبقه ۲", "پاساژ کیان)، طبقه ۳",
+             "پاساژ ABC، طبقه ۱", "پاساژ abc، طبقه ۲"]  # case-only twins still share a slug
+    for i, a in enumerate(addrs):
+        Shop.objects.create(id=f"s{i}", name="x", name_norm="x", address_raw=a, geom=Point(51, 35))
+    build_venues()
+    slugs = dict(Venue.objects.values_list("name_norm", "slug"))
+    assert slugs["کیان"] == "کیان" and Venue.objects.get(name_norm="کیان").shop_count == 3
+    Venue.objects.all().delete()  # a fresh DB: who gets the base slug must not depend on heap order
+    build_venues()
+    assert dict(Venue.objects.values_list("name_norm", "slug")) == slugs
+
+
+@pytest.mark.django_db
+def test_rebuild_frees_a_stale_twins_slug_in_one_run():
+    # the pre-fix dev DB: the stray «علالدین(1)» owned the clean slug, the real one had a hash
+    Venue.objects.create(name="x", name_norm="علالدین(1)", kind="pasazh")
+    Venue.objects.create(name="x", name_norm="علالدین1", kind="pasazh")
+    Shop.objects.create(id="s0", name="x", name_norm="x", address_raw="پاساژ علالدین 1، طبقه ۱",
+                        geom=Point(51, 35))
+    build_venues()
+    assert list(Venue.objects.values_list("slug", flat=True)) == ["علالدین1"]

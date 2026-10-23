@@ -44,8 +44,10 @@ class Venue(models.Model):
         # From name_norm (the merge key), never ids or the display spelling: same venue, same URL.
         base = persian_slug(self.name_norm)
         taken = Venue.objects.filter(slug=base).exclude(pk=self.pk).exists()
-        # ponytail: keys differing only in punctuation collide; the hash suffix is per key.
+        # ponytail: keys differing only in letter case collide; the hash suffix is per key.
         self.slug = f"{base}-{sha1(self.name_norm.encode()).hexdigest()[:6]}" if taken else base
+        if kwargs.get("update_fields") is not None:  # update_or_create saves only its defaults
+            kwargs["update_fields"] = {*kwargs["update_fields"], "slug"}
         super().save(*args, **kwargs)
 
 

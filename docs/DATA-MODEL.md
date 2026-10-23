@@ -26,7 +26,7 @@ quality   verification, shop_report, eval_case, eval_run, eval_result
 | id | uuid pk | |
 | name | text | canonical, e.g. «پاساژ علاءالدین ۲» |
 | name_norm | text unique | normalized for matching |
-| slug | text unique | `slugify(name_norm, allow_unicode=True)`, Persian kept (`/pasazh/علالدین2`); from the merge key, never ids or the display spelling, so a re-ingest gives the same URL. A rare punctuation-only clash gets `-<sha1(name_norm)[:6]>` |
+| slug | text unique | `slugify(name_norm, allow_unicode=True)`, Persian kept (`/pasazh/علالدین2`); from the merge key, never ids or the display spelling, so a re-ingest gives the same URL. `name_norm` keeps letters and digits only, so punctuation and harakat twins merge into one venue (the P3 dev DB had 8 such clashes over 531 venues); what can still clash (Latin letter case) gets `-<sha1(name_norm)[:6]>`, and shops are read in id order so the same venue gets the base slug on every fresh build |
 | aliases | text[] | «علاالدین 2», «علاءالدین2» … |
 | kind | enum(pasazh, bazaar, building, street) | |
 | address | text | |

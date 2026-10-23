@@ -21,7 +21,8 @@ def venue_key(name: str) -> str:
     # ponytail: spelling drift only (hamza, spaces, alef runs, number words); no fuzzy matching.
     s = _TAIL.sub(lambda m: " " + _NUMW[m[1]], _LEAD.sub("", normalize(name)))
     s = s.replace("ائ", "اال").translate(_HAMZA)  # «علائدین» is «علاالدین» typed with hamza
-    return re.sub("ا+", "ا", s)
+    # letters and digits only: «کیان٬», «علالدین(1)», «اُپال» (harakat are not alnum) were twins
+    return re.sub("ا+", "ا", "".join(filter(str.isalnum, s)))
 
 
 @transaction.atomic
@@ -29,10 +30,14 @@ def build_venues() -> tuple[int, int]:
     """Upsert one Venue per venue_key, link member shops, unlink the rest and drop empty venues.
     Returns (venues, shops linked)."""
     groups = defaultdict(list)  # key -> [(shop, normalised name)]
-    shops = Shop.objects.only("id", "address_raw", "geom", "venue_id")
+    # ordered so a fresh build hands a shared base slug to the same venue every time
+    shops = Shop.objects.only("id", "address_raw", "geom", "venue_id").order_by("id")
     for shop in shops.iterator(chunk_size=2000):
         if name := parse_address(shop.address_raw).venue_name:
             groups[venue_key(name)].append((shop, name))
+    # Stale venues go first so a merged-away twin frees its slug before the survivor saves.
+    # ponytail: venues are derived-only in P0; once students add floors/photos, merge not delete
+    Venue.objects.exclude(name_norm__in=[k for k in groups if k]).delete()
     stale, linked = [], 0
     for key, members in groups.items():
         if not key:
@@ -57,6 +62,4 @@ def build_venues() -> tuple[int, int]:
     Shop.objects.bulk_update(stale, ["venue"], batch_size=2000)
     grouped = [s.id for key, members in groups.items() if key for s, _ in members]
     Shop.objects.exclude(id__in=grouped).exclude(venue=None).update(venue=None)
-    # ponytail: venues are derived-only in P0; once students add floors/photos, merge not delete
-    Venue.objects.exclude(name_norm__in=[k for k in groups if k]).delete()
     return len(groups), linked
