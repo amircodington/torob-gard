@@ -71,3 +71,33 @@ test("plan B: fail a shop, re-rank by price then distance, every shop failed →
   await page.getByRole("button", { name: "برگشت به میز تصمیم" }).click();
   await page.waitForURL(/\/desk/);
 });
+
+test("seller follow-up (simulated): labelled, answers, and a no-reply opens Plan B without a report", async ({ page }) => {
+  let reports = 0;
+  await page.route("**/api/reports", (r) => (reports++, r.fulfill({ status: 200, json: { id: "test" } })));
+  await page.goto(`/radar/${PRODUCT}`);
+  const rows = page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem");
+  const sheet = page.getByRole("dialog");
+  await expect(rows.first()).toBeVisible();
+  const n = Math.min(await rows.count(), 12);
+  for (let i = 0; i < n; i++) {
+    await rows.nth(i).getByRole("button").click();
+    const box = sheet.getByTestId("seller-follow-up");
+    await expect(box.getByText("شبیه‌سازی", { exact: true })).toBeVisible();
+    await expect(box.getByText(/به هیچ فروشنده‌ای پیامی نمی‌ره/)).toBeVisible();
+    await box.getByRole("button", { name: /از طرف من بپرس/ }).click();
+    await expect(box.getByText(/پیام فرستادم/)).toBeVisible();
+    await expect(box.getByText(/جواب داد|جوابی نیومد/)).toBeVisible();
+    const planB = box.getByRole("button", { name: "برو سراغ پلن B" });
+    if (await planB.count()) {
+      await planB.click();
+      await page.waitForURL(/planb=(no-answer|stock)/);
+      await expect(page.getByRole("dialog", { name: "پلن B" })).toBeVisible();
+      expect(reports).toBe(0);
+      return;
+    }
+    await expect(box.getByText(/موجودی تأییدشده/)).toBeVisible();
+    await sheet.getByRole("button", { name: "بستن" }).click();
+  }
+  throw new Error(`no simulated no-reply among the first ${n} shops`);
+});

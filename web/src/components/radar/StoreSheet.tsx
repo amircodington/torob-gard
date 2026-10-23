@@ -15,6 +15,7 @@ import { Sheet } from "../ui/Sheet";
 import { StockBadge } from "../ui/StockBadge";
 import type { RadarAnchor } from "./AnchorPicker";
 import { PriceCheck } from "./PriceCheck";
+import { SellerFollowUp } from "./SellerFollowUp";
 import { distanceLabel, placeLine } from "./ShopRow";
 
 const FAILS: { label: string; kind: ReportInput["kind"]; reason: FailReason; icon: LucideIcon }[] = [
@@ -68,8 +69,12 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
     // ponytail: the report is a signal for others; Plan B opens even when it does not reach the server.
     await api.report({ shopId: store.id, productId: offer.productId, kind: f.kind }).catch(() => {});
     setBusy(false);
-    dispatch({ type: "FAIL_STORE", reason: f.reason });
-    router.push(`${pathname}?planb=${f.reason}`);
+    planB(f.reason);
+  };
+  // a simulated seller reply goes straight here: it is not a real signal, so no report is sent
+  const planB = (reason: FailReason) => {
+    dispatch({ type: "FAIL_STORE", reason });
+    router.push(`${pathname}?planb=${reason}`);
   };
 
   const installment = store.installment === true ? "اقساط دارد" : store.installment === false ? "اقساط ندارد" : "اطلاعات اقساط ثبت نشده";
@@ -107,6 +112,7 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
           </Fact>
         </div>
         <PriceCheck key={store.id} productId={offer.productId} />
+        <SellerFollowUp key={`follow-${store.id}`} row={row} now={now} onPlanB={planB} />
 
         <p className="mt-3 text-[12px] leading-5 text-on-dark/60">قبل از رفتن زنگ بزن؛ قیمت و موجودی رو خود فروشگاه تأیید می‌کنه.</p>
         <Btn className="mt-3 w-full" icon={Navigation} disabled={busy} onClick={go}>
