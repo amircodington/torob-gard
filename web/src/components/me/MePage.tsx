@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState, type CSSProperties, type FormEvent } from "react";
-import { Check, ChevronRight, Heart, LogOut, Route, ShoppingBag, Trash2, UserRound } from "lucide-react";
+import { Check, ChevronRight, Heart, LogOut, MessagesSquare, Route, ShoppingBag, Trash2, UserRound } from "lucide-react";
 import { api } from "../../lib/api";
 import { faFreshness, faNum, faPriceFull } from "../../lib/fa";
 import { toAsciiDigits } from "../../lib/persian";
 import { clearSavedTrips } from "../../lib/sw";
 import { resetStorage } from "../../state/session";
-import type { Me, NeedsProfile } from "../../lib/types";
+import type { ChatSummary, Me, NeedsProfile } from "../../lib/types";
 import { Btn, btnClass } from "../ui/Btn";
 import { ROW_LINK } from "../catalog/parts";
 import { Chip } from "../ui/Chip";
@@ -115,6 +115,8 @@ export function MePage() {
         )}
       </section>
 
+      <MyChats />
+
       <section className={CARD} style={at(1)} aria-labelledby="items-h">
         <h2 id="items-h" className={H2}>
           <Heart aria-hidden className="size-5 text-orange" />
@@ -153,6 +155,40 @@ export function MePage() {
         <DeleteData onDeleted={() => setGone(true)} />
       </section>
     </>
+  );
+}
+
+/** «گفتگوهام»: each saved agent chat reopens in /start. */
+function MyChats() {
+  const [chats, setChats] = useState<ChatSummary[] | null>(null);
+  useEffect(() => {
+    api.chats().then(setChats, () => setChats([]));
+  }, []);
+  if (chats === null) return null;
+  return (
+    <section className={CARD} style={at(1)} aria-labelledby="chats-h">
+      <h2 id="chats-h" className={H2}>
+        <MessagesSquare aria-hidden className="size-5 text-orange" />
+        گفتگوهام
+      </h2>
+      {chats.length === 0 ? (
+        <p className="mt-1 text-[15px] text-ink-muted">هنوز با دستیار گفتگو نکردی.</p>
+      ) : (
+        <ul className="mt-2 divide-y divide-line">
+          {chats.map((c, i) => (
+            <li key={c.id} style={at(i)} className="animate-rise stagger">
+              <Link href={`/start?chat=${c.id}`} className={`${ROW_LINK} py-3`}>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-[15px] font-bold leading-6">{c.title || "گفتگو"}</span>
+                  <span className="text-[13px] text-ink-muted">{faNum(c.turns)} پرسش · {date(c.lastAt)}</span>
+                </span>
+                <ChevronRight aria-hidden className="nudge size-5 shrink-0 text-ink-muted flip-rtl" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

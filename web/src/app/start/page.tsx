@@ -8,9 +8,11 @@ import { Composer } from "../../components/chat/Composer";
 import { ConsultFrame } from "../../components/chat/ConsultFrame";
 import { ReqSummary } from "../../components/chat/ReqSummary";
 import { ShopCards } from "../../components/chat/ShopCards";
+import { ChatHistory } from "../../components/chat/ChatHistory";
+import { api } from "../../lib/api";
 import { Mascot } from "../../components/Mascot";
 import { JourneyShell } from "../../components/JourneyShell";
-import { consult } from "../../state/agentBridge";
+import { consult, reopenChat } from "../../state/agentBridge";
 import { agentNeed, resetStorage, useSession, type Chip, type Msg } from "../../state/session";
 
 function Consult() {
@@ -43,6 +45,19 @@ function Consult() {
     actions.forEach(dispatch);
     setPending(null);
   };
+
+  // A saved chat (the history list, or /me's link: /start?chat=<id>) replaces this one; the agent keeps its session.
+  const open = (id: string) =>
+    api.chat(id).then((msgs) => {
+      turn.current?.abort();
+      reopenChat(id, msgs).forEach(dispatch);
+    }, () => undefined);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("chat");
+    if (!id) return;
+    window.history.replaceState(null, "", "/start");
+    open(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once, on arrival
 
   const pick = (chip: Chip) => (chip.id.startsWith("agent:") ? send(chip.label) : dispatch({ type: "CHAT_CHIP", chip }));
 
@@ -84,6 +99,7 @@ function Consult() {
           گفتگوی جدید
         </button>
       )}
+      <ChatHistory current={state.agentSessionId} onOpen={open} />
       {state.agentOffline && (
         <p role="status" className="mt-3 rounded-md bg-surface-tint px-4 py-2 text-[13px] font-semibold leading-5 text-ink">
           دستیار هوشمند موقتاً در دسترس نیست

@@ -3,7 +3,7 @@
 import { PRIORITIES } from "../config/journey";
 import { faPrice } from "../lib/fa";
 import { streamChat, type AgentEvent, type ChatBody } from "../lib/sse";
-import type { Category } from "../lib/types";
+import type { Category, StoredChatMsg } from "../lib/types";
 import type { Action, JourneyReq } from "./session";
 
 /** Ruling R7: no event of any kind (status included) for this long → abort and fall back. */
@@ -52,7 +52,23 @@ export function bridge(e: AgentEvent): Action[] {
   }
 }
 
-type Stream = (body: ChatBody, signal: AbortSignal) => AsyncIterable<AgentEvent>;
+/** A saved chat (GET /api/me/chats/{id}) back into the session: a new chat epoch, the agent's own session id,
+ *  and each turn through `bridge`, except that the desk only sets the need instead of leaving the chat. */
+export function reopenChat(sessionId: string, messages: StoredChatMsg[]): Action[] {
+  return [
+    { type: "RESET" },
+    ...messages.flatMap((m): Action[] =>
+      m.from === "user"
+        ? [{ type: "CHAT_USER", text: m.text }]
+        : [
+            ...(m.text ? [{ type: "AGENT_TOKEN", text: m.text } as Action] : []),
+            ...m.blocks.flatMap((data) => bridge({ event: "block", data } as AgentEvent)).filter((a) => a.type !== "GO"),
+          ]),
+    { type: "AGENT_DONE", sessionId },
+  ];
+}
+
+type Stream =(body: ChatBody, signal: AbortSignal) => AsyncIterable<AgentEvent>;
 
 /** One consult turn. The actions are applied together at `done`, so a fallback never leaves half a turn behind.
  *  `signal` (a new chat) cancels the turn outright: no actions, not even the fallback. */

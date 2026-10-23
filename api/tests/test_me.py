@@ -159,3 +159,28 @@ def test_delete_covers_agent_sessions_started_after_login(client, sent, pair):  
     assert r.status_code == 204 and r.cookies["tg_uid"]["max-age"] == 0
     assert not ItemMemory.objects.exists()
     assert not Session.objects.filter(user_id=u.id).exists()
+
+
+def test_chat_history_lists_and_opens_only_the_users_own_chats(client, sent, db):
+    assert client.get("/api/me/chats").status_code == 401
+    login(client, sent)
+    u = AppUser.objects.get()
+    mine, empty, theirs = (Session.objects.create(id=uuid4(), model="m", user_id=uid)
+                           for uid in (u.id, u.id, uuid4()))
+    Message.objects.create(session=mine, seq=1, role="user",
+                           content={"text": "یه هدفون می‌خوام"})
+    Message.objects.create(session=mine, seq=2, role="assistant", content={
+        "say": "بودجه‌ت چقدره؟",
+        "blocks": [{"type": "ask", "question": "بودجه؟", "options": ["تا ۲"]}],
+        "violations": []})
+    chats = client.get("/api/me/chats").json()
+    assert [(c["id"], c["title"], c["turns"]) for c in chats] == [
+        (str(mine.id), "یه هدفون می‌خوام", 1)]
+    msgs = client.get(f"/api/me/chats/{mine.id}").json()["messages"]
+    assert msgs == [
+        {"from": "user", "text": "یه هدفون می‌خوام", "blocks": []},
+        {"from": "assistant", "text": "بودجه‌ت چقدره؟",
+         "blocks": [{"type": "ask", "question": "بودجه؟", "options": ["تا ۲"]}]},
+    ]
+    assert client.get(f"/api/me/chats/{theirs.id}").status_code == 404
+    assert client.get(f"/api/me/chats/{empty.id}").json()["messages"] == []

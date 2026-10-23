@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AgentEvent } from "../lib/sse";
-import { bridge, consult } from "./agentBridge";
+import { bridge, consult, reopenChat } from "./agentBridge";
 import { initialState, reducer } from "./session";
 
 const BODY = { text: "یه گوشی می‌خوام", context: { req: null, anchor: null, stage: "consult" } };
@@ -107,5 +107,25 @@ describe("consult", () => {
     const outer = new AbortController();
     setTimeout(() => outer.abort(), 10);
     expect(await consult(BODY, () => {}, stream, 1000, { signal: outer.signal })).toEqual([]);
+  });
+});
+
+describe("reopenChat", () => {
+  it("rebuilds a saved chat on a fresh epoch: bubbles, ask chips, the desk's need, the same agent session", () => {
+    const start = reducer(initialState(), { type: "CHAT_TEXT", text: "گوشی" });
+    const s = reopenChat("s-1", [
+      { from: "user", text: "یه لپ‌تاپ سبک", blocks: [] },
+      { from: "assistant", text: "بودجه‌ت؟", blocks: [{ type: "ask", question: "بودجه‌ت؟", options: ["تا ۱۸۰ میلیون"] }] },
+      { from: "user", text: "تا ۱۸۰ میلیون", blocks: [] },
+      { from: "assistant", text: "سه گزینه:", blocks: [{ type: "desk", category: "laptop", budget_min: 0, budget_max: 180_000_000, priority: "weight" }] },
+    ]).reduce(reducer, start);
+    expect(s.epoch).toBe(start.epoch + 1);
+    expect(s.agentSessionId).toBe("s-1");
+    expect(s.stage).toBe("consult"); // reopening reads the chat; it does not jump to the desk
+    expect(s.chat.slice(1).map((m) => [m.from, m.text])).toEqual([
+      ["user", "یه لپ‌تاپ سبک"], ["assistant", "بودجه‌ت؟"], ["user", "تا ۱۸۰ میلیون"], ["assistant", "سه گزینه:"],
+    ]);
+    expect(s.chat[2].chips?.map((c) => c.label)).toEqual(["تا ۱۸۰ میلیون"]);
+    expect(s.req).toMatchObject({ category: "laptop", priorityId: "weight" });
   });
 });

@@ -190,6 +190,21 @@ export interface ChatMsg {
   chipIds?: string[];
 }
 
+/** GET /api/me/chats */
+export interface ChatSummary {
+  id: string;
+  title: string;
+  lastAt: string;
+  turns: number;
+}
+
+/** GET /api/me/chats/{id}: the agent's own blocks, as it streamed them. */
+export interface StoredChatMsg {
+  from: "user" | "assistant";
+  text: string;
+  blocks: Record<string, any>[]; // eslint-disable-line @typescript-eslint/no-explicit-any -- the agent's block JSON
+}
+
 /* ------------------------- public catalog pages (P3) ------------------------- */
 
 export interface NamedCount {

@@ -6,12 +6,13 @@ from uuid import UUID
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Count, Max
 from django.http import HttpResponse
 from django.utils import timezone
 from ninja import Field, Router, Schema
 from ninja.errors import HttpError
 
-from conversation.models import ItemMemory, Session
+from conversation.models import ItemMemory, Message, Session
 from torobgard.persian import to_ascii_digits
 from trips.models import Trip
 
@@ -178,6 +179,32 @@ def logout(request):
 @router.get("/me")
 def me(request) -> dict:
     return _payload(_me(request))
+
+
+@router.get("/me/chats")
+def my_chats(request) -> list[dict]:
+    """The user's agent conversations, newest first; a session with no messages is not a chat."""
+    u = _me(request)
+    # ponytail: newest 50 only; page it if someone really keeps more
+    sessions = (Session.objects.filter(user_id=u.id, messages__isnull=False)
+                .annotate(last_at=Max("messages__created_at"), turns=Count("messages") / 2)
+                .order_by("-last_at")[:50])
+    firsts = dict(Message.objects.filter(session__in=[s.id for s in sessions], role="user")
+                  .order_by("session_id", "seq").distinct("session_id")
+                  .values_list("session_id", "content"))
+    return [{"id": str(s.id), "title": (firsts.get(s.id) or {}).get("text", "")[:80],
+             "last_at": s.last_at, "turns": s.turns} for s in sessions]
+
+
+@router.get("/me/chats/{chat_id}")
+def my_chat(request, chat_id: UUID) -> dict:
+    s = Session.objects.filter(id=chat_id, user_id=_me(request).id).first()
+    if not s:
+        raise HttpError(404, "not found")
+    rows = s.messages.filter(role__in=["user", "assistant"]).order_by("seq")
+    return {"id": str(s.id), "messages": [
+        {"from": m.role, "text": m.content.get("text" if m.role == "user" else "say") or "",
+         "blocks": m.content.get("blocks") or []} for m in rows]}
 
 
 @router.patch("/me/profile")

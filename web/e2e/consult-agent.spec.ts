@@ -105,3 +105,20 @@ test("«شروع دوباره» mid-turn: the chat unlocks at once and the old t
   await expect(page.getByText("جواب قدیمی")).toHaveCount(0);
   await expect(box).toBeEnabled();
 });
+
+test("history: a logged-in user reopens a saved chat and the next turn goes to its agent session", async ({ page }) => {
+  const SID = "22222222-2222-2222-2222-222222222222";
+  await page.route("**/api/me/chats", (r) => r.fulfill({ json: [{ id: SID, title: "یه هدفون بی‌سیم", last_at: "2026-10-20T10:00:00Z", turns: 1 }] }));
+  await page.route(`**/api/me/chats/${SID}`, (r) => r.fulfill({ json: { id: SID, messages: [
+    { from: "user", text: "یه هدفون بی‌سیم", blocks: [] },
+    { from: "assistant", text: "بودجه‌ت چقدره؟", blocks: [{ type: "ask", question: "بودجه‌ت چقدره؟", options: ["تا ۲ میلیون"] }] },
+  ] } }));
+  const bodies = await agent(page, [sse(["token", { text: "باشه، تا ۲ میلیون." }], done)]);
+  await page.goto("/start");
+  await page.getByText("گفتگوهای قبلی").click();
+  await page.getByRole("button", { name: /یه هدفون بی‌سیم/ }).click();
+  await expect(page.getByText("بودجه‌ت چقدره؟")).toHaveCount(1);
+  await page.getByRole("button", { name: "تا ۲ میلیون" }).click();
+  await expect(page.getByText("باشه، تا ۲ میلیون.")).toBeVisible();
+  expect(bodies[0]).toMatchObject({ text: "تا ۲ میلیون", session_id: SID });
+});

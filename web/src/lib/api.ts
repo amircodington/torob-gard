@@ -1,5 +1,5 @@
 /* Typed client for the Django API; snake_case → camelCase happens here and only here. */
-import type { Anchor, CategoryPage, Me, NeedsProfile, DeskTier, FailureRecord, OfferRow, Product, ProductCard, ShopDetail, ShopHit, SitemapData, Stats, Store, Trip, Venue, VenueDetail } from "./types";
+import type { Anchor, CategoryPage, ChatSummary, StoredChatMsg, Me, NeedsProfile, DeskTier, FailureRecord, OfferRow, Product, ProductCard, ShopDetail, ShopHit, SitemapData, Stats, Store, Trip, Venue, VenueDetail } from "./types";
 
 // Relative: a Next.js rewrite to the Django server lands in Task 6. Server components set API_URL.
 const API = "/api";
@@ -222,6 +222,16 @@ export const api = {
       avoided_brands: p.avoidedBrands, style_tags: p.styleTags, notes: p.notes,
     }))),
   deleteMe: () => request<void>("/me", { method: "DELETE" }),
+  /** The logged-in user's agent chats, newest first; [] for a guest. */
+  chats: async (): Promise<ChatSummary[]> => {
+    try {
+      return (await request<Raw[]>("/me/chats")).map((c) => ({ id: c.id, title: c.title, lastAt: c.last_at, turns: c.turns }));
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return [];
+      throw e;
+    }
+  },
+  chat: async (id: string): Promise<StoredChatMsg[]> => (await request<Raw>(`/me/chats/${encodeURIComponent(id)}`)).messages,
   trip: async (id: string): Promise<Trip> => mapTrip(await request<Raw>(`/trips/${encodeURIComponent(id)}`)),
   patchTrip: async (id: string, p: TripPatch): Promise<Trip> =>
     mapTrip(await request<Raw>(`/trips/${encodeURIComponent(id)}`, send("PATCH", {
