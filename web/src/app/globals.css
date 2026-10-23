@@ -203,3 +203,7 @@ body {
     flex-shrink: 0;
   }
 }
+
+/* Shown only on a copy the service worker served from cache (public/sw.js markOffline). */
+.offline-note { display: none; }
+html[data-offline] .offline-note { display: block; }
