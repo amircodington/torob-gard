@@ -240,24 +240,24 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
                   report("open");
                   setStep("asked");
                 }}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange press focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
               >
-                <CircleCheck aria-hidden className="size-5" />
+                <CircleCheck aria-hidden className="hover-hop size-5" />
                 پیداش کردم
               </button>
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => toPlanB("closed", "closed")}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-panel-2 px-4 text-[15px] font-bold transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-pill bg-panel-2 px-4 text-[15px] font-bold press focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
               >
-                <SearchX aria-hidden className="size-5" />
+                <SearchX aria-hidden className="hover-hop size-5" />
                 اینجا نیست
               </button>
             </div>
           )}
           {step === "asked" && (
-            <div>
+            <div className="animate-rise">
               <p className="text-[15px] font-bold">داشت؟</p>
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <button
@@ -267,7 +267,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
                     report("had_item");
                     setStep("had");
                   }}
-                  className="min-h-11 rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
+                  className="min-h-11 rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange press focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
                 >
                   آره
                 </button>
@@ -275,7 +275,7 @@ export function WalkSheet({ trip, rows, rowsFailed = false }: { trip: Trip; rows
                   type="button"
                   disabled={busy}
                   onClick={() => toPlanB("stock", "no_item")}
-                  className="min-h-11 rounded-pill bg-panel-2 px-4 text-[15px] font-bold focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
+                  className="min-h-11 rounded-pill bg-panel-2 px-4 text-[15px] font-bold press focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
                 >
                   نه
                 </button>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { Pencil, RotateCw } from "lucide-react";
 import { ApiError, api } from "../../lib/api";
 import { toAsciiDigits, toFaDigits } from "../../lib/persian";
 import type { Me } from "../../lib/types";
@@ -86,7 +87,7 @@ export function OtpSheet({ open, onClose, onDone, agentSessionId }: { open: bool
           </Btn>
         </form>
       ) : (
-        <form onSubmit={(e) => verify(code, e)} className="mt-4">
+        <form onSubmit={(e) => verify(code, e)} className="mt-4 animate-rise">
           <label className="block text-[13px] font-semibold">
             کد ۵ رقمی که به <span dir="ltr" className="tabular">{toFaDigits(cleanPhone(phone))}</span> پیامک شد
             <input
@@ -107,10 +108,12 @@ export function OtpSheet({ open, onClose, onDone, agentSessionId }: { open: bool
             ورود
           </Btn>
           <div className="mt-2 flex justify-between gap-2">
-            <button type="button" onClick={() => { setStep("phone"); setError(null); }} className="min-h-11 rounded-pill px-2 text-[13px] text-on-dark/70 focus-visible:outline-2 focus-visible:outline-focus">
+            <button type="button" onClick={() => { setStep("phone"); setError(null); }} className="inline-flex min-h-11 items-center gap-1.5 rounded-pill px-3 text-[13px] text-on-dark/70 press hover:bg-white/10 hover:text-on-dark focus-visible:outline-2 focus-visible:outline-focus">
+              <Pencil aria-hidden className="hover-wiggle size-4" />
               شماره رو عوض کن
             </button>
-            <button type="button" disabled={busy} onClick={() => ask()} className="min-h-11 rounded-pill px-2 text-[13px] text-on-dark/70 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50">
+            <button type="button" disabled={busy} onClick={() => ask()} className="inline-flex min-h-11 items-center gap-1.5 rounded-pill px-3 text-[13px] text-on-dark/70 press hover:bg-white/10 hover:text-on-dark focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50">
+              <RotateCw aria-hidden className={`size-4 ${busy ? "motion-safe:animate-spin" : "hover-spin [--spin:360deg]"}`} />
               دوباره بفرست
             </button>
           </div>

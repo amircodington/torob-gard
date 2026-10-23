@@ -28,8 +28,8 @@ export function Chips({
             onClick={() => onPick(c)}
             style={{ "--i": i } as CSSProperties}
             // fill-mode backwards: once in, the entrance lets go of opacity so the 50% siblings fade (180 ms)
-            className={`stagger flex min-h-11 animate-rise items-center gap-2 rounded-pill px-4 py-1.5 text-start text-[15px] font-bold leading-5 shadow-card transition-[background-color,color,opacity,scale] duration-(--duration-fast) ease-out [animation-fill-mode:backwards] focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] active:duration-(--duration-press) disabled:active:scale-100 ${
-              selected ? "bg-orange text-on-orange" : "bg-surface text-ink"
+            className={`stagger flex min-h-11 animate-rise items-center gap-2 rounded-pill px-4 py-1.5 text-start text-[15px] font-bold leading-5 shadow-card transition-[background-color,color,opacity,scale] duration-(--duration-fast) ease-out [animation-fill-mode:backwards] focus-visible:outline-2 focus-visible:outline-focus motion-safe:active:scale-[0.97] active:duration-(--duration-press) disabled:active:scale-100 ${
+              selected ? "bg-orange text-on-orange" : "bg-surface text-ink enabled:hover:bg-orange-tint"
             } ${disabled && !selected ? "opacity-50" : ""}`}
           >
             {Icon && <Icon aria-hidden className={`size-4 ${isDirectional(Icon) ? "flip-rtl" : ""} ${selected ? "" : "text-ink-muted"}`} />}

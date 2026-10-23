@@ -39,9 +39,9 @@ export function Composer({ onSend, disabled = false }: { onSend: (text: string) 
         type="submit"
         disabled={disabled || !draft.trim()}
         aria-label="ارسال"
-        className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange text-on-orange transition-transform focus-visible:outline-2 focus-visible:outline-focus active:scale-95 disabled:opacity-50"
+        className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-orange text-on-orange press focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
       >
-        <SendHorizontal className="flip-rtl h-5 w-5" />
+        <SendHorizontal className="flip-rtl nudge h-5 w-5" />
       </button>
     </form>
   );

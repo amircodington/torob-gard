@@ -39,9 +39,9 @@ export function Toolbar({ onFilters }: { onFilters: () => void }) {
       <button
         type="button"
         onClick={onFilters}
-        className="relative ms-auto inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-pill bg-surface px-3 md:px-4 text-[13px] font-bold shadow-card transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97]"
+        className="relative ms-auto inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-2 rounded-pill bg-surface px-3 md:px-4 text-[13px] font-bold shadow-card lift press focus-visible:outline-2 focus-visible:outline-focus"
       >
-        <SlidersHorizontal aria-hidden className="size-4 shrink-0" />
+        <SlidersHorizontal aria-hidden className="hover-hop size-4 shrink-0" />
         <span className="max-md:sr-only">فیلترها</span>
         {count > 0 && (
           // key: a new count remounts the badge, so it pops (0.9→1, 180 ms; reduced motion fades)

@@ -95,13 +95,13 @@ export function TierCard({
     <article
       style={{ "--i": index } as CSSProperties}
       // Balanced lifts at lg by growing upward (-mt + pt), not by translate, so its price box stays on the shared row.
-      className={`grid animate-rise stagger content-start gap-3 rounded-lg bg-surface p-5 shadow-card md:max-lg:grid-cols-2 md:max-lg:gap-x-5 lg:row-span-5 lg:grid-rows-subgrid ${
+      className={`lift grid animate-rise stagger content-start gap-3 rounded-lg bg-surface p-5 shadow-card md:max-lg:grid-cols-2 md:max-lg:gap-x-5 lg:row-span-5 lg:grid-rows-subgrid ${
         balanced || selected ? "ring-2 ring-orange" : ""
       } ${balanced ? "lg:-mt-2 lg:pt-7" : ""}`}
     >
       <div className="flex flex-wrap items-center gap-2 md:max-lg:col-span-2">
         <span className="inline-flex items-center gap-1.5 rounded-pill bg-panel px-3 py-1 text-[13px] font-bold text-on-dark">
-          <TierIcon aria-hidden className="size-4" />
+          <TierIcon aria-hidden className="hover-hop size-4" />
           {TIER_LABEL[t.tier]}
         </span>
         {balanced && (
@@ -166,13 +166,13 @@ export function TierCard({
           aria-expanded={why}
           aria-controls={whyId}
           onClick={() => setWhy((v) => !v)}
-          className="mt-1 flex min-h-11 items-center justify-between rounded-md bg-surface-tint px-3 text-[14px] font-bold focus-visible:outline-2 focus-visible:outline-focus"
+          className="mt-1 flex min-h-11 items-center justify-between rounded-md bg-surface-tint px-3 text-[14px] font-bold press [--press:0.98] hover:bg-line focus-visible:outline-2 focus-visible:outline-focus"
         >
           چرا این گزینه؟
           <ChevronDown aria-hidden className={`size-5 transition-transform duration-(--duration-fast) ease-(--ease-out) motion-reduce:transition-none in-data-[input=keyboard]:transition-none ${why ? "rotate-180" : ""}`} />
         </button>
         {why && (
-          <div id={whyId} className="space-y-1.5 px-1 text-[13px] leading-6">
+          <div id={whyId} className="animate-rise space-y-1.5 px-1 text-[13px] leading-6 [--rise:4px] in-data-[input=keyboard]:animate-none">
             {t.bullets.map((b) => (
               <p key={b} className="flex items-start gap-1.5">
                 <Check aria-hidden className="mt-1 size-4 text-verified" />
@@ -197,7 +197,7 @@ export function TierCard({
         <Btn variant={inCompare ? "panel" : "ghost"} aria-pressed={inCompare} onClick={onCompare}>
           <span aria-hidden className="grid">
             <Plus className={swap(!inCompare)} />
-            <Check className={swap(inCompare)} />
+            <Check className={`${swap(inCompare)} ${inCompare ? "draw-in" : ""}`} />
           </span>
           {/* 1024–1279: three cards are too narrow for both labels, so «انتخاب این مدل» keeps one line and this goes icon-only */}
           <span className="lg:max-xl:sr-only">مقایسه</span>

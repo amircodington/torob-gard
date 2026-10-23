@@ -1,6 +1,6 @@
 "use client";
 
-import { Wallet } from "lucide-react";
+import { Pencil, Wallet } from "lucide-react";
 import type { Category } from "../../lib/types";
 import { reqBudget, reqPriority, type JourneyReq } from "../../state/session";
 import { Chip } from "../ui/Chip";
@@ -21,8 +21,9 @@ export function ReqChips({ req, onEdit, className = "" }: { req: JourneyReq; onE
         <button
           type="button"
           onClick={onEdit}
-          className="min-h-11 rounded-pill px-3 text-[13px] font-bold text-orange-deep focus-visible:outline-2 focus-visible:outline-focus"
+          className="inline-flex min-h-11 items-center gap-1 rounded-pill px-3 text-[13px] font-bold text-orange-deep press hover:bg-orange-tint focus-visible:outline-2 focus-visible:outline-focus"
         >
+          <Pencil aria-hidden className="hover-wiggle size-4" />
           ویرایش
         </button>
       )}

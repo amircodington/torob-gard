@@ -86,10 +86,10 @@ function Consult() {
           <button
             type="button"
             onClick={() => dispatch({ type: "GO", stage: "products" })}
-            className="inline-flex min-h-11 items-center gap-1 self-center rounded-pill px-4 text-[15px] lg:hidden font-bold text-orange-deep focus-visible:outline-2 focus-visible:outline-focus"
+            className="inline-flex min-h-11 items-center gap-1 self-center rounded-pill px-4 text-[15px] lg:hidden font-bold text-orange-deep press hover:bg-orange-tint focus-visible:outline-2 focus-visible:outline-focus"
           >
             بدون سوال بیشتر، نمایش گزینه‌ها
-            <ArrowRight aria-hidden className="flip-rtl size-4" />
+            <ArrowRight aria-hidden className="flip-rtl nudge size-4" />
           </button>
         )}
         <Composer onSend={send} disabled={!!pending} />

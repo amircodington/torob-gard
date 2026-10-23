@@ -58,7 +58,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
         pose="idle"
         title="هنوز فروشگاه مقصد انتخاب نشده"
         body="از رادار یه فروشگاه انتخاب کن تا چک‌لیست ساخته بشه."
-        actions={<Link href={`/radar/${trip.productId}`} className="inline-flex min-h-11 items-center rounded-pill bg-orange px-4 text-[15px] font-bold text-on-orange">رفتن به رادار</Link>}
+        actions={<Link href={`/radar/${trip.productId}`} className={btnClass()}>رفتن به رادار</Link>}
       />
     );
 
@@ -172,7 +172,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
 
         <section className="mt-3 rounded-lg bg-surface p-5 shadow-card">
           <p className="flex items-center gap-1 text-[12px] font-bold text-ink-muted">
-            <MapPin aria-hidden className="size-4 text-orange" />
+            <MapPin aria-hidden className="size-4 animate-pin-drop text-orange" />
             آدرس
           </p>
           <p className={`mt-1 break-words text-[15px] leading-6 ${address ? "" : "text-ink-muted"}`}>{address ?? "آدرس ثبت نشده"}</p>
@@ -184,13 +184,13 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
                 rel="noopener"
                 className={btnClass()}
               >
-                <Navigation aria-hidden className="size-5" />
+                <Navigation aria-hidden className="hover-hop size-5" />
                 باز کردن مسیر در نقشه
               </a>
             ) : (
               <p className="self-center text-[13px] text-ink-muted">مختصات فروشگاه ثبت نشده</p>
             )}
-            <Btn variant="ghost" icon={copied === "done" ? CopyCheck : Copy} onClick={copy}>
+            <Btn variant="ghost" icon={copied === "done" ? CopyCheck : Copy} iconClass={copied === "done" ? "draw-in [--draw:9]" : ""} onClick={copy}>
               {copied === "done" ? "کپی شد" : "کپی آدرس"}
             </Btn>
           </div>
@@ -214,7 +214,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
                     aria-hidden
                     className={`pop-in grid h-7 w-7 shrink-0 place-items-center rounded-full [transition-delay:calc(min(var(--i),7)*var(--stagger))] motion-safe:[--pop:0.8] ${m.cls}`}
                   >
-                    <m.Icon className="size-4.5" />
+                    <m.Icon className={`size-4.5 ${c.ok ? "draw-in [--draw-dir:-1] [--draw:12] [--draw-delay:calc(min(var(--i),7)*var(--stagger))]" : ""}`} />
                   </span>
                   <div className="min-w-0">
                     <p className="text-[15px] font-bold leading-6">{c.label}</p>
@@ -238,13 +238,14 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
           </div>
         )}
         <Link href={`/trip/${trip.id}/walk`} className={`${btnClass()} mt-5 w-full lg:mt-4`}>
-          <Footprints aria-hidden className="size-5" />
+          <Footprints aria-hidden className="hover-hop size-5" />
           شروع مسیر
         </Link>
         <SaveTrip tripId={trip.id} />
         <Btn
           variant="ghost"
           icon={RotateCcw}
+          iconClass="hover-spin"
           className="mt-3 w-full"
           onClick={() => {
             resetStorage();

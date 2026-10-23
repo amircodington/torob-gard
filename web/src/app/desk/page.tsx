@@ -185,7 +185,8 @@ function Desk() {
         <div className="page tray-in fixed inset-x-0 bottom-0 z-30 py-3 pb-[max(12px,env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-3 rounded-md bg-panel px-4 py-3 text-on-dark shadow-sheet lg:px-6">
             <p className="flex-1 text-[14px] font-bold leading-5">
-              {faNum(picked.length)} مدل برای مقایسه آماده‌ست
+              {/* key: a new count remounts the digit, so it pops in (pop-in, 180 ms) */}
+              <span key={picked.length} className="pop-in inline-block">{faNum(picked.length)}</span> مدل برای مقایسه آماده‌ست
               <span className="block text-[12px] font-medium text-on-dark/60">مصالحه‌ها رو شفاف می‌بینی، نه تبلیغ</span>
             </p>
             <Btn onClick={() => setCompareOpen(true)}>باز کردن مقایسه</Btn>

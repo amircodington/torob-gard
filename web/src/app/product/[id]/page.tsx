@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight, Radar } from "lucide-react";
+import type { CSSProperties } from "react";
+import { Banknote, ChevronRight, ListChecks, Radar, Store } from "lucide-react";
 import { SiteHeader } from "../../../components/SiteHeader";
 import { Crumbs, JsonLd, ROW_LINK, Section, Thumb } from "../../../components/catalog/parts";
 import { placeLine } from "../../../components/radar/ShopRow";
@@ -54,7 +55,10 @@ export default async function ProductPage(p: Props) {
         </header>
 
         <section data-testid="price-range" className="rounded-lg bg-surface p-5 shadow-card">
-          <h2 className="text-[17px] font-extrabold leading-7">قیمت در بازار مرکز تهران</h2>
+          <h2 className="flex items-center gap-2 text-[17px] font-extrabold leading-7">
+            <Banknote aria-hidden className="size-5 text-orange" />
+            قیمت در بازار مرکز تهران
+          </h2>
           <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
             {range.map((r) => (
               <div key={r.l} className="rounded-md bg-surface-tint px-1 py-3">
@@ -68,21 +72,21 @@ export default async function ProductPage(p: Props) {
           </p>
           <p className="mt-1 text-[12px] leading-5 text-ink-muted">از {faNum(product.offerCount)} پیشنهاد؛ قیمت‌های پرت کنار گذاشته شده‌اند.</p>
           <Link href={`/radar/${encodeURIComponent(product.id)}`} className={`${btnClass()} mt-4 w-full md:w-auto`}>
-            <Radar aria-hidden className="size-5 shrink-0" />
+            <Radar aria-hidden className="hover-spin size-5 shrink-0" />
             پیدا کردن فروشگاه
           </Link>
         </section>
 
         <div className="grid gap-4 md:grid-cols-2 md:items-start">
-          <Section title="فروشگاه‌ها">
+          <Section title="فروشگاه‌ها" icon={Store}>
             {rows == null ? (
               <p className="text-[15px] leading-6 text-ink-muted">فهرست فروشگاه‌ها الان باز نشد.</p>
             ) : rows.length === 0 ? (
               <p className="text-[15px] leading-6 text-ink-muted">برای این مدل فروشگاهی ثبت نشده.</p>
             ) : (
               <ul className="divide-y divide-line">
-                {rows.slice(0, SHOWN).map((r) => (
-                  <li key={r.offer.offerId}>
+                {rows.slice(0, SHOWN).map((r, i) => (
+                  <li key={r.offer.offerId} style={{ "--i": i } as CSSProperties} className="animate-rise stagger">
                     <Link href={pathOf.shop(r.store.id)} className={ROW_LINK}>
                       <span className="min-w-0 flex-1">
                         <span className="block text-[15px] font-bold leading-6 break-words">{r.store.name}</span>
@@ -93,7 +97,7 @@ export default async function ProductPage(p: Props) {
                           <StockBadge stock={r.offer.stock} />
                         </span>
                       </span>
-                      <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-muted flip-rtl" />
+                      <ChevronRight aria-hidden className="nudge size-5 shrink-0 text-ink-muted flip-rtl" />
                     </Link>
                   </li>
                 ))}
@@ -105,7 +109,7 @@ export default async function ProductPage(p: Props) {
           </Section>
 
           {specs.length > 0 && (
-            <Section title="مشخصات">
+            <Section title="مشخصات" icon={ListChecks}>
               <dl className="divide-y divide-line text-[13px] leading-5">
                 {specs.map((s, i) => (
                   <div key={i} className="flex justify-between gap-3 py-2">

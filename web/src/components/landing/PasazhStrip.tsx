@@ -54,10 +54,10 @@ export function PasazhStrip({ venues }: { venues: Venue[] }) {
             <li key={l}>
               <Link
                 href="/start"
-                className="lift flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg bg-surface px-2 text-center text-[15px] font-bold shadow-card focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] lg:min-h-18 lg:flex-row lg:justify-start lg:gap-3 lg:px-5"
+                className="lift flex min-h-20 flex-col items-center justify-center gap-2 rounded-lg bg-surface px-2 text-center text-[15px] font-bold shadow-card press focus-visible:outline-2 focus-visible:outline-focus lg:min-h-18 lg:flex-row lg:justify-start lg:gap-3 lg:px-5"
               >
                 <span className="grid size-10 place-items-center rounded-full bg-orange-tint">
-                  <Icon aria-hidden className="size-5" />
+                  <Icon aria-hidden className="hover-hop size-5" />
                 </span>
                 {l}
               </Link>

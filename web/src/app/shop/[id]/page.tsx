@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight, MapPin } from "lucide-react";
+import type { CSSProperties } from "react";
+import { ChevronRight, Info, MapPin, Tag } from "lucide-react";
 import { SiteHeader } from "../../../components/SiteHeader";
 import { ReportButtons } from "../../../components/catalog/ReportButtons";
 import { Crumbs, JsonLd, ROW_LINK, Section, Thumb } from "../../../components/catalog/parts";
@@ -40,14 +41,14 @@ export default async function ShopPage(p: Props) {
           {s.mall && s.venueSlug && <Crumbs items={[{ href: pathOf.venue(s.venueSlug), label: faNum(s.mall) }]} />}
           <h1 className="text-[28px] leading-10 font-extrabold break-words">{s.name}</h1>
           <p className="mt-1 flex gap-1 text-[15px] leading-6 text-ink-muted">
-            <MapPin aria-hidden className="mt-1 size-4 shrink-0" />
+            <MapPin aria-hidden className="mt-1 size-4 shrink-0 animate-pin-drop [animation-delay:120ms]" />
             <span className="min-w-0 break-words">{placeLine(s)}</span>
           </p>
         </header>
 
         <div className="grid gap-4 md:grid-cols-2 md:items-start">
           <div className="flex flex-col gap-4">
-            <Section title="اطلاعات فروشگاه">
+            <Section title="اطلاعات فروشگاه" icon={Info}>
               <dl className="grid gap-3 text-[15px] leading-6">
                 <div>
                   <dt className="text-[12px] font-semibold text-ink-muted">آدرس</dt>
@@ -83,11 +84,11 @@ export default async function ShopPage(p: Props) {
             <ReportButtons shopId={s.id} />
           </div>
 
-          <Section title={`قیمت‌های ثبت‌شده (${faNum(s.offerCount)} پیشنهاد)`}>
+          <Section title={`قیمت‌های ثبت‌شده (${faNum(s.offerCount)} پیشنهاد)`} icon={Tag}>
             {s.offers.length ? (
               <ul className="divide-y divide-line">
-                {s.offers.map((o) => (
-                  <li key={o.productId}>
+                {s.offers.map((o, i) => (
+                  <li key={o.productId} style={{ "--i": i } as CSSProperties} className="animate-rise stagger">
                     <Link href={pathOf.product(o.productId)} className={ROW_LINK}>
                       <Thumb src={o.imageUrl} className="size-12" />
                       <span className="min-w-0 flex-1">
@@ -95,7 +96,7 @@ export default async function ShopPage(p: Props) {
                         <span className="tabular block text-[15px] font-extrabold leading-6">{faGroup(o.price)} تومان</span>
                         <FreshBadge updatedMinAgo={minAgo(o.lastPriceChangedAt)} />
                       </span>
-                      <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-muted flip-rtl" />
+                      <ChevronRight aria-hidden className="nudge size-5 shrink-0 text-ink-muted flip-rtl" />
                     </Link>
                   </li>
                 ))}

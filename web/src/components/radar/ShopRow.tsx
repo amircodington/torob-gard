@@ -46,10 +46,10 @@ export function ShopRow({ row, now, onOpen, active, onHover }: { row: OfferRow; 
       onClick={onOpen}
       onPointerEnter={onHover && (() => hoverable() && onHover(store.id))}
       onPointerLeave={onHover && (() => hoverable() && onHover(null))}
-      className="flex min-h-11 w-full items-start gap-3 rounded-lg bg-surface p-4 text-start shadow-card transition-transform duration-(--duration-press) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.99]"
+      className="flex min-h-11 w-full items-start gap-3 rounded-lg bg-surface p-4 text-start shadow-card lift press [--press:0.99] focus-visible:outline-2 focus-visible:outline-focus"
     >
       <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-full transition-colors duration-(--duration-fast) ${active ? "bg-orange text-on-orange" : "bg-surface-tint text-ink"}`}>
-        <StoreIcon aria-hidden className="h-5 w-5" />
+        <StoreIcon aria-hidden className="hover-hop h-5 w-5" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="line-clamp-2 text-[15px] font-bold leading-6 break-words">{store.name}</span>

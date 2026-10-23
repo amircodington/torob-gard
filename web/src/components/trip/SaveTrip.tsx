@@ -14,6 +14,7 @@ export function SaveTrip({ tripId }: { tripId: string }) {
   const { state } = useSession();
   const [me, setMe] = useState<Me | null | undefined>(undefined); // undefined = still asking
   const [open, setOpen] = useState(false);
+  const [justSaved, setJustSaved] = useState(false); // the bookmark wiggles once, right after the login saved it
 
   useEffect(() => {
     api.me().then(setMe, () => setMe(null));
@@ -24,7 +25,7 @@ export function SaveTrip({ tripId }: { tripId: string }) {
     const saved = me.trips.some((t) => t.id === tripId);
     return (
       <Link href="/me" className={`${btnClass("ghost")} mt-3 w-full`}>
-        <BookmarkCheck aria-hidden className="size-5" />
+        <BookmarkCheck aria-hidden className={`size-5 ${justSaved ? "animate-wiggle" : ""}`} />
         {/* honest: a trip someone else made (a shared link) does not move into your account */}
         {saved ? "تو حسابت ذخیره شده — صفحه‌ی من" : "صفحه‌ی من"}
       </Link>
@@ -32,7 +33,7 @@ export function SaveTrip({ tripId }: { tripId: string }) {
   }
   return (
     <>
-      <Btn variant="ghost" icon={BookmarkPlus} className="mt-3 w-full" onClick={() => setOpen(true)}>
+      <Btn variant="ghost" icon={BookmarkPlus} iconClass="hover-wiggle" className="mt-3 w-full" onClick={() => setOpen(true)}>
         ذخیره‌ی سفر
       </Btn>
       <OtpSheet
@@ -41,6 +42,7 @@ export function SaveTrip({ tripId }: { tripId: string }) {
         agentSessionId={state.agentSessionId}
         onDone={(m) => {
           setOpen(false);
+          setJustSaved(true);
           setMe(m);
         }}
       />

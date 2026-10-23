@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { Banknote, Building2, ChevronRight, Package } from "lucide-react";
 import type { CSSProperties } from "react";
 import { SiteHeader } from "../../../components/SiteHeader";
 import { CARD, JsonLd, ROW_LINK, Section, Thumb } from "../../../components/catalog/parts";
@@ -43,7 +43,10 @@ export default async function CategoryPage(p: Props) {
         </h1>
 
         <section data-testid="price-range" className={CARD}>
-          <h2 className="text-[17px] font-extrabold leading-7">بازه‌ی قیمت</h2>
+          <h2 className="flex items-center gap-2 text-[17px] font-extrabold leading-7">
+            <Banknote aria-hidden className="size-5 text-orange" />
+            بازه‌ی قیمت
+          </h2>
           {q.p25 != null && q.p75 != null && q.p50 != null ? (
             <>
               <p className="mt-2 text-[15px] leading-7">
@@ -60,15 +63,15 @@ export default async function CategoryPage(p: Props) {
         </section>
 
         <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:items-start">
-          <Section title="پاساژهای پرفروشگاه" testId="top-venues">
+          <Section title="پاساژهای پرفروشگاه" icon={Building2} testId="top-venues">
             {c.topVenues.length ? (
               <ul className="divide-y divide-line">
-                {c.topVenues.map((v) => (
-                  <li key={v.slug}>
+                {c.topVenues.map((v, i) => (
+                  <li key={v.slug} style={{ "--i": i } as CSSProperties} className="animate-rise stagger">
                     <Link href={pathOf.venue(v.slug)} className={ROW_LINK}>
                       <span className="min-w-0 flex-1 text-[15px] font-bold leading-6 break-words">{faNum(v.name)}</span>
                       <span className="shrink-0 text-[12px] font-semibold text-ink-muted">{faNum(v.count)} فروشگاه</span>
-                      <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-muted flip-rtl" />
+                      <ChevronRight aria-hidden className="nudge size-5 shrink-0 text-ink-muted flip-rtl" />
                     </Link>
                   </li>
                 ))}
@@ -78,7 +81,7 @@ export default async function CategoryPage(p: Props) {
             )}
           </Section>
 
-          <Section title="مدل‌های پرطرفدار" testId="products">
+          <Section title="مدل‌های پرطرفدار" icon={Package} testId="products">
             {c.popularProducts.length ? (
               <ul className="grid gap-1 md:grid-cols-2 md:gap-x-4">
                 {c.popularProducts.map((x, i) => (

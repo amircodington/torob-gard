@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Tag } from "lucide-react";
 import { api, type PriceCheck as Check } from "../../lib/api";
 import { faNum, faPrice } from "../../lib/fa";
 import { toAsciiDigits } from "../../lib/persian";
@@ -20,9 +21,10 @@ function Bar({ c, quoted }: { c: Check & { min: number; median: number; max: num
   const at = (v: number) => `${((v - lo) / span) * 100}%`;
   return (
     <div className="relative mt-3 h-2 rounded-pill bg-surface-tint" aria-hidden>
-      <div className="absolute inset-y-0 rounded-pill bg-ink/25" style={{ insetInlineStart: at(c.min), width: `${((c.max - c.min) / span) * 100}%` }} />
+      {/* the range grows from inline-start, then the quoted price pops onto it */}
+      <div className="absolute inset-y-0 origin-right animate-grow rounded-pill bg-ink/25" style={{ insetInlineStart: at(c.min), width: `${((c.max - c.min) / span) * 100}%` }} />
       <div className="absolute -inset-y-1 w-0.5 bg-ink" style={{ insetInlineStart: at(c.median) }} />
-      <div className="absolute -top-1.5 h-5 w-5 -translate-x-1/2 rounded-full border-2 border-surface bg-orange rtl:translate-x-1/2" style={{ insetInlineStart: at(quoted) }} />
+      <div className="absolute -top-1.5 h-5 w-5 -translate-x-1/2 rounded-full border-2 border-surface bg-orange animate-pop [animation-delay:200ms] rtl:translate-x-1/2" style={{ insetInlineStart: at(quoted) }} />
     </div>
   );
 }
@@ -40,8 +42,9 @@ export function PriceCheck({ productId }: { productId: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 min-h-11 w-full rounded-md bg-panel-2 px-4 text-[15px] font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.98]"
+        className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-panel-2 px-4 text-[15px] font-bold text-on-dark press [--press:0.98] hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-focus"
       >
+        <Tag aria-hidden className="hover-wiggle size-4" />
         این قیمت منصفانه‌ست؟
       </button>
     );
@@ -62,7 +65,7 @@ export function PriceCheck({ productId }: { productId: string }) {
 
   const c = result?.c;
   return (
-    <div className="mt-3 rounded-lg bg-surface p-5 text-ink">
+    <div className="mt-3 animate-rise rounded-lg bg-surface p-5 text-ink">
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -84,7 +87,7 @@ export function PriceCheck({ productId }: { productId: string }) {
         <button
           type="submit"
           disabled={busy || !quoted}
-          className="min-h-11 rounded-md bg-orange px-4 text-[15px] font-bold text-on-orange focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
+          className="min-h-11 rounded-md bg-orange px-4 text-[15px] font-bold text-on-orange press focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
         >
           بررسی
         </button>
@@ -95,7 +98,7 @@ export function PriceCheck({ productId }: { productId: string }) {
         </p>
       )}
       {c && result && (
-        <div role="status" className="mt-4">
+        <div role="status" className="mt-4 animate-rise">
           {c.min == null || c.median == null || c.max == null ? (
             <p className="text-[15px] leading-6">قیمت ثبت‌شده‌ای برای مقایسه نداریم.</p>
           ) : (

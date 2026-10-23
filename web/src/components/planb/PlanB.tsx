@@ -15,7 +15,7 @@ import { distanceLabel, placeLine } from "../radar/ShopRow";
 import { Btn } from "../ui/Btn";
 import { FreshBadge } from "../ui/FreshBadge";
 import { StockBadge } from "../ui/StockBadge";
-import { ArrowLeft, Banknote, Check, Footprints, Lock, Minus, ShieldCheck, X, type LucideIcon } from "lucide-react";
+import { ArrowLeft, Banknote, Check, CircleAlert, Footprints, Lock, Minus, ShieldCheck, X, type LucideIcon } from "lucide-react";
 
 const PRIORITY_ICON: Record<RecoveryPriority, LucideIcon> = { price: Banknote, distance: Footprints, trust: ShieldCheck };
 
@@ -168,9 +168,9 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
             type="button"
             onClick={shut}
             aria-label="بستن پلن B"
-            className="grid h-11 w-11 place-items-center rounded-full bg-surface shadow-card focus-visible:outline-2 focus-visible:outline-focus"
+            className="grid h-11 w-11 place-items-center rounded-full bg-surface shadow-card lift press focus-visible:outline-2 focus-visible:outline-focus"
           >
-            <X className="h-5 w-5" />
+            <X className="hover-hop h-5 w-5" />
           </button>
         </div>
 
@@ -189,7 +189,10 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
             </div>
 
             <section className="mt-4 rounded-lg bg-surface p-5 shadow-card">
-              <p className="text-[12px] font-bold text-ink-muted">چی شد؟</p>
+              <p className="flex items-center gap-1 text-[12px] font-bold text-ink-muted">
+                <CircleAlert aria-hidden className="size-4 text-signal" />
+                چی شد؟
+              </p>
               <p className="mt-1 break-words text-[15px] font-bold leading-6">
                 <span className="text-signal">{fail.title}</span>
                 {failedStore && <span> — {failedStore.name}</span>}
@@ -198,7 +201,10 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
             </section>
 
             <section className="mt-3 rounded-lg bg-surface p-5 shadow-card">
-              <p className="text-[12px] font-bold text-ink-muted">چی رو نگه می‌داریم</p>
+              <p className="flex items-center gap-1 text-[12px] font-bold text-ink-muted">
+                <Lock aria-hidden className="size-4 text-verified" />
+                چی رو نگه می‌داریم
+              </p>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Chip>هدف: {req.goalText || "مشخص نشده"}</Chip>
                 <Chip>بودجه: {budget ? budget.label : "مشخص نشده"}</Chip>
@@ -238,9 +244,9 @@ export function PlanB({ rows, onAccepted }: { rows: OfferRow[] | undefined; onAc
                         type="button"
                         aria-pressed={active}
                         onClick={() => choose(p)}
-                        className={`flex min-h-11 items-start gap-3 rounded-lg p-4 text-start shadow-card transition-[background-color,color,scale] duration-(--duration-fast) ease-out focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.98] ${active ? "bg-orange text-on-orange" : "bg-surface"}`}
+                        className={`flex min-h-11 items-start gap-3 rounded-lg p-4 text-start shadow-card lift press [--press:0.98] focus-visible:outline-2 focus-visible:outline-focus ${active ? "animate-chip-pop bg-orange text-on-orange in-data-[input=keyboard]:animate-none" : "bg-surface"}`}
                       >
-                        <Icon aria-hidden className={`mt-0.5 size-5 shrink-0 ${active ? "" : "text-orange"}`} />
+                        <Icon aria-hidden className={`hover-hop mt-0.5 size-5 shrink-0 ${active ? "" : "text-orange"}`} />
                         <span className="min-w-0">
                           <span className="block text-[15px] font-bold">{PRIORITY_META[p].label}</span>
                           <span className={`block text-[13px] transition-colors duration-(--duration-fast) ${active ? "text-on-orange" : "text-ink-muted"}`}> {PRIORITY_META[p].sub}</span>

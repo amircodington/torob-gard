@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Store } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { JourneyShell } from "../../../components/JourneyShell";
 import { DistrictMap } from "../../../components/map/DistrictMap";
@@ -127,7 +127,10 @@ function Radar({ id }: { id: string }) {
               ) : (
                 <>
                   <p className="mb-2 flex justify-between px-1 text-[12px] font-semibold text-ink-muted">
-                    <span>{faNum(rows.length)} فروشگاه</span>
+                    <span className="inline-flex items-center gap-1">
+                      <Store aria-hidden className="size-3.5" />
+                      {faNum(rows.length)} فروشگاه
+                    </span>
                     <span>قیمت‌ها به هزار تومان</span>
                   </p>
                   <ul aria-label="فروشگاه‌ها" className="grid gap-3">

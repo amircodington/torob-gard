@@ -125,9 +125,9 @@ export function StoreSheet({ row, anchor, now }: { row: OfferRow | null; anchor:
               type="button"
               disabled={busy}
               onClick={() => fail(f)}
-              className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-md bg-panel-2 px-2 py-1.5 text-[13px] font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] disabled:opacity-50"
+              className="flex min-h-11 flex-col items-center justify-center gap-1 rounded-md bg-panel-2 px-2 py-1.5 text-[13px] font-bold text-on-dark press hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-focus disabled:opacity-50"
             >
-              <f.icon aria-hidden className="size-4" />
+              <f.icon aria-hidden className="hover-hop size-4" />
               {f.label}
             </button>
           ))}

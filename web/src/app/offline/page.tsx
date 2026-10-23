@@ -17,7 +17,7 @@ export default function Offline() {
         <p className="mt-3 max-w-80 text-[15px] leading-7 text-ink-muted">
           این صفحه ذخیره نشده. چک‌لیست و مسیر سه سفر آخری که باز کردی بدون اینترنت هم باز می‌شن.
         </p>
-        <Link href="/" className="mt-8 inline-flex min-h-11 items-center rounded-pill bg-orange px-6 text-[15px] font-bold text-on-orange shadow-card active:scale-[0.97] transition-transform">
+        <Link href="/" className="mt-8 inline-flex min-h-11 items-center rounded-pill bg-orange px-6 text-[15px] font-bold text-on-orange shadow-card lift press">
           برگشت به خانه
         </Link>
       </main>

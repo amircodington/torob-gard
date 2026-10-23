@@ -9,7 +9,7 @@ const DOTS = 6;
 
 /**
  * Walk mode's one rare moment («داشت؟» → آره): the verified check settles (scale 0.9→1 + fade, 240 ms) while
- * six orange dots burst 28 px out and fade (600 ms), with a 12 ms buzz. Reduced motion or «آره» pressed by key: the check fades in, no dots, no buzz.
+ * six orange dots burst 28 px out and fade (600 ms), with a 12 ms buzz; the tick draws itself (draw-in, CSS). Reduced motion or «آره» pressed by key: the check fades in, no dots, no buzz.
  */
 export function Success() {
   const root = useRef<HTMLDivElement>(null);
@@ -49,7 +49,7 @@ export function Success() {
           <span key={i} data-dot className="absolute size-2 rounded-full bg-orange opacity-0" />
         ))}
         <span data-check className="relative grid size-12 place-items-center rounded-full bg-verified text-on-dark">
-          <Check className="size-6 [stroke-width:2.5]" />
+          <Check className="draw-in size-6 [stroke-width:2.5]" />
         </span>
       </span>
       <p data-copy className="text-[17px] font-extrabold">

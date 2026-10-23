@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ChevronRight, MapPin, ShieldCheck } from "lucide-react";
+import { ChevronRight, Layers, LayoutGrid, MapPin, ShieldCheck } from "lucide-react";
 import type { CSSProperties } from "react";
 import { SiteHeader } from "../../../components/SiteHeader";
 import { CARD, JsonLd, ROW_LINK, Section } from "../../../components/catalog/parts";
@@ -40,7 +40,7 @@ export default async function PasazhPage(p: Props) {
             مغازه‌های <span className="font-extrabold break-words">{faNum(v.name)}</span>
           </h1>
           <p className="mt-1 flex gap-1 text-[15px] leading-6 text-ink-muted">
-            <MapPin aria-hidden className="mt-1 size-4 shrink-0" />
+            <MapPin aria-hidden className="mt-1 size-4 shrink-0 animate-pin-drop [animation-delay:120ms]" />
             <span className="min-w-0 break-words">{v.address || "آدرس دقیق ثبت نشده"} · {faNum(shops)} فروشگاه</span>
           </p>
           <p className="mt-1 flex items-center gap-1 text-[12px] font-semibold text-ink-muted">
@@ -57,11 +57,11 @@ export default async function PasazhPage(p: Props) {
           )}
           <div className="flex flex-col gap-4">
             {v.topCategories.length > 0 && (
-              <Section title="دسته‌های پرفروش این پاساژ">
+              <Section title="دسته‌های پرفروش این پاساژ" icon={LayoutGrid}>
                 <ul className="flex flex-wrap gap-2">
                   {v.topCategories.map((c) => (
                     <li key={c.slug}>
-                      <Link href={pathOf.category(c.slug)} className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-pill bg-surface-tint px-4 text-[13px] font-bold [overflow-wrap:anywhere] focus-visible:outline-2 focus-visible:outline-focus active:scale-[0.97] transition-transform duration-(--duration-press)">
+                      <Link href={pathOf.category(c.slug)} className="inline-flex min-h-11 max-w-full items-center gap-1.5 rounded-pill bg-surface-tint px-4 text-[13px] font-bold [overflow-wrap:anywhere] press hover:bg-line focus-visible:outline-2 focus-visible:outline-focus">
                         {c.name}
                         <span className="font-semibold text-ink-muted">{faNum(c.count)} مدل</span>
                       </Link>
@@ -74,12 +74,15 @@ export default async function PasazhPage(p: Props) {
             {v.floors.map((f, i) => (
               <section key={f.floor ?? "none"} data-testid="floor" style={{ "--i": i } as CSSProperties} className={`${CARD} animate-rise stagger`}>
                 <div className="flex items-baseline justify-between gap-2">
-                  <h2 className="text-[17px] font-extrabold leading-7">{f.label}</h2>
+                  <h2 className="flex items-center gap-2 text-[17px] font-extrabold leading-7">
+                    <Layers aria-hidden className="size-5 text-orange" />
+                    {f.label}
+                  </h2>
                   <span className="text-[12px] font-semibold text-ink-muted">{faNum(f.shops.length)} فروشگاه</span>
                 </div>
                 <ul className="mt-1 divide-y divide-line">
-                  {f.shops.map((s) => (
-                    <li key={s.id}>
+                  {f.shops.map((s, i) => (
+                    <li key={s.id} style={{ "--i": i } as CSSProperties} className="animate-rise stagger">
                       <Link href={pathOf.shop(s.id)} className={ROW_LINK}>
                         <span className="min-w-0 flex-1">
                           <span className="block text-[15px] font-bold leading-6 break-words">{s.name}</span>
@@ -88,7 +91,7 @@ export default async function PasazhPage(p: Props) {
                             {s.parseConfidence < 0.8 ? floorUnit(s) : s.unit ? `واحد ${faNum(s.unit)}` : "شماره‌ی واحد ثبت نشده"}
                           </span>
                         </span>
-                        <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-muted flip-rtl" />
+                        <ChevronRight aria-hidden className="nudge size-5 shrink-0 text-ink-muted flip-rtl" />
                       </Link>
                     </li>
                   ))}

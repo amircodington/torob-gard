@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { api } from "../../lib/api";
 import type { OfferRow } from "../../lib/types";
 import { useSession } from "../../state/session";
@@ -25,8 +25,9 @@ export function ShopCards({ offerIds, why }: { offerIds: string[]; why: Record<s
   const now = new Date();
   return (
     <ul aria-label="فروشگاه‌های پیشنهادی" className="flex flex-col gap-2 pe-11">
-      {rows.map((row) => (
-        <li key={row.offer.offerId}>
+      {/* the agent's block arrives: its rows rise in, 40 ms apart */}
+      {rows.map((row, i) => (
+        <li key={row.offer.offerId} style={{ "--i": i } as CSSProperties} className="animate-rise stagger">
           <ShopRow
             row={row}
             now={now}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ChevronRight, Search } from "lucide-react";
+import { ChevronRight, Package, Search, Store } from "lucide-react";
 import type { CSSProperties } from "react";
 import { SiteHeader } from "../../components/SiteHeader";
 import { ROW_LINK, Section, Thumb } from "../../components/catalog/parts";
@@ -36,7 +36,7 @@ export default async function SearchPage({ searchParams }: Props) {
             className="min-h-11 min-w-0 flex-1 rounded-pill bg-surface px-4 text-[16px] text-ink shadow-card outline-none focus-visible:outline-2 focus-visible:outline-focus"
           />
           <button type="submit" className={btnClass()}>
-            <Search aria-hidden className="size-5 shrink-0" />
+            <Search aria-hidden className="hover-hop size-5 shrink-0" />
             بگرد
           </button>
         </form>
@@ -51,7 +51,7 @@ export default async function SearchPage({ searchParams }: Props) {
         )}
 
         {hits && !!hits.products.length && (
-          <Section title="مدل‌ها" testId="search-products">
+          <Section title="مدل‌ها" icon={Package} testId="search-products">
             <ul className="grid gap-1 md:grid-cols-2 md:gap-x-4">
               {hits.products.map((x, i) => (
                 <li key={x.id} style={{ "--i": i } as CSSProperties} className="animate-rise stagger">
@@ -71,10 +71,10 @@ export default async function SearchPage({ searchParams }: Props) {
         )}
 
         {hits && !!hits.shops.length && (
-          <Section title="مغازه‌ها" testId="search-shops">
+          <Section title="مغازه‌ها" icon={Store} testId="search-shops">
             <ul className="divide-y divide-line">
-              {hits.shops.map((s) => (
-                <li key={s.id}>
+              {hits.shops.map((s, i) => (
+                <li key={s.id} style={{ "--i": i } as CSSProperties} className="animate-rise stagger">
                   <Link href={pathOf.shop(s.id)} className={ROW_LINK}>
                     <span className="min-w-0 flex-1">
                       <span className="block text-[15px] font-bold leading-6 break-words">{s.name}</span>
@@ -82,7 +82,7 @@ export default async function SearchPage({ searchParams }: Props) {
                         {s.venueName ? faNum(s.venueName) : "پاساژ ثبت نشده"} · {floorUnit({ ...s, mall: s.venueName })}
                       </span>
                     </span>
-                    <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-muted flip-rtl" />
+                    <ChevronRight aria-hidden className="nudge size-5 shrink-0 text-ink-muted flip-rtl" />
                   </Link>
                 </li>
               ))}
