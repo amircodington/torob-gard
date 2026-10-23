@@ -85,6 +85,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 ## Redesign — gate: e2e green at phone/tablet/desktop, mobile-native pass, T-08 re-run (students)
 
 - [x] Redesign Tasks 1–10: motion system, icons, wider layouts, sheet, desk, radar, Plan B, trip, walk ([plan](superpowers/plans/2026-10-22-redesign.md), [gate](evidence/redesign/gate.md))
+- [x] Redesign 2: Dana, 3D radish mascot set (Gemini), landing bands, loaders, micro-interactions, mascot in states ([plan](superpowers/plans/2026-10-23-redesign-2.md), [gate](evidence/redesign-2/gate.md))
 - [ ] T-08 UI walk test, redesign re-run (Chrome, Bale, Eitaa on a ≤ 3 GB Android) — students · table in the redesign gate.md
 
 ## Open questions
