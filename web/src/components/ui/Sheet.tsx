@@ -86,15 +86,18 @@ export function Sheet({
     // `motion` is there because a conditions handler runs only while at least one condition matches.
     mm.add({ desk: DESK, reduce: REDUCED, motion: "(prefers-reduced-motion: no-preference)" }, (ctx) => {
       const { desk, reduce } = ctx.conditions as { desk: boolean; reduce: boolean };
-      if (reduce) return void gsap.from([panel.current, scrim.current], { opacity: 0, duration: DUR.fast });
+      if (reduce) return void gsap.fromTo([panel.current, scrim.current], { opacity: 0 }, { opacity: 1, duration: DUR.fast });
       const from = desk && dock ? { xPercent: edge(panel.current) } : { yPercent: 100 };
       gsap.from(panel.current, { ...from, duration: DUR.sheet, ease: "tg.drawer" });
-      gsap.from(scrim.current, { opacity: 0, duration: DUR.sheet, ease: "tg.drawer" });
+      gsap.fromTo(scrim.current, { opacity: 0 }, { opacity: 1, duration: DUR.sheet, ease: "tg.drawer" });
       const b = body.current;
       if (!b || byKeyboard()) return;
       const blocks = b.children.length === 1 ? b.firstElementChild!.children : b.children; // one wrapper (StoreSheet): its blocks
       const items = [...blocks].filter((el) => !el.matches('[class*="animate-rise"]'));
-      if (items.length) gsap.from(items, { y: 8, opacity: 0, duration: DUR.fast, ease: "tg.out", stagger: staggerStep(items.length, 0.12) });
+      // fromTo + clearProps, not from(): a re-run (Strict Mode, dock change) would read a lift/press opacity transition
+      // mid-way as the end value and leave the block half-transparent.
+      if (items.length)
+        gsap.fromTo(items, { y: 8, opacity: 0 }, { y: 0, opacity: 1, duration: DUR.fast, ease: "tg.out", stagger: staggerStep(items.length, 0.12), clearProps: "opacity,transform" });
     });
     return () => mm.revert();
   }, [open, dock]);

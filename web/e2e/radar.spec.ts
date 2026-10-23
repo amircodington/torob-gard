@@ -192,3 +192,17 @@ test("radar (desktop): every pin lies inside the map box at 1280×720, 1440×900
     expect(out, `${width}×${height}`).toBe(0);
   }
 });
+
+test("radar: every block of the store sheet ends fully opaque (the content stagger never sticks half-way)", async ({ page }) => {
+  await page.goto(`/radar/${PRODUCT}`);
+  await page.getByRole("list", { name: "فروشگاه‌ها" }).getByRole("listitem").first().getByRole("button").click();
+  const sheet = page.getByRole("dialog");
+  for (const name of ["برو همین‌جا", /منصفانه/]) {
+    const btn = sheet.getByRole("button", { name });
+    await expect(btn).toBeVisible();
+    // effective opacity: the element and every ancestor up to the sheet
+    await expect
+      .poll(() => btn.evaluate((el) => { let o = 1; for (let e: Element | null = el; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity); return o; }))
+      .toBe(1);
+  }
+});

@@ -18,7 +18,7 @@ export function Success() {
     const mm = gsap.matchMedia(root.current!);
     mm.add({ calm: REDUCED, full: "(prefers-reduced-motion: no-preference)" }, ({ conditions }) => {
       if (conditions!.calm || byKeyboard()) {
-        gsap.from("[data-check], [data-copy]", { opacity: 0, duration: DUR.base });
+        gsap.fromTo("[data-check], [data-copy]", { opacity: 0 }, { opacity: 1, duration: DUR.base, clearProps: "opacity" });
         return;
       }
       navigator.vibrate?.(12);

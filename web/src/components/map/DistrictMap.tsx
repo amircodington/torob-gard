@@ -42,7 +42,7 @@ export function DistrictMap({ rows, anchor, selectedId, onSelect, radiusKm, hove
       ro!.disconnect();
       // Radar moment: pins drop y -12→0 + fade, 320 ms back.out(1.4), 30 ms apart; the 9th pin on lands with the 8th.
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.from("[data-pin] > span", { y: -12, opacity: 0, duration: 0.32, ease: "back.out(1.4)", stagger: (i) => Math.min(i, 7) * 0.03 });
+        gsap.fromTo("[data-pin] > span", { y: -12, opacity: 0 }, { y: 0, opacity: 1, duration: 0.32, ease: "back.out(1.4)", stagger: (i) => Math.min(i, 7) * 0.03, clearProps: "opacity,transform" });
       });
     });
     ro?.observe(el);
