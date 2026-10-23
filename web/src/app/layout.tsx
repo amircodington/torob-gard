@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: { default: "ترب‌گرد | از چی بخرم تا از کجا بخرم!", template: "%s | ترب‌گرد" },
   description: DESCRIPTION,
   openGraph: { title: "ترب‌گرد | از چی بخرم تا از کجا بخرم!", description: DESCRIPTION, locale: "fa_IR", type: "website" },
-  icons: { icon: "/mascot/torob-gard-icon.webp", apple: "/icons/icon-192.png" },
+  // icons: app/favicon.ico (16/32/48), app/icon.png, app/apple-icon.png — Next's file conventions.
 };
 
 // viewport-fit=cover lets the sheets' env(safe-area-inset-*) padding work; theme-color = paper.
