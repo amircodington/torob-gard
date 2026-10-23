@@ -15,19 +15,23 @@ const TURNS = [
   "کجا می‌تونم همین رو ارزون‌تر بخرم؟",
 ];
 
-// The gate is p95 first token < 2.5 s at 50 VUs and errors < 1 %.
-const agentOnly = AGENT ? { agent_ttfb_ms: ["p(95)<2500"] } : {};
-export const options = {
-  insecureSkipTLSVerify: true, // ponytail: also true against the VPS; the cert is not what is measured
-  stages: __ENV.SMOKE === "1"
-    ? [{ duration: "30s", target: 2 }]
-    : [10, 25, 50].map((target) => ({ duration: "5m", target })), // ponytail: no ramp-down, each stage is a step
-  thresholds: { errors: ["rate<0.01"], ...agentOnly },
-};
+// The gate is p95 first token < 2.5 s at 50 VUs and errors < 1 %. Each level is its own flat constant-VU
+// scenario run back to back (10, 25, 50 VUs x 5 min), tagged `level`, so the 50-VU p95 reads on its own line.
+const LEVELS = __ENV.SMOKE === "1" ? [2] : [10, 25, 50];
+const DUR = __ENV.SMOKE === "1" ? 30 : 300;
+const scenarios = {}, thresholds = {};
+LEVELS.forEach((vus, i) => {
+  scenarios[`vus${vus}`] = { executor: "constant-vus", vus, duration: `${DUR}s`, startTime: `${i * DUR}s`,
+    tags: { level: String(vus) } };
+  thresholds[`errors{level:${vus}}`] = ["rate<0.01"];
+  // ponytail: first-event time, NOT first token (see docs/evidence/P3/load.md); a green result here does not pass the gate
+  if (AGENT) thresholds[`agent_first_event_ms{level:${vus}}`] = ["p(95)<2500"];
+});
+export const options = { insecureSkipTLSVerify: true, scenarios, thresholds }; // ponytail: skip-verify also against the VPS; the cert is not what is measured
 
 const errors = new Rate("errors");
-const ttfb = new Trend("agent_ttfb_ms", true); // ponytail: k6 sees the stream only when it ends, so this is time to the first
-// byte = the instant `status` event, a lower bound on the first grounded token (docs/evidence/P3/load.md)
+// k6 sees the first SSE byte = the instant `status` event, not the first grounded token.
+const ttfb = new Trend("agent_first_event_ms", true);
 const full = new Trend("agent_full_ms", true);
 const turns = new Counter("agent_turns");
 

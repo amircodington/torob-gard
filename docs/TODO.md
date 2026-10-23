@@ -79,7 +79,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P3.3 PWA + offline trips — Mohammad
 - [x] P3.4 Phone login + `/me` — Mohammad
 - [x] P3.5 Production deploy + backups — Mohammad (built + verified locally; VPS push is Mohammad's, R-P2)
-- [x] P3.6 Load and cost check — script done (`deploy/k6/journey.js`, local smoke in `docs/evidence/P3/load.md`); gate run open, T-13
+- [x] P3.6 Load and cost check — script + local smoke done; gate run open (T-13)
 - [ ] T-14 Content and copy review — student
 
 ## Redesign — gate: e2e green at phone/tablet/desktop, mobile-native pass, T-08 re-run (students)

@@ -64,4 +64,4 @@ push-test:
 
 # k6 load/cost script (docs/evidence/P3/load.md). BASE_URL=https://host AGENT_TURNS=1 make load; SMOKE=1 for 30 s. Agent turns cost money.
 load:
-	docker run --rm -v $(CURDIR)/deploy/k6:/k6:ro -e BASE_URL -e AGENT_TURNS -e SMOKE grafana/k6 run /k6/journey.js
+	docker run --rm --network host -v $(CURDIR)/deploy/k6:/k6:ro -e BASE_URL -e AGENT_TURNS -e SMOKE grafana/k6 run /k6/journey.js

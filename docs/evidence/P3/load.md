@@ -2,7 +2,7 @@
 
 Script: `deploy/k6/journey.js`. One iteration = `GET /api/stats` → `POST /api/desk` (mobile, ≤ 30M, camera) →
 `GET /api/products/{id}/offers` for the first tier → with `AGENT_TURNS=1`, three `POST /agent/chat` turns
-(one session, `session_id` taken from the `done` event). Stages: 10 / 25 / 50 VUs × 5 min. `SMOKE=1`: 2 VUs, 30 s.
+(one session, `session_id` taken from the `done` event). Three flat constant-VU scenarios back to back, 10 / 25 / 50 VUs × 5 min, tagged `level` (thresholds and the summary are per level). `SMOKE=1`: 2 VUs, 30 s.
 
 ## Local smoke (NOT the gate)
 
@@ -25,19 +25,19 @@ Not run: it needs the VPS and spends BoxAPI money. From any machine with Docker 
 generator does not compete for its CPU):
 
 ```sh
-docker run --rm -v $PWD/deploy/k6:/k6:ro -e BASE_URL=https://<SERVER_NAME> -e AGENT_TURNS=1 \
+docker run --rm --network host -v $PWD/deploy/k6:/k6:ro -e BASE_URL=https://<SERVER_NAME> -e AGENT_TURNS=1 \
   grafana/k6 run /k6/journey.js            # or: BASE_URL=... AGENT_TURNS=1 make load
 ```
 
-Pass: `errors` < 1 % and `agent_ttfb_ms` p(95) < 2500 (k6 exits non-zero otherwise), cost < $0.02 per conversation.
+Pass: `errors` < 1 % and `agent_first_event_ms` p(95) < 2500 at `level:50`, cost < $0.02 per conversation.
+**A green k6 threshold does NOT satisfy the first-token gate** (see below); it only bounds the first event.
 Read `agent_full_ms` (p95 full answer) and `agent_turns` from the same summary.
 
 Caveats the students must handle:
 
-- **First token.** k6 sees an SSE response only when it ends, so `agent_ttfb_ms` is time to the first byte, which is
-  the instant `status` event. It is a lower bound on the first grounded `token`. For the true figure, take the
-  first-token time from the browser (devtools) on a few turns during the run, or accept `message.latency_ms`
-  (full turn) from the DB as the upper bound.
+- **First token.** k6 sees an SSE response only when it ends; `agent_first_event_ms` is time to the first byte, the
+  instant `status` event, long before any grounded `token`. It cannot pass or fail the first-token gate. The real
+  first-token number needs server-side timing (time from request to the first `token` event), left to T-13.
 - **Rate limit.** `/agent/chat` allows 30 turns / 10 min per client IP and nginx overwrites `X-Forwarded-For`,
   so one k6 host will get 429s (counted as errors) after ~10 conversations. Either run from several IPs, or
   raise `TURNS` in `agent/torobgard_agent/api.py` for the test and put it back. Ask Mohammad before shipping that.
