@@ -1,5 +1,5 @@
 /* Typed client for the Django API; snake_case → camelCase happens here and only here. */
-import type { Anchor, CategoryPage, DeskTier, FailureRecord, OfferRow, Product, ProductCard, ShopDetail, ShopHit, SitemapData, Stats, Store, Trip, Venue, VenueDetail } from "./types";
+import type { Anchor, CategoryPage, Me, NeedsProfile, DeskTier, FailureRecord, OfferRow, Product, ProductCard, ShopDetail, ShopHit, SitemapData, Stats, Store, Trip, Venue, VenueDetail } from "./types";
 
 // Relative: a Next.js rewrite to the Django server lands in Task 6. Server components set API_URL.
 const API = "/api";
@@ -18,7 +18,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers: { "Content-Type": "application/json", ...init.headers },
   });
   if (!res.ok) throw new ApiError(res.status, await res.text());
-  return res.json() as Promise<T>;
+  return (res.status === 204 ? undefined : res.json()) as Promise<T>;
 }
 
 const send = (method: string, body: unknown): RequestInit => ({ method, body: JSON.stringify(body) });
@@ -76,6 +76,19 @@ const mapTrip = (t: Raw): Trip => ({
     offerCount: t.product.offer_count,
   },
   shop: t.shop ? mapStore(t.shop) : null,
+});
+
+const mapProfile = (p: Raw): NeedsProfile => ({
+  budgetMin: p.budget_min, budgetMax: p.budget_max, preferredBrands: p.preferred_brands,
+  avoidedBrands: p.avoided_brands, styleTags: p.style_tags, notes: p.notes,
+});
+
+export const mapMe = (m: Raw): Me => ({
+  displayName: m.display_name, phoneMasked: m.phone_masked, trips: m.trips.map(mapTrip), profile: mapProfile(m.profile),
+  memory: m.memory.map((x: Raw) => ({
+    id: x.id, state: x.state, productId: x.product_id, productTitle: x.product_title, imageUrl: x.image_url,
+    shopId: x.shop_id, shopName: x.shop_name, priceSeen: x.price_seen, note: x.note, createdAt: x.created_at,
+  })),
 });
 
 /* -------------------------------- inputs -------------------------------- */
@@ -189,6 +202,26 @@ export const api = {
     mapTrip(await request<Raw>("/trips", send("POST", {
       product_id: i.productId, chosen_shop_id: i.chosenShopId ?? null, req: i.req, failures: i.failures, anchor: i.anchor,
     }))),
+  /** Phone login (people/api.py). The session cookie is httpOnly; these only ever run in the browser. */
+  requestOtp: (phone: string) => request<void>("/auth/otp/request", send("POST", { phone })),
+  verifyOtp: async (phone: string, code: string, agentSessionId?: string | null): Promise<Me> =>
+    mapMe(await request<Raw>("/auth/otp/verify", send("POST", { phone, code, agent_session_id: agentSessionId ?? null }))),
+  logout: () => request<void>("/auth/logout", { method: "POST" }),
+  /** null for a guest (401). */
+  me: async (): Promise<Me | null> => {
+    try {
+      return mapMe(await request<Raw>("/me"));
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return null;
+      throw e;
+    }
+  },
+  patchProfile: async (p: Partial<NeedsProfile>): Promise<NeedsProfile> =>
+    mapProfile(await request<Raw>("/me/profile", send("PATCH", {
+      budget_min: p.budgetMin, budget_max: p.budgetMax, preferred_brands: p.preferredBrands,
+      avoided_brands: p.avoidedBrands, style_tags: p.styleTags, notes: p.notes,
+    }))),
+  deleteMe: () => request<void>("/me", { method: "DELETE" }),
   trip: async (id: string): Promise<Trip> => mapTrip(await request<Raw>(`/trips/${encodeURIComponent(id)}`)),
   patchTrip: async (id: string, p: TripPatch): Promise<Trip> =>
     mapTrip(await request<Raw>(`/trips/${encodeURIComponent(id)}`, send("PATCH", {

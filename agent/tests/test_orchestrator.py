@@ -275,8 +275,22 @@ def test_sessionless_requests_are_limited_by_the_forwarded_client(monkeypatch):
     other = {"X-Forwarded-For": "9.9.9.9"}
     assert c.post("/agent/chat", json={"text": "سلام"}, headers=other).status_code == 200
     assert c.post("/agent/chat", json={"text": "سلام"}).status_code == 200  # no proxy: the client host
-    sid = str(uuid4())
-    assert c.post("/agent/chat", json={"text": "سلام", "session_id": sid}, headers=me).status_code == 200
+    sid = str(uuid4())  # a fresh session id does not reset the client's limit (R-P6)
+    assert c.post("/agent/chat", json={"text": "سلام", "session_id": sid}, headers=me).status_code == 429
+
+
+def test_minting_session_ids_does_not_bypass_the_limit(monkeypatch):
+    r = FakeRedis()
+    monkeypatch.setattr(api, "redis", lambda: r)
+
+    async def fake_turn(session_id, txt, ctx, **kw):
+        yield Done(uuid4(), [], uuid4())
+    monkeypatch.setattr(api, "run_turn", fake_turn)
+    c = TestClient(app)
+    me = {"X-Forwarded-For": "5.6.7.8"}
+    codes = [c.post("/agent/chat", json={"text": "سلام", "session_id": str(uuid4())}, headers=me).status_code
+             for _ in range(api.TURNS + 1)]
+    assert codes[:-1] == [200] * api.TURNS and codes[-1] == 429
 
 
 def test_chat_context_is_size_capped(monkeypatch):

@@ -77,7 +77,7 @@ Plans: [P0](superpowers/plans/2026-10-22-p0-foundation.md) ·
 - [x] P3.1 Pasazh, shop, product, category pages + SEO — Mohammad
 - [x] P3.2 Search, sitemap, robots — Mohammad
 - [x] P3.3 PWA + offline trips — Mohammad
-- [ ] P3.4 Phone login + `/me` — Mohammad
+- [x] P3.4 Phone login + `/me` — Mohammad
 - [ ] P3.5 Production deploy + backups — Mohammad
 - [ ] P3.6 Load and cost check — Mohammad + T-13
 - [ ] T-14 Content and copy review — student

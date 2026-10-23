@@ -10,6 +10,7 @@ from ninja.errors import HttpError
 from catalog.models import Product, Shop, ShopReport
 from catalog.rows import shop_out
 from catalog.schemas import ShopOut
+from people.api import current_user
 
 from .models import Trip
 
@@ -93,7 +94,8 @@ def create_report(request, body: ReportIn) -> dict:
         raise HttpError(429, "too many reports")
     shop = get_object_or_404(Shop, id=body.shop_id)
     product = Product.objects.filter(id=body.product_id).first() if body.product_id else None
-    r = ShopReport.objects.create(shop=shop, product=product, kind=body.kind, user_id=None)
+    u = current_user(request)
+    r = ShopReport.objects.create(shop=shop, product=product, kind=body.kind, user_id=u and u.id)
     request.session["report_times"] = times + [now]
     return {"id": str(r.id)}
 
@@ -107,6 +109,7 @@ def create_trip(request, body: TripIn):
     t = Trip.objects.create(
         product=product, chosen_shop=shop, req=body.req, failures=body.failures,
         anchor=body.anchor, owner_key=request.session.session_key,
+        user_id=(u := current_user(request)) and u.id,
     )
     return _out(t)
 

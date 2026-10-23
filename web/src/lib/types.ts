@@ -153,6 +153,36 @@ export interface Trip {
   shop: Store | null;
 }
 
+export interface MemoryItem {
+  id: string;
+  state: "seen" | "liked" | "tried" | "bought" | "skipped";
+  productId: string | null;
+  productTitle: string | null;
+  imageUrl: string | null;
+  shopId: string | null;
+  shopName: string | null;
+  priceSeen: number | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface NeedsProfile {
+  budgetMin: number | null;
+  budgetMax: number | null;
+  preferredBrands: string[];
+  avoidedBrands: string[];
+  styleTags: string[];
+  notes: string;
+}
+
+export interface Me {
+  displayName: string | null;
+  phoneMasked: string | null;
+  trips: Trip[];
+  memory: MemoryItem[];
+  profile: NeedsProfile;
+}
+
 export interface ChatMsg {
   id: number;
   from: "assistant" | "user";

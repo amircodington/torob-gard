@@ -11,5 +11,5 @@ class Trip(models.Model):
     req = models.JSONField(default=dict)
     failures = models.JSONField(default=list)
     anchor = models.JSONField(default=dict)
-    # ponytail: trips have no user yet; owner = session cookie; /me links them in P3
-    owner_key = models.CharField(max_length=64, db_index=True)
+    owner_key = models.CharField(max_length=64, db_index=True)  # the guest's session key
+    user_id = models.UUIDField(null=True, db_index=True)  # people.AppUser, set at login (no FK)

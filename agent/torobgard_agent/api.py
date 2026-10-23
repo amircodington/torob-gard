@@ -32,8 +32,8 @@ def redis() -> Redis:
 
 
 async def allow(r: Redis, key: str) -> bool:
-    # ponytail: fixed window keyed by session, else by client address; a client can mint session ids or
-    # send its own X-Forwarded-For (Next keeps it) — key by user once auth lands (P3)
+    # ponytail: fixed window; a client can still send its own X-Forwarded-For (Next keeps it) until
+    # prod nginx overwrites it (P3 deploy)
     n = await r.incr(f"rl:agent:{key}")
     if n == 1:
         await r.expire(f"rl:agent:{key}", WINDOW_S)
@@ -48,9 +48,10 @@ def _client(request: Request) -> str:
     return first or (request.client.host if request.client else "anon")
 
 
-async def _limit(key: str) -> None:
+async def _limit(client: str, session_id: UUID | None = None) -> None:
+    """Per client always, and per session too: a fresh session id per request does not reset it."""
     try:
-        ok = await allow(redis(), key)
+        ok = all([await allow(redis(), k) for k in (client, session_id) if k])
     except RedisError:
         log.exception("rate limit unavailable; letting the request through")
         return
@@ -64,7 +65,7 @@ def _sse(event: str, data) -> str:
 
 @router.post("/agent/chat")
 async def chat(body: ChatIn, request: Request):
-    await _limit(str(body.session_id or _client(request)))
+    await _limit(_client(request), body.session_id)
 
     async def events():
         try:
@@ -101,5 +102,5 @@ async def price_check_route(body: PriceCheckIn, request: Request):
 @router.post("/agent/explain")
 async def explain_route(body: ExplainIn, request: Request):
     """Desk copy by FAST_MODEL; a tier missing from the answer keeps its P1 template."""
-    await _limit(str(body.session_id or _client(request)))
+    await _limit(_client(request), body.session_id)
     return await explain(body)

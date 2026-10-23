@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "ingest",
     "trips",
     "conversation",
+    "people",
     "quality",
 ]
 
@@ -67,5 +68,25 @@ TIME_ZONE = "Asia/Tehran"
 USE_TZ = True
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+# Login cookie: httpOnly, SameSite=Lax (no cross-site POST/DELETE carries it), Secure in prod
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SECURE = not DEBUG
+PHONE_PEPPER = os.environ.get("PHONE_PEPPER", "")
+PHONE_KEY = os.environ.get("PHONE_KEY", "")  # base64 of 32 bytes
+KAVENEGAR_KEY = os.environ.get("KAVENEGAR_KEY", "")
+KAVENEGAR_TEMPLATE = os.environ.get("KAVENEGAR_TEMPLATE", "")
+if not DEBUG and not (PHONE_PEPPER and PHONE_KEY):
+    raise RuntimeError("set PHONE_PEPPER and PHONE_KEY")
+
+# people.otp's dev sender prints the code (never the phone) to the console in DEBUG
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "loggers": {"people": {"handlers": ["console"], "level": "INFO"}},
+}
 
 UNFOLD = {"SITE_TITLE": "ترب‌گرد", "SITE_HEADER": "ترب‌گرد"}

@@ -18,6 +18,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { FreshBadge } from "../ui/FreshBadge";
 import { StockBadge } from "../ui/StockBadge";
 import { RecoveryStory } from "./RecoveryStory";
+import { SaveTrip } from "./SaveTrip";
 import { floorName } from "./WalkSheet";
 
 type Item = { ok: boolean | null; label: string; detail: string };
@@ -240,6 +241,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
           <Footprints aria-hidden className="size-5" />
           شروع مسیر
         </Link>
+        <SaveTrip tripId={trip.id} />
         <Btn
           variant="ghost"
           icon={RotateCcw}
