@@ -16,7 +16,9 @@ git archive --format=tar HEAD | ssh "$host" "set -e; rm -rf '$dir.new'; mkdir -p
   tar -x -C '$dir.new'; [ ! -f '$dir/.env.prod' ] || cp -p '$dir/.env.prod' '$dir.new/'
   rm -rf '$dir.old'; mv '$dir' '$dir.old' && mv '$dir.new' '$dir'"
 # The api container runs `migrate` and `collectstatic` on start.
-ssh "$host" "cd '$dir' && BUILD_ID=$sha docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --remove-orphans"
+ssh "$host" "cd '$dir' && BUILD_ID=$sha docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build --remove-orphans \
+  && docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --force-recreate --no-deps nginx"
+# ^ nginx bind-mounts files from the dir; recreate it so it sees the swapped-in one (certbot webroot, conf)
 url="${SMOKE_URL:-https://$(ssh "$host" "sed -n 's/^SERVER_NAME=//p' '$dir/.env.prod'")}"
 sleep 5
 deploy/smoke.sh "$url"

@@ -120,7 +120,8 @@ then `$C up -d` and `deploy/smoke.sh`. A restore of the full dump takes about 5 
 `DEPLOY_HOST=user@vps make push-test` (`deploy/push-test.sh`): `git archive HEAD` over SSH into a fresh
 `DEPLOY_DIR.new` (the old `.env.prod` copied in), swapped in for `DEPLOY_DIR` (previous kept as `DEPLOY_DIR.old`), `up -d --build` there with `BUILD_ID=<sha>` (the server keeps its own `.env.prod`;
 images come through its registry mirror), `migrate` runs as `api` starts, then `deploy/smoke.sh`
-against `https://<SERVER_NAME>`. Only committed code is shipped.
+against `https://<SERVER_NAME>`. Only committed code is shipped. nginx is recreated after the swap so its bind mounts (conf, certbot
+webroot) point at the new dir. `DEPLOY_DIR.old` is disposable once the smoke passes.
 
 ## 7. Checked locally (2026-10-23)
 
