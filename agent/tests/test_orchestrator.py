@@ -338,13 +338,28 @@ def test_chat_reads_the_signed_user_cookie(monkeypatch):
         return True
     monkeypatch.setattr(api, "run_turn", fake_turn)
     monkeypatch.setattr(api, "allow", yes)
-    u = uuid4()
+    # each TestClient has its own event loop, so no pooled engine across them
+    monkeypatch.setattr(api, "engine", lambda: make_engine(os.environ["TEST_DATABASE_URL"]))
+    u, gone = uuid4(), uuid4()
 
-    def token(exp, key="k"):
-        msg = f"{u}.{exp}"
+    async def users(sql):
+        e = make_engine(os.environ["TEST_DATABASE_URL"])
+        async with e.begin() as c:
+            await c.execute(text(sql), {"u": u})
+        await e.dispose()
+    asyncio.run(users("INSERT INTO people_appuser (id, role, created_at, last_seen_at)"
+                      " VALUES (:u, 'shopper', now(), now())"))
+
+    def token(exp, key="k", who=u):
+        msg = f"{who}.{exp}"
         return f"{msg}.{hmac.new(key.encode(), f'tg_uid:{msg}'.encode(), hashlib.sha256).hexdigest()}"
     future = int(time.time()) + 600
-    for cookie in [token(future), token(future, "wrong"), token(int(time.time()) - 1), "junk"]:
-        c = TestClient(app, cookies={"tg_uid": cookie})
-        assert c.post("/agent/chat", json={"text": "سلام"}).status_code == 200
-    assert seen == [u, None, None, None]
+    try:
+        # «a.b.é»: a non-ASCII signature must not 500; «gone»: deleted on another device
+        for cookie in [token(future), token(future, "wrong"), token(int(time.time()) - 1), "junk",
+                       "a.b.é", token(future, who=gone)]:
+            raw = {"cookie": f"tg_uid={cookie}".encode()}  # bytes: httpx refuses a non-ASCII str
+            assert TestClient(app).post("/agent/chat", json={"text": "سلام"}, headers=raw).status_code == 200
+    finally:
+        asyncio.run(users("DELETE FROM people_appuser WHERE id = :u"))
+    assert seen == [u, None, None, None, None, None]

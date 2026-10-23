@@ -12,8 +12,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
+from sqlalchemy import text
 
 from .context import TurnContext
+from .db import engine
 from .explain import ExplainIn, explain
 from .orchestrator import BlockEvent, Done, Status, Token, run_turn
 from .tools.price import price_check
@@ -51,7 +53,7 @@ def _client(request: Request) -> str:
     return first or (request.client.host if request.client else "anon")
 
 
-def _uid(request: Request) -> UUID | None:
+async def _uid(request: Request) -> UUID | None:
     """The logged-in user from Django's `tg_uid` cookie (`uid.exp.sig`, api/people/api.py uid_token)."""
     key = os.environ.get("DJANGO_SECRET_KEY", "")
     parts = request.cookies.get("tg_uid", "").split(".")
@@ -59,9 +61,16 @@ def _uid(request: Request) -> UUID | None:
         return None
     uid, exp, sig = parts
     good = hmac.new(key.encode(), f"tg_uid:{uid}.{exp}".encode(), hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(sig, good) or int(exp) < time.time():
+    try:  # bytes: a non-ASCII str makes compare_digest raise TypeError
+        if not hmac.compare_digest(sig.encode(), good.encode()) or int(exp) < time.time():
+            return None
+        user = UUID(uid)
+    except ValueError:
         return None
-    return UUID(uid)
+    # The cookie outlives «حذف داده‌هام» on another device; one indexed lookup per turn.
+    async with engine().connect() as c:
+        found = await c.execute(text("SELECT 1 FROM people_appuser WHERE id = :u"), {"u": user})
+        return user if found.first() else None
 
 
 async def _limit(client: str, session_id: UUID | None = None, user_id: UUID | None = None) -> None:
@@ -81,7 +90,7 @@ def _sse(event: str, data) -> str:
 
 @router.post("/agent/chat")
 async def chat(body: ChatIn, request: Request):
-    uid = _uid(request)
+    uid = await _uid(request)
     await _limit(_client(request), body.session_id, uid)
 
     async def events():
