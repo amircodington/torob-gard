@@ -127,6 +127,18 @@ def test_anonymise_sessions_after_90_days(db):
     assert old.user_id is None and new.user_id == uid
 
 
+def test_anonymised_sessions_memory_stays_the_users_and_is_deleted_with_them(client, sent, db):
+    login(client, sent)
+    u = AppUser.objects.get()
+    old = Session.objects.create(model="m", user_id=u.id)
+    Session.objects.filter(id=old.id).update(started_at=timezone.now() - timedelta(days=91))
+    ItemMemory.objects.create(user_id=old.id, state="liked")  # the agent keys on the session id
+    call_command("anonymise_sessions")
+    assert len(client.get("/api/me").json()["memory"]) == 1
+    assert client.delete("/api/me").status_code == 204
+    assert not ItemMemory.objects.exists()
+
+
 def test_login_sets_a_signed_user_cookie_for_the_agent(client, sent, db):
     r = login(client, sent)
     u = AppUser.objects.get()

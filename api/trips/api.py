@@ -10,7 +10,8 @@ from ninja.errors import HttpError
 from catalog.models import Product, Shop, ShopReport
 from catalog.rows import shop_out
 from catalog.schemas import ShopOut
-from people.api import current_user
+from people import otp
+from people.api import _client, current_user
 
 from .models import Trip
 
@@ -101,10 +102,11 @@ def _get(trip_id: str) -> Trip:
 
 @router.post("/reports")
 def create_report(request, body: ReportIn) -> dict:
-    # ponytail: per-session counter, not per-IP; Redis-backed limiter in P3
+    # Session list plus a per-client Redis count: a cookie-less script gets a new session each POST.
+    # ponytail: one CGNAT IP shares 20 reports / 10 min, same trade as the agent limit (R-P6)
     now = time.time()
     times = [t for t in request.session.get("report_times", []) if now - t < 600]
-    if len(times) >= 20:
+    if len(times) >= 20 or otp._count(otp.redis(), f"rl:report:{_client(request)}", 600) > 20:
         raise HttpError(429, "too many reports")
     shop = get_object_or_404(Shop, id=body.shop_id)
     product = Product.objects.filter(id=body.product_id).first() if body.product_id else None

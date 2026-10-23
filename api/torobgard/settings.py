@@ -86,6 +86,8 @@ KAVENEGAR_KEY = os.environ.get("KAVENEGAR_KEY", "")
 KAVENEGAR_TEMPLATE = os.environ.get("KAVENEGAR_TEMPLATE", "")
 if not DEBUG and SECRET_KEY == "dev-only-insecure-key":
     raise RuntimeError("set DJANGO_SECRET_KEY")
+if not DEBUG and "*" in ALLOWED_HOSTS:
+    raise RuntimeError("set ALLOWED_HOSTS to the domain plus api")
 if not DEBUG and not (PHONE_PEPPER and PHONE_KEY):
     raise RuntimeError("set PHONE_PEPPER and PHONE_KEY")
 if PHONE_KEY and len(base64.b64decode(PHONE_KEY)) != 32:

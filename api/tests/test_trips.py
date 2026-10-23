@@ -2,6 +2,14 @@ import pytest
 from django.contrib.gis.geos import Point
 
 from catalog.models import Category, Product, Shop, ShopReport, Venue
+from people import otp
+
+
+@pytest.fixture(autouse=True)
+def _fresh_report_limit():
+    r = otp.redis()
+    for k in r.scan_iter("rl:report:*"):
+        r.delete(k)
 
 
 @pytest.fixture
@@ -64,6 +72,19 @@ def test_report_rate_limit(client, pair):
     codes = [post(client, "/api/reports", body).status_code for _ in range(21)]
     assert codes[:20] == [200] * 20
     assert codes[20] == 429
+
+
+def test_report_limit_holds_for_a_cookieless_client(client, pair):
+    """A script that drops cookies gets a fresh session each time; the client IP still counts."""
+    body, codes = {"shop_id": "s1", "kind": "no_item"}, []
+    for _ in range(21):
+        client.cookies.clear()
+        codes.append(client.post("/api/reports", body, content_type="application/json",
+                                 HTTP_X_FORWARDED_FOR="5.6.7.8").status_code)
+    assert codes[:20] == [200] * 20 and codes[20] == 429
+    other = client.post("/api/reports", body, content_type="application/json",
+                        HTTP_X_FORWARDED_FOR="9.9.9.9")
+    assert other.status_code == 200
 
 
 def test_device_anchor_is_rounded_landmark_kept(client, pair):
