@@ -64,6 +64,7 @@ class ProductOut(Schema):
     offer_count: int
     category_name: str
     category_slug: str
+    seller_notes: int = 0  # the product page only: offers whose seller wrote a note or a warranty
 
 
 class ShopOut(Schema):

@@ -64,7 +64,7 @@ const mapTier = (t: Raw): DeskTier => ({
 const mapProduct = (p: Raw): Product => ({
   id: p.id, title: p.title, brand: p.brand, imageUrls: p.image_urls, specs: p.specs,
   minPrice: p.min_price, medianPrice: p.median_price, maxPrice: p.max_price, offerCount: p.offer_count,
-  categoryName: p.category_name, categorySlug: p.category_slug,
+  categoryName: p.category_name, categorySlug: p.category_slug, sellerNotes: p.seller_notes ?? 0,
 });
 
 const mapTrip = (t: Raw): Trip => ({
@@ -188,6 +188,12 @@ export const api = {
     const raw = await request<(RawOfferRow & { product_id: string })[]>(`/offers?ids=${ids.map(encodeURIComponent).join(",")}`);
     const now = new Date();
     return raw.map((r) => mapOfferRow(r, now, r.product_id));
+  },
+  /** «جمع‌بندی فروشنده‌ها»: FAST_MODEL's summary of the sellers' own notes (agent/torobgard_agent/seller_notes.py). */
+  sellerNotes: async (productId: string): Promise<{ points: string[]; notes: number }> => {
+    const res = await fetch("/agent/seller_notes", { cache: "no-store", headers: { "Content-Type": "application/json" }, ...send("POST", { product_id: productId }) });
+    if (!res.ok) throw new ApiError(res.status, await res.text());
+    return res.json();
   },
   /** The agent's price_check tool, no LLM (agent/torobgard_agent/api.py). */
   priceCheck: async (productId: string, quotedPrice: number): Promise<PriceCheck> => {

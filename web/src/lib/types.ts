@@ -62,6 +62,8 @@ export interface Product {
   offerCount: number;
   categoryName: string;
   categorySlug: string;
+  /** Offers whose seller wrote a note or a warranty (the product endpoint only; 0 elsewhere). */
+  sellerNotes: number;
 }
 
 export interface Stats {

@@ -18,6 +18,7 @@ from .context import TurnContext
 from .db import engine
 from .explain import ExplainIn, explain
 from .orchestrator import BlockEvent, Done, Status, Token, run_turn
+from .seller_notes import seller_notes
 from .tools.price import price_check
 
 log = logging.getLogger(__name__)
@@ -130,3 +131,29 @@ async def explain_route(body: ExplainIn, request: Request):
     """Desk copy by FAST_MODEL; a tier missing from the answer keeps its P1 template."""
     await _limit(_client(request), body.session_id)
     return await explain(body)
+
+
+class SellerNotesIn(BaseModel):
+    product_id: str = Field(min_length=1, max_length=64)
+
+
+NOTES_TTL_S = 86_400  # offers change daily at most (the dataset is a snapshot)
+
+
+@router.post("/agent/seller_notes")
+async def seller_notes_route(body: SellerNotesIn, request: Request):
+    """The product page's «جمع‌بندی فروشنده‌ها»: one FAST_MODEL call per product per day."""
+    key = f"notes:{body.product_id}"
+    try:
+        if hit := await redis().get(key):
+            return json.loads(hit)
+    except RedisError:
+        log.exception("notes cache unavailable")
+    await _limit(_client(request))
+    out = await seller_notes(body.product_id)
+    if out["points"]:  # a failed summary is retried on the next press
+        try:
+            await redis().set(key, json.dumps(out, ensure_ascii=False), ex=NOTES_TTL_S)
+        except RedisError:
+            log.exception("notes cache unavailable")
+    return out

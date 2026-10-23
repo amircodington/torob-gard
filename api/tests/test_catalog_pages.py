@@ -88,3 +88,11 @@ def test_category_page(client, world):
 def test_product_names_its_category(client, world):
     r = client.get("/api/products/p1").json()
     assert (r["category_name"], r["category_slug"]) == ("گوشی موبایل", "گوشی-موبایل")
+
+
+def test_product_counts_the_sellers_notes(client, world):
+    assert client.get("/api/products/p1").json()["seller_notes"] == 0
+    Offer.objects.filter(id="o0p1").update(description="اصل و پلمپ")
+    Offer.objects.filter(id="o1p1").update(warranty='{"provider": "گارانتی ۱۸ ماهه"}')
+    Offer.objects.filter(id="o2p1").update(description="  ", is_outlier=False)
+    assert client.get("/api/products/p1").json()["seller_notes"] == 2

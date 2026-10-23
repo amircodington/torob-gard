@@ -88,7 +88,11 @@ def desk(request, body: DeskIn):
 
 @router.get("/products/{product_id}", response=ProductOut)
 def product(request, product_id: str):
-    return product_out(get_object_or_404(Product.objects.select_related("category"), id=product_id))
+    p = get_object_or_404(Product.objects.select_related("category"), id=product_id)
+    # what the agent's «جمع‌بندی فروشنده‌ها» reads (agent/torobgard_agent/seller_notes.py)
+    noted = Q(description__regex=r"\S") | Q(warranty__regex=r'"(provider|description)": *"[^"]')
+    notes = Offer.objects.filter(noted, product=p, is_outlier=False).count()
+    return {**product_out(p), "seller_notes": notes}
 
 
 @router.get("/products/{product_id}/offers", response=list[OfferRowOut])

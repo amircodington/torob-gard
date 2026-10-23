@@ -140,3 +140,25 @@ test("product page: ask about this product in a sheet; the agent gets the produc
   expect(bodies[1]).toMatchObject({ text: "آره", session_id: "11111111-1111-1111-1111-111111111111" });
   await expect(page).toHaveURL(new RegExp(`/product/${PRODUCT}$`)); // never leaves for the desk
 });
+
+test("product page: the sellers' notes summed up on demand, labelled as the sellers' claims", async ({ page }) => {
+  const NOTED = "product_6c62d575e3d247f6f29e051a"; // a phone whose sellers wrote notes (dev DB)
+  let calls = 0;
+  await page.route("**/agent/seller_notes", (r) => {
+    calls++;
+    return r.fulfill({ json: { points: ["بیشتر فروشنده‌ها می‌گن پلمپ و اصله", "بعضی‌ها گارانتی ۱۸ ماهه دارن"], notes: 12 } });
+  });
+  await page.goto(`/product/${NOTED}`);
+  const card = page.getByTestId("seller-notes");
+  await expect(card).toContainText("نه نظر خریدارها");
+  expect(calls).toBe(0); // nothing is spent until the shopper asks
+  await card.getByRole("button", { name: "جمع‌بندی با هوش مصنوعی" }).click();
+  await expect(card.getByRole("listitem")).toHaveCount(2);
+  await expect(card).toContainText("خلاصه با هوش مصنوعی از یادداشت ۱۲ پیشنهاد");
+});
+
+test("product page: no notes card for a product whose sellers wrote nothing", async ({ page }) => {
+  await page.goto("/product/product_4a071fb47603b709cff158f3"); // dev DB: no seller wrote a note or a warranty
+  await expect(page.getByRole("heading", { name: "مشخصات" })).toBeVisible();
+  await expect(page.getByTestId("seller-notes")).toHaveCount(0);
+});

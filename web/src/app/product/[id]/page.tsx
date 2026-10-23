@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { Banknote, ChevronRight, ListChecks, Radar, Store } from "lucide-react";
 import { SiteHeader } from "../../../components/SiteHeader";
 import { ProductChat } from "../../../components/chat/ProductChat";
+import { SellerNotes } from "../../../components/catalog/SellerNotes";
 import { Crumbs, JsonLd, ROW_LINK, Section, Thumb } from "../../../components/catalog/parts";
 import { placeLine } from "../../../components/radar/ShopRow";
 import { btnClass } from "../../../components/ui/Btn";
@@ -111,6 +112,9 @@ export default async function ProductPage(p: Props) {
               <p className="mt-2 text-[13px] leading-5 text-ink-muted">و {faNum(rows.length - SHOWN)} فروشگاه دیگر در رادار.</p>
             )}
           </Section>
+
+          {/* one seller's note is that seller's ad, not a summary (agent seller_notes MIN_NOTES) */}
+          {product.sellerNotes >= 2 && <SellerNotes productId={product.id} count={product.sellerNotes} />}
 
           {specs.length > 0 && (
             <Section title="مشخصات" icon={ListChecks}>
