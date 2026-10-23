@@ -1,5 +1,6 @@
 "use client";
 
+import { img } from "../../lib/img";
 import { useState, type CSSProperties } from "react";
 import {
   ArrowRight,
@@ -57,7 +58,7 @@ function ProductImage({ src, alt }: { src: string | null; alt: string }) {
   return (
     // ponytail: plain <img>; Torob images are allowed from outside and next/image would proxy them.
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={alt} onError={() => setBroken(true)} className="size-24 shrink-0 rounded-md bg-surface object-contain lg:h-32 lg:w-full" />
+    <img src={img(src)} alt={alt} onError={() => setBroken(true)} className="size-24 shrink-0 rounded-md bg-surface object-contain lg:h-32 lg:w-full" />
   );
 }
 

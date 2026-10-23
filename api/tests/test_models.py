@@ -26,16 +26,16 @@ def test_catalog_chain():
 
 
 @pytest.mark.django_db
-def test_persian_venue_slug_fallback():
-    v = Venue.objects.create(name="پاساژ علاءالدین", name_norm="پاساژ علاءالدین", kind="pasazh")
-    assert v.slug.startswith("venue-") and len(v.slug) == 14
+def test_persian_venue_slug_from_name_norm():
+    v = Venue.objects.create(name="پاساژ علاءالدین", name_norm="علاالدین", kind="pasazh")
+    assert v.slug == "علاالدین"
 
 
 @pytest.mark.django_db
 def test_venue_slugs_unique_and_stable():
-    a = Venue.objects.create(name="پاساژ 2", name_norm="a", kind="pasazh")
-    b = Venue.objects.create(name="علاءالدین 2", name_norm="b", kind="pasazh")
-    assert a.slug == "2" and b.slug != a.slug
+    a = Venue.objects.create(name="پاساژ 2", name_norm="الف.2", kind="pasazh")
+    b = Venue.objects.create(name="پاساژ 2", name_norm="الف2", kind="pasazh")
+    assert a.slug == "الف2" and b.slug.startswith("الف2-") and len(b.slug) == len("الف2-") + 6
     a.save()
     a.refresh_from_db()
-    assert a.slug == "2"
+    assert a.slug == "الف2"

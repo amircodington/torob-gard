@@ -62,6 +62,8 @@ class ProductOut(Schema):
     median_price: int | None
     max_price: int | None
     offer_count: int
+    category_name: str
+    category_slug: str
 
 
 class ShopOut(Schema):
@@ -93,3 +95,57 @@ class OfferRowOut(Schema):
 
 class OfferByIdOut(OfferRowOut):
     product_id: str
+
+
+class FloorOut(Schema):
+    floor: str | None
+    label: str
+    shops: list[ShopOut]
+
+
+class NamedCountOut(Schema):
+    name: str
+    slug: str
+    count: int
+
+
+class VenueDetailOut(Schema):
+    slug: str
+    name: str
+    address: str
+    lat: float | None
+    lng: float | None
+    verified_at: datetime | None
+    floors: list[FloorOut]
+    top_categories: list[NamedCountOut]
+
+
+class ShopOfferOut(Schema):
+    product_id: str
+    title: str
+    image_url: str | None
+    price: int
+    last_price_changed_at: datetime
+
+
+class ShopDetailOut(ShopOut):
+    offer_count: int
+    offers: list[ShopOfferOut]
+
+
+class ProductCardOut(Schema):
+    id: str
+    title: str
+    brand: str | None
+    image_url: str | None
+    min_price: int
+    offer_count: int
+    price_at: datetime | None  # the cheapest offer's date (PLAN §2 rule 1)
+
+
+class CategoryOut(Schema):
+    slug: str
+    name: str
+    price_quantiles: dict[str, int]
+    top_venues: list[NamedCountOut]
+    popular_products: list[ProductCardOut]

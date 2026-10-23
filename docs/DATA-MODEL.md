@@ -26,6 +26,7 @@ quality   verification, shop_report, eval_case, eval_run, eval_result
 | id | uuid pk | |
 | name | text | canonical, e.g. «پاساژ علاءالدین ۲» |
 | name_norm | text unique | normalized for matching |
+| slug | text unique | `slugify(name_norm, allow_unicode=True)`, Persian kept (`/pasazh/علالدین2`); from the merge key, never ids or the display spelling, so a re-ingest gives the same URL. A rare punctuation-only clash gets `-<sha1(name_norm)[:6]>` |
 | aliases | text[] | «علاالدین 2», «علاءالدین2» … |
 | kind | enum(pasazh, bazaar, building, street) | |
 | address | text | |
@@ -70,6 +71,8 @@ Indexes: `gist(geom)`, `btree(venue_id, floor)`, `gin(name_norm gin_trgm_ops)`, 
 | name_norm | text |
 | parent_id | int fk null (students map a 2-level tree; null = root) |
 | product_count, shop_count | int |
+
+No slug column: `/c/[slug]` uses the same `persian_slug(name_norm)` computed on read (`«سیم و کابل برق ساختمان»` → `سیم-و-کابل-برق-ساختمان`), so it is stable across re-ingest; on a clash the category with more products wins.
 
 ### product (225,903 rows)
 | column | type | notes |

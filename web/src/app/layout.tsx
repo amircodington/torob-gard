@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Footer } from "../components/landing/Footer";
+import { SITE_URL } from "../lib/seo";
 import "./globals.css";
 
 const DESCRIPTION = "همراه خرید حضوری تو بازار الکترونیک مرکز تهران: مدل مناسب رو با دلیل انتخاب کن و بدون از کدوم مغازه و کدوم طبقه بخری.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "ترب‌گرد | از چی بخرم تا از کجا بخرم!", template: "%s | ترب‌گرد" },
   description: DESCRIPTION,
   openGraph: { title: "ترب‌گرد | از چی بخرم تا از کجا بخرم!", description: DESCRIPTION, locale: "fa_IR", type: "website" },

@@ -1,5 +1,6 @@
 "use client";
 
+import { img } from "../../lib/img";
 import Link from "next/link";
 import { useRef, useState, type CSSProperties } from "react";
 import { CircleCheck, CircleHelp, Copy, CopyCheck, Footprints, MapPin, Navigation, RotateCcw, TriangleAlert } from "lucide-react";
@@ -132,7 +133,7 @@ export function Checklist({ trip, rows, rowsFailed = false }: { trip: Trip; rows
             <div className="mt-2 flex items-start gap-3">
               {product.imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element -- Torob CDN image, no optimizer
-                <img src={product.imageUrl} alt="" className="h-16 w-16 shrink-0 rounded-sm bg-surface-tint object-contain" />
+                <img src={img(product.imageUrl)} alt="" className="h-16 w-16 shrink-0 rounded-sm bg-surface-tint object-contain" />
               ) : (
                 <span aria-hidden className="h-16 w-16 shrink-0 rounded-sm bg-surface-tint" />
               )}

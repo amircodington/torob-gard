@@ -6,7 +6,7 @@ from catalog.models import Category, Product, Shop, ShopReport, Venue
 
 @pytest.fixture
 def pair(db):
-    v = Venue.objects.create(name="پاساژ", name_norm="pasazh", kind="pasazh", slug="pasazh-1")
+    v = Venue.objects.create(name="پاساژ", name_norm="pasazh", kind="pasazh")
     shop = Shop.objects.create(
         id="s1", name="shop", name_norm="shop", address_raw="addr", venue=v,
         contacts=[{"channel": "phone", "display_number": "۰۲۱۱۲۳۴۵۶۷۸"}],
@@ -33,7 +33,7 @@ def test_create_get_patch(client, pair):
     assert j["shop"]["id"] == "s1"
     assert (j["product"]["brand"], j["product"]["image_url"]) == ("سامسونگ", "http://i/1.jpg")
     sh = j["shop"]
-    assert (sh["venue_name"], sh["venue_slug"], sh["address"]) == ("پاساژ", "pasazh-1", "addr")
+    assert (sh["venue_name"], sh["venue_slug"], sh["address"]) == ("پاساژ", "pasazh", "addr")
     assert sh["contact"] == "۰۲۱۱۲۳۴۵۶۷۸"
     for f in ("a", "b"):
         r = client.patch(f"/api/trips/{tid}", {"failures": [f]}, content_type="application/json")

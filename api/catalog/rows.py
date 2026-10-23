@@ -4,7 +4,7 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.geos import Point
 from django.utils import timezone
 
-from .models import Offer, Product, Shop, ShopReport
+from .models import Offer, Product, Shop, ShopReport, persian_slug
 
 STOCK_WINDOW = timedelta(hours=48)
 
@@ -20,6 +20,7 @@ def product_out(p: Product) -> dict:
         "image_urls": p.image_urls or [], "specs": p.specs or [],
         "min_price": p.min_price, "median_price": p.median_price,
         "max_price": p.max_price, "offer_count": p.offer_count,
+        "category_name": p.category.name, "category_slug": persian_slug(p.category.name_norm),
     }
 
 

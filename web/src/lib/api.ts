@@ -1,5 +1,5 @@
 /* Typed client for the Django API; snake_case → camelCase happens here and only here. */
-import type { Anchor, DeskTier, FailureRecord, OfferRow, Product, Stats, Store, Trip, Venue } from "./types";
+import type { Anchor, CategoryPage, DeskTier, FailureRecord, OfferRow, Product, ShopDetail, Stats, Store, Trip, Venue, VenueDetail } from "./types";
 
 // Relative: a Next.js rewrite to the Django server lands in Task 6. Server components set API_URL.
 const API = "/api";
@@ -64,6 +64,7 @@ const mapTier = (t: Raw): DeskTier => ({
 const mapProduct = (p: Raw): Product => ({
   id: p.id, title: p.title, brand: p.brand, imageUrls: p.image_urls, specs: p.specs,
   minPrice: p.min_price, medianPrice: p.median_price, maxPrice: p.max_price, offerCount: p.offer_count,
+  categoryName: p.category_name, categorySlug: p.category_slug,
 });
 
 const mapTrip = (t: Raw): Trip => ({
@@ -127,6 +128,28 @@ export const api = {
     if (!res.ok) throw new ApiError(res.status, await res.text());
     const r: Record<string, Raw> = await res.json();
     return Object.fromEntries(Object.entries(r).map(([id, e]) => [id, { bullets: e.bullets, tradeoffs: e.tradeoffs, fitNote: e.fit_note }]));
+  },
+  venue: async (slug: string): Promise<VenueDetail> => {
+    const v = await request<Raw>(`/venues/${encodeURIComponent(slug)}`);
+    return {
+      slug: v.slug, name: v.name, address: v.address, lat: v.lat, lng: v.lng, verifiedAt: v.verified_at,
+      floors: v.floors.map((f: Raw) => ({ floor: f.floor, label: f.label, shops: f.shops.map(mapStore) })),
+      topCategories: v.top_categories,
+    };
+  },
+  shop: async (id: string): Promise<ShopDetail> => {
+    const s = await request<Raw>(`/shops/${encodeURIComponent(id)}`);
+    return {
+      ...mapStore(s), offerCount: s.offer_count,
+      offers: s.offers.map((o: Raw) => ({ productId: o.product_id, title: o.title, imageUrl: o.image_url, price: o.price, lastPriceChangedAt: o.last_price_changed_at })),
+    };
+  },
+  category: async (slug: string): Promise<CategoryPage> => {
+    const c = await request<Raw>(`/categories/${encodeURIComponent(slug)}`);
+    return {
+      slug: c.slug, name: c.name, priceQuantiles: c.price_quantiles, topVenues: c.top_venues,
+      popularProducts: c.popular_products.map((p: Raw) => ({ id: p.id, title: p.title, brand: p.brand, imageUrl: p.image_url, minPrice: p.min_price, offerCount: p.offer_count, priceAt: p.price_at })),
+    };
   },
   product: async (id: string): Promise<Product> => mapProduct(await request<Raw>(`/products/${encodeURIComponent(id)}`)),
   offerRows: async (productId: string, anchor?: Anchor): Promise<OfferRow[]> => {

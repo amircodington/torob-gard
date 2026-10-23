@@ -1,3 +1,4 @@
+from hashlib import sha1
 from uuid import uuid4
 
 from django.contrib.gis.db import models
@@ -8,6 +9,11 @@ from django.db.models.expressions import RawSQL
 from django.utils.text import slugify
 
 # ponytail: no __str__/managers/abstract bases.
+
+
+def persian_slug(text: str) -> str:
+    """URL slug from a normalised Persian name, kept Persian so it is stable across re-ingest."""
+    return slugify(text, allow_unicode=True)[:90] or f"x-{sha1(text.encode()).hexdigest()[:8]}"
 
 
 def text_array():
@@ -24,7 +30,7 @@ class Venue(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.TextField()
     name_norm = models.TextField(unique=True)
-    slug = models.SlugField(unique=True, allow_unicode=False, max_length=100)
+    slug = models.SlugField(unique=True, allow_unicode=True, max_length=100)
     aliases = text_array()
     kind = models.TextField(choices=Kind.choices)
     address = models.TextField(blank=True, default="")
@@ -35,11 +41,11 @@ class Venue(models.Model):
     verified_at = models.DateTimeField(null=True)
 
     def save(self, *args, **kwargs):
-        if not self.slug:
-            # Pure-Persian names slugify to "" or collide ("پاساژ 2" -> "2"); suffix hex.
-            base = slugify(self.name)[:90] or f"venue-{uuid4().hex[:8]}"
-            taken = Venue.objects.filter(slug=base).exclude(pk=self.pk).exists()
-            self.slug = f"{base}-{uuid4().hex[:8]}" if taken else base
+        # From name_norm (the merge key), never ids or the display spelling: same venue, same URL.
+        base = persian_slug(self.name_norm)
+        taken = Venue.objects.filter(slug=base).exclude(pk=self.pk).exists()
+        # ponytail: keys differing only in punctuation collide; the hash suffix is per key.
+        self.slug = f"{base}-{sha1(self.name_norm.encode()).hexdigest()[:6]}" if taken else base
         super().save(*args, **kwargs)
 
 

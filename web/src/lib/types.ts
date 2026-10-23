@@ -60,6 +60,8 @@ export interface Product {
   medianPrice: number | null;
   maxPrice: number | null;
   offerCount: number;
+  categoryName: string;
+  categorySlug: string;
 }
 
 export interface Stats {
@@ -156,4 +158,46 @@ export interface ChatMsg {
   from: "assistant" | "user";
   text: string;
   chipIds?: string[];
+}
+
+/* ------------------------- public catalog pages (P3) ------------------------- */
+
+export interface NamedCount {
+  name: string;
+  slug: string;
+  count: number;
+}
+
+/** GET /api/venues/{slug}: floors in order -1, 0, 1 …, then «طبقه نامشخص». */
+export interface VenueDetail {
+  slug: string;
+  name: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  verifiedAt: string | null;
+  floors: { floor: string | null; label: string; shops: Store[] }[];
+  topCategories: NamedCount[];
+}
+
+export interface ShopOffer {
+  productId: string;
+  title: string;
+  imageUrl: string | null;
+  price: number;
+  lastPriceChangedAt: string;
+}
+
+export interface ShopDetail extends Store {
+  offerCount: number;
+  offers: ShopOffer[];
+}
+
+export interface CategoryPage {
+  slug: string;
+  name: string;
+  /** p10 … p90 of model min prices; {} when too few priced models */
+  priceQuantiles: Partial<Record<"p10" | "p25" | "p50" | "p75" | "p90", number>>;
+  topVenues: NamedCount[];
+  popularProducts: { id: string; title: string; brand: string | null; imageUrl: string | null; minPrice: number; offerCount: number; priceAt: string | null }[];
 }

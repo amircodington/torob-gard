@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Headphones, Laptop, Smartphone } from "lucide-react";
 import { faNum } from "../../lib/fa";
+import { pathOf } from "../../lib/seo";
 import type { Venue } from "../../lib/types";
 
 const CATEGORIES = [
@@ -20,12 +21,11 @@ export function PasazhStrip({ venues }: { venues: Venue[] }) {
         </h2>
         {venues.length ? (
           // Brand data shape: rounded bars with a dot tip; the first (most shops) is orange.
-          // ponytail: plain rows, not links; pasazh pages are P3.
           <ul data-testid="pasazh-strip" className="mt-4 flex flex-col gap-4 md:gap-3 rounded-lg bg-surface p-5 shadow-card">
             {venues.map((v, i) => (
               // Phone: name and count on a line, the bar under them (break-ui: a middle column left it ~20px at 320).
               <li key={v.slug} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 md:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto]">
-                <span className="text-[13px] leading-5 font-bold [overflow-wrap:anywhere] md:text-[15px] md:leading-6">{faNum(v.name)}</span>
+                <Link href={pathOf.venue(v.slug)} className="text-[13px] leading-5 font-bold [overflow-wrap:anywhere] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-focus md:text-[15px] md:leading-6">{faNum(v.name)}</Link>
                 <span aria-hidden className="col-span-2 row-start-2 pe-1.5 md:col-span-1 md:row-start-auto">
                   {/* origin-right = inline-start under dir="rtl" */}
                   <span

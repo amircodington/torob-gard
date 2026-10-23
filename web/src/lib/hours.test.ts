@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { isOpenNow, todayHoursLabel } from "./hours";
+import { isOpenNow, todayHoursLabel, weekHours } from "./hours";
 import type { WeeklyHours } from "./types";
 
 const sun12 = new Date("2026-10-25T08:30:00Z"); // Sunday 12:00 Tehran
@@ -40,4 +40,12 @@ it("treats unfilled or unsupported hours as unknown", () => {
   expect(isOpenNow(unfilled, sun12)).toBeNull();
   expect(todayHoursLabel(unfilled, sun12)).toBe("ساعت کاری ثبت نشده");
   expect(isOpenNow({ sun: day(["18:00:00", "02:00:00"]) }, sun01)).toBe(true);
+});
+
+it("lists the week with closed and undeclared days named", () => {
+  const w = weekHours({ sat: day(["10:00:00", "19:30:00"]), fri: closed, sun: day(["10:00:00", "10:00:00"]) });
+  expect(w).toHaveLength(7);
+  expect(w[0]).toEqual({ day: "شنبه", hours: "۱۰ تا ۱۹:۳۰" });
+  expect(w[1].hours).toBe("ثبت نشده");
+  expect(w[6]).toEqual({ day: "جمعه", hours: "تعطیل" });
 });

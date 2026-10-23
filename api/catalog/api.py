@@ -1,12 +1,27 @@
-from django.db.models import Max
+from django.db.models import Count, Max, OuterRef, Q, Subquery
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from ninja import Router
 
+from ingest.prices import category_quantiles
+from torobgard.persian import to_fa_digits
+
 from . import desk_config
 from .desk import explain_tiers, pick_tiers
-from .models import Offer, Product, Shop, Venue
+from .models import Category, Offer, Product, Shop, Venue, persian_slug
 from .rows import offer_rows, product_out, shop_out
-from .schemas import DeskIn, DeskOut, OfferByIdOut, OfferRowOut, ProductOut, StatsOut, VenueOut
+from .schemas import (
+    CategoryOut,
+    DeskIn,
+    DeskOut,
+    OfferByIdOut,
+    OfferRowOut,
+    ProductOut,
+    ShopDetailOut,
+    StatsOut,
+    VenueDetailOut,
+    VenueOut,
+)
 
 router = Router(tags=["catalog"])
 
@@ -67,7 +82,7 @@ def desk(request, body: DeskIn):
 
 @router.get("/products/{product_id}", response=ProductOut)
 def product(request, product_id: str):
-    return product_out(get_object_or_404(Product, id=product_id))
+    return product_out(get_object_or_404(Product.objects.select_related("category"), id=product_id))
 
 
 @router.get("/products/{product_id}/offers", response=list[OfferRowOut])
@@ -87,3 +102,83 @@ def offers_by_id(request, ids: str):
              "last_price_changed_at": o.last_price_changed_at, "stock": "unknown",
              "shop": shop_out(o.shop)}
             for i in wanted if (o := found.get(i))]
+
+
+def _floor_key(f: str | None):
+    if f is None:
+        return (2, 0, "")
+    try:
+        return (0, int(f), "")
+    except ValueError:
+        return (1, 0, f)  # «M» (mezzanine) and other words after the numbered floors
+
+
+def _floor_label(f: str | None) -> str:
+    if f is None:
+        return "طبقه نامشخص"
+    if f == "0":
+        return "همکف"
+    return "طبقه " + to_fa_digits(f.replace("-", "منفی ", 1) if f.startswith("-") else f)
+
+
+@router.get("/venues/{slug}", response=VenueDetailOut)
+def venue(request, slug: str):
+    v = get_object_or_404(Venue, slug=slug)
+    shops = sorted(v.shops.select_related("venue"),
+                   key=lambda s: (_floor_key(s.floor), s.unit or "", s.name))
+    floors: dict[str | None, list] = {}
+    for s in shops:
+        floors.setdefault(s.floor, []).append(shop_out(s))
+    cats = (Category.objects
+            .filter(products__offers__shop__venue=v, products__offers__is_outlier=False)
+            .annotate(n=Count("products", distinct=True)).order_by("-n", "name")[:8])
+    return {
+        "slug": v.slug, "name": v.name, "address": v.address, "verified_at": v.verified_at,
+        "lat": v.geom.y if v.geom else None, "lng": v.geom.x if v.geom else None,
+        "floors": [{"floor": f, "label": _floor_label(f), "shops": rows}
+                   for f, rows in floors.items()],
+        "top_categories": [{"name": c.name, "slug": persian_slug(c.name_norm), "count": c.n}
+                           for c in cats],
+    }
+
+
+@router.get("/shops/{shop_id}", response=ShopDetailOut)
+def shop(request, shop_id: str):
+    s = get_object_or_404(Shop.objects.select_related("venue"), id=shop_id)
+    offers = (s.offers.filter(is_outlier=False).select_related("product")
+              .order_by("-product__offer_count", "-price_toman")[:20])
+    return {
+        **shop_out(s), "offer_count": s.offer_count,
+        "offers": [{"product_id": o.product_id, "title": o.product.persian_title,
+                    "image_url": (o.product.image_urls or [None])[0], "price": o.price_toman,
+                    "last_price_changed_at": o.last_price_changed_at} for o in offers],
+    }
+
+
+def _category_by_slug(slug: str) -> Category:
+    # ponytail: no slug column; ~3.4k names scanned per ISR-cached page. Add one if it profiles hot.
+    for c in Category.objects.order_by("-product_count").only("id", "name", "name_norm"):
+        if persian_slug(c.name_norm) == slug:
+            return c
+    raise Http404
+
+
+@router.get("/categories/{slug}", response=CategoryOut)
+def category(request, slug: str):
+    c = _category_by_slug(slug)
+    fair = Q(shops__offers__is_outlier=False, shops__offers__product__category=c)
+    venues = (Venue.objects.annotate(n=Count("shops", filter=fair, distinct=True))
+              .filter(n__gt=0).order_by("-n", "name")[:6])
+    cheapest = (Offer.objects.filter(product=OuterRef("pk"), is_outlier=False)
+                .order_by("price_toman", "-last_price_changed_at")
+                .values("last_price_changed_at")[:1])
+    products = (Product.objects.filter(category=c, min_price__isnull=False)
+                .annotate(price_at=Subquery(cheapest)).order_by("-offer_count", "min_price")[:12])
+    return {
+        "slug": slug, "name": c.name, "price_quantiles": category_quantiles(c.name),
+        "top_venues": [{"name": v.name, "slug": v.slug, "count": v.n} for v in venues],
+        "popular_products": [{"id": p.id, "title": p.persian_title, "brand": p.brand_name,
+                              "image_url": (p.image_urls or [None])[0], "min_price": p.min_price,
+                              "offer_count": p.offer_count, "price_at": p.price_at}
+                             for p in products],
+    }

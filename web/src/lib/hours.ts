@@ -41,3 +41,14 @@ export function todayHoursLabel(weekly: WeeklyHours, now: Date): string {
   if (today.length === 0) return "ساعت کاری ثبت نشده";
   return `امروز ${today.map((s) => `${hm(s.start_time)} تا ${hm(s.end_time)}`).join(" و ")}`;
 }
+
+const DAY_FA: Record<string, string> = { sat: "شنبه", sun: "یکشنبه", mon: "دوشنبه", tue: "سه‌شنبه", wed: "چهارشنبه", thu: "پنجشنبه", fri: "جمعه" };
+
+/** The whole week, for cached pages that cannot know «امروز». Undeclared days say so (honesty rule 3). */
+export function weekHours(weekly: WeeklyHours): { day: string; hours: string }[] {
+  return DAYS.map((d) => {
+    const shifts = shiftsOf(weekly, d);
+    const hours = weekly[d]?.status === "closed" ? "تعطیل" : shifts.length ? shifts.map((s) => `${hm(s.start_time)} تا ${hm(s.end_time)}`).join(" و ") : "ثبت نشده";
+    return { day: DAY_FA[d], hours };
+  });
+}
